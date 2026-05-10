@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "854994592901",
+    "project_id": "rmss-6fb66",
+    "storage_bucket": "rmss-6fb66.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:854994592901:android:9834449b7471e85547f5ec",
+        "android_client_info": {
+          "package_name": "com.example.rmss"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvc__6LcFOCOdlLSwoIwhd0PAQImptOj0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
