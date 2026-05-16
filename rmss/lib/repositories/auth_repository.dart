@@ -41,7 +41,7 @@ class AuthRepository {
       'email': email,
       'phoneNumber': phoneNumber,
       'address': address,
-      'role': 'waiter',
+      'role': 'no-role',
       'photoUrl': photoUrl,
       'status': 'active',
       'createdDate':
@@ -50,6 +50,10 @@ class AuthRepository {
       'deviceToken': deviceToken,
     });
 
+    return _firebaseAuth.currentUser;
+  }
+
+  User? getCurrentUser() {
     return _firebaseAuth.currentUser;
   }
 }

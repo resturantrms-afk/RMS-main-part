@@ -18,6 +18,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (user != null) {
           emit(AuthSuccess(user: user));
         }
+      } on FirebaseAuthException catch (e) {
+        emit(
+          AuthError(
+            message: e.message ?? 'An unknown authentication error occurred',
+          ),
+        );
       } catch (e) {
         emit(AuthError(message: e.toString()));
       }
@@ -39,6 +45,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (user != null) {
           emit(AuthSuccess(user: user));
         }
+      } on FirebaseAuthException catch (e) {
+        emit(
+          AuthError(
+            message: e.message ?? 'An unknown authentication error occurred',
+          ),
+        );
       } catch (e) {
         emit(AuthError(message: e.toString()));
       }
@@ -48,9 +60,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthLoading());
       try {
         await authRepository.logout();
-        emit(AuthInitial());
+        emit(AuthUnauthenticated());
+      } on FirebaseAuthException catch (e) {
+        emit(
+          AuthError(
+            message: e.message ?? 'An unknown authentication error occurred',
+          ),
+        );
       } catch (e) {
         emit(AuthError(message: e.toString()));
+      }
+    });
+
+    on<CheckAuthStatus>((event, emit) {
+      User? user = authRepository.getCurrentUser();
+      if (user != null) {
+        emit(AuthSuccess(user: user));
+      } else {
+        emit(AuthUnauthenticated());
       }
     });
   }
