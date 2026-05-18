@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rmss/blocs/auth/auth_bloc.dart';
-import 'package:rmss/blocs/auth/auth_event.dart';
-import 'package:rmss/blocs/auth/auth_state.dart';
-import '../theme/colors.dart';
+import 'package:rmss/features/auth/bloc/auth_bloc.dart';
+import 'package:rmss/features/auth/bloc/auth_event.dart';
+import 'package:rmss/features/auth/bloc/auth_state.dart';
 import 'login_screen.dart';
-import 'home_screen.dart';
+import '../../../home_screen.dart';
+import '../../../core/constants/app_config.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -67,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen>
         if (state is AuthSuccess) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => HomeScreen()),
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
           );
         } else if (state is AuthUnauthenticated || state is AuthError) {
           Navigator.pushReplacement(
@@ -77,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen>
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         body: Center(
           child: AnimatedBuilder(
             animation: _controller,
@@ -92,20 +92,22 @@ class _SplashScreenState extends State<SplashScreen>
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.restaurant,
                           size: 80,
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        "SUPER MEAT",
+                        AppConfig.appName,
                         style: TextStyle(
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 4,
@@ -115,7 +117,7 @@ class _SplashScreenState extends State<SplashScreen>
                       Text(
                         "Restaurant Management System",
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: 14,
                           letterSpacing: 1.5,
                         ),

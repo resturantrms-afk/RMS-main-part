@@ -22,7 +22,6 @@ class SignUpRequested extends AuthEvent {
   final String address;
   final String password;
   final String photoUrl;
-  final String deviceToken;
 
   SignUpRequested({
     required this.name,
@@ -31,7 +30,6 @@ class SignUpRequested extends AuthEvent {
     required this.address,
     required this.password,
     required this.photoUrl,
-    required this.deviceToken,
   });
 
   @override
@@ -42,10 +40,18 @@ class SignUpRequested extends AuthEvent {
     address,
     password,
     photoUrl,
-    deviceToken,
   ];
 }
 
 class LogoutRequested extends AuthEvent {}
 
 class CheckAuthStatus extends AuthEvent {}
+
+class ForgotPasswordRequested extends AuthEvent {
+  final String email;
+
+  ForgotPasswordRequested({required this.email});
+
+  @override
+  List<Object?> get props => [email];
+}

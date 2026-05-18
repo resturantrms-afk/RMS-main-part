@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rmss/repositories/auth_repository.dart';
+import 'package:rmss/features/auth/repository/auth_repository.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -39,7 +39,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           address: event.address,
           password: event.password,
           photoUrl: event.photoUrl,
-          deviceToken: event.deviceToken,
         );
 
         if (user != null) {
@@ -78,6 +77,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthSuccess(user: user));
       } else {
         emit(AuthUnauthenticated());
+      }
+    });
+
+    on<ForgotPasswordRequested>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        await authRepository.sendPasswordResetEmail(email: event.email);
+        emit(AuthPasswordResetSent());
+      } on FirebaseAuthException catch (e) {
+        emit(AuthError(message: e.message ?? "Error"));
+      } catch (e) {
+        emit(AuthError(message: e.toString()));
       }
     });
   }

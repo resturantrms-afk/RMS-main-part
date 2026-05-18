@@ -25,7 +25,6 @@ class AuthRepository {
     required String address,
     required String password,
     required String photoUrl,
-    required String deviceToken,
   }) async {
     // create a new user
     await _firebaseAuth.createUserWithEmailAndPassword(
@@ -47,7 +46,7 @@ class AuthRepository {
       'createdDate':
           FieldValue.serverTimestamp(), // Firestore's way of getting the exact time
       'lastLoginDate': FieldValue.serverTimestamp(),
-      'deviceToken': deviceToken,
+      'deviceToken': '',
     });
 
     return _firebaseAuth.currentUser;
@@ -55,5 +54,9 @@ class AuthRepository {
 
   User? getCurrentUser() {
     return _firebaseAuth.currentUser;
+  }
+
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    await _firebaseAuth.sendPasswordResetEmail(email: email);
   }
 }

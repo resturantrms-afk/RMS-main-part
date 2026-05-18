@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rmss/blocs/auth/auth_bloc.dart';
-import 'package:rmss/blocs/auth/auth_event.dart';
-import 'package:rmss/blocs/auth/auth_state.dart';
-import '../theme/colors.dart';
+import 'package:rmss/features/auth/bloc/auth_bloc.dart';
+import 'package:rmss/features/auth/bloc/auth_event.dart';
+import 'package:rmss/features/auth/bloc/auth_state.dart';
 import 'signup_screen.dart';
 import 'forget_password_screen.dart';
-import 'home_screen.dart';
+import '../../../home_screen.dart';
 import 'package:flutter/gestures.dart';
+import '../../../core/constants/app_config.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -63,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (state is AuthSuccess) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => HomeScreen()),
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
           );
         } else if (state is AuthError) {
           ScaffoldMessenger.of(
@@ -73,14 +73,14 @@ class _LoginScreenState extends State<LoginScreen> {
       },
       builder: (context, state) {
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           body: Center(
             child: Container(
               width: isDesktop ? 450 : double.infinity,
               margin: const EdgeInsets.all(20),
               padding: const EdgeInsets.all(25),
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: Theme.of(context).colorScheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(25),
               ),
               child: SingleChildScrollView(
@@ -92,16 +92,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Animated Logo
                     Center(
                       child: TweenAnimationBuilder(
-                        duration: const Duration(milliseconds: 1000),
-                        tween: Tween<double>(begin: 0, end: 1),
-                        curve: Curves.elasticOut,
+                        duration: const Duration(milliseconds: 1500),
+                        tween: Tween<double>(begin: 0.8, end: 1),
+                        curve: Curves.easeOutCubic,
                         builder: (context, value, child) {
                           return Transform.scale(scale: value, child: child);
                         },
                         child: Text(
-                          "SUPER MEAT",
+                          AppConfig.appName,
                           style: TextStyle(
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.primary,
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 2,
@@ -114,13 +114,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     // Fade in text animation
                     TweenAnimationBuilder(
-                      duration: const Duration(milliseconds: 800),
+                      duration: const Duration(milliseconds: 1200),
                       tween: Tween<double>(begin: 0, end: 1),
+                      curve: Curves.easeOutCubic,
                       builder: (context, value, child) {
                         return Opacity(
                           opacity: value,
                           child: Transform.translate(
-                            offset: Offset(0, 20 * (1 - value)),
+                            offset: Offset(0, 40 * (1 - value)),
                             child: child,
                           ),
                         );
@@ -131,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Text(
                             "Welcome Back",
                             style: TextStyle(
-                              color: AppColors.textPrimary,
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
                             ),
@@ -140,7 +141,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           Text(
                             "Sign in to manage your restaurant",
                             style: TextStyle(
-                              color: AppColors.textSecondary,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                               fontSize: 15,
                             ),
                           ),
@@ -152,12 +155,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     TextField(
                       controller: _emailController,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       decoration: InputDecoration(
                         hintText: "Email",
-                        hintStyle: TextStyle(color: AppColors.textSecondary),
+                        hintStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         filled: true,
-                        fillColor: AppColors.surface,
+                        fillColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainer,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(15),
                           borderSide: BorderSide.none,
@@ -170,12 +179,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       decoration: InputDecoration(
                         hintText: "Password",
-                        hintStyle: TextStyle(color: AppColors.textSecondary),
+                        hintStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         filled: true,
-                        fillColor: AppColors.surface,
+                        fillColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainer,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(15),
                           borderSide: BorderSide.none,
@@ -198,9 +213,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: [
                               Checkbox(
                                 value: !_obscurePassword,
-                                activeColor: AppColors.primary,
+                                activeColor: Theme.of(
+                                  context,
+                                ).colorScheme.primary,
                                 side: BorderSide(
-                                  color: AppColors.textSecondary,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                                 onChanged: (value) {
                                   setState(() {
@@ -211,7 +230,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               Text(
                                 "Show Password",
                                 style: TextStyle(
-                                  color: AppColors.textSecondary,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -221,14 +242,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const ForgotPasswordScreen(),
+                                  builder: (_) => const ForgetPasswordScreen(),
                                 ),
                               );
                             },
                             child: Text(
                               "Forgot Password?",
                               style: TextStyle(
-                                color: AppColors.primary,
+                                color: Theme.of(context).colorScheme.primary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -250,7 +271,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(18),
                             ),
@@ -258,18 +281,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           onPressed: state is AuthLoading ? null : _login,
                           child: state is AuthLoading
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 24,
                                   height: 24,
                                   child: CircularProgressIndicator(
-                                    color: Colors.white,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
                                     strokeWidth: 3,
                                   ),
                                 )
-                              : const Text(
+                              : Text(
                                   "Login",
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -284,12 +311,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       textAlign: TextAlign.center,
                       TextSpan(
                         text: "Don't have an account? ",
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         children: [
                           TextSpan(
                             text: "Create Account",
                             recognizer: _signupRecognizer,
-                            style: TextStyle(color: AppColors.primary),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                           ),
                         ],
                       ),

@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:rmss/core/constants/app_config.dart';
+import 'package:rmss/core/theme/colors.dart';
 import 'firebase_options.dart';
-import 'screens/splash_screen.dart';
+import 'features/auth/screens/splash_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'blocs/auth/auth_bloc.dart';
-import 'repositories/auth_repository.dart';
+import 'features/auth/bloc/auth_bloc.dart';
+import 'features/auth/repository/auth_repository.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await dotenv.load(fileName: ".env");
 
   runApp(const MyApp());
 }
@@ -25,12 +29,10 @@ class MyApp extends StatelessWidget {
         create: (context) =>
             AuthBloc(authRepository: context.read<AuthRepository>()),
         child: MaterialApp(
-          title: 'Restaurant Management System',
+          title: AppConfig.appName,
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-            useMaterial3: true,
-          ),
+          darkTheme: AppTheme.darkTheme,
+          theme: AppTheme.lightTheme,
           home: const SplashScreen(),
         ),
       ),
