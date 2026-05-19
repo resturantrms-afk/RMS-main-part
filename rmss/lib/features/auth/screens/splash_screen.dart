@@ -4,7 +4,7 @@ import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_event.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
 import 'login_screen.dart';
-import '../../../home_screen.dart';
+import '../../../role_router_screen.dart';
 import '../../../core/constants/app_config.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -67,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen>
         if (state is AuthSuccess) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            MaterialPageRoute(builder: (_) => const RoleRouterScreen()),
           );
         } else if (state is AuthUnauthenticated || state is AuthError) {
           Navigator.pushReplacement(

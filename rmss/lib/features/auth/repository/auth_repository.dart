@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:rmss/core/models/user_model.dart';
 
 class AuthRepository {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
@@ -40,9 +41,9 @@ class AuthRepository {
       'email': email,
       'phoneNumber': phoneNumber,
       'address': address,
-      'role': 'no-role',
+      'role': UserRoles.noRole.name,
       'photoUrl': photoUrl,
-      'status': 'active',
+      'status': UserStatus.active.name,
       'createdDate':
           FieldValue.serverTimestamp(), // Firestore's way of getting the exact time
       'lastLoginDate': FieldValue.serverTimestamp(),
@@ -58,5 +59,21 @@ class AuthRepository {
 
   Future<void> sendPasswordResetEmail({required String email}) async {
     await _firebaseAuth.sendPasswordResetEmail(email: email);
+  }
+
+  Future<UserModel?> getUserData(String uid) async {
+    try {
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(uid)
+          .get();
+      if (doc.exists) {
+        return UserModel.fromJson(doc.data() as Map<String, dynamic>, doc.id);
+      }
+    } catch (e) {
+      //print("Error fetching user: $e");
+    }
+
+    return null;
   }
 }

@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_event.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
-import 'package:rmss/home_screen.dart';
+import 'package:rmss/role_router_screen.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/services/api_services.dart';
@@ -92,7 +92,7 @@ class _SignupScreenState extends State<SignupScreen> {
         if (state is AuthSuccess) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            MaterialPageRoute(builder: (_) => const RoleRouterScreen()),
           );
         } else if (state is AuthError) {
           ScaffoldMessenger.of(

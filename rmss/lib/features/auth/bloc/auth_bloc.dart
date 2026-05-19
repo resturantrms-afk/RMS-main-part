@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rmss/core/models/user_model.dart';
 import 'package:rmss/features/auth/repository/auth_repository.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
@@ -10,13 +11,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LoginRequested>((event, emit) async {
       emit(AuthLoading());
       try {
-        final User? user = await authRepository.login(
+        final User? firebaseUser = await authRepository.login(
           email: event.email,
           password: event.password,
         );
 
-        if (user != null) {
-          emit(AuthSuccess(user: user));
+        if (firebaseUser != null) {
+          UserModel? userModel = await authRepository.getUserData(
+            firebaseUser.uid,
+          );
+
+          if (userModel != null) {
+            emit(AuthSuccess(user: userModel));
+          } else {
+            emit(AuthError(message: "User data not found in database"));
+          }
         }
       } on FirebaseAuthException catch (e) {
         emit(
@@ -32,7 +41,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignUpRequested>((event, emit) async {
       emit(AuthLoading());
       try {
-        User? user = await authRepository.signUp(
+        User? firebaseUser = await authRepository.signUp(
           name: event.name,
           email: event.email,
           phoneNumber: event.phoneNumber,
@@ -41,8 +50,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           photoUrl: event.photoUrl,
         );
 
-        if (user != null) {
-          emit(AuthSuccess(user: user));
+        if (firebaseUser != null) {
+          UserModel? userModel = await authRepository.getUserData(
+            firebaseUser.uid,
+          );
+          if (userModel != null) {
+            emit(AuthSuccess(user: userModel));
+          } else {
+            emit(AuthError(message: "User not Found in database"));
+          }
         }
       } on FirebaseAuthException catch (e) {
         emit(
@@ -71,10 +87,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     });
 
-    on<CheckAuthStatus>((event, emit) {
-      User? user = authRepository.getCurrentUser();
-      if (user != null) {
-        emit(AuthSuccess(user: user));
+    on<CheckAuthStatus>((event, emit) async {
+      User? firebaseUser = authRepository.getCurrentUser();
+
+      if (firebaseUser != null) {
+        UserModel? userModel = await authRepository.getUserData(
+          firebaseUser.uid,
+        );
+
+        if (userModel != null) {
+          emit(AuthSuccess(user: userModel));
+        } else {
+          emit(AuthError(message: "User not found in database"));
+        }
       } else {
         emit(AuthUnauthenticated());
       }

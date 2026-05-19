@@ -5,7 +5,7 @@ import 'package:rmss/features/auth/bloc/auth_event.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
 import 'signup_screen.dart';
 import 'forget_password_screen.dart';
-import '../../../home_screen.dart';
+import '../../../role_router_screen.dart';
 import 'package:flutter/gestures.dart';
 import '../../../core/constants/app_config.dart';
 
@@ -63,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (state is AuthSuccess) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            MaterialPageRoute(builder: (_) => const RoleRouterScreen()),
           );
         } else if (state is AuthError) {
           ScaffoldMessenger.of(

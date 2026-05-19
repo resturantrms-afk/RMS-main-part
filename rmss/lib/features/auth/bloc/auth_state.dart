@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:rmss/core/models/user_model.dart';
 
 abstract class AuthState extends Equatable {
   @override
@@ -13,7 +13,7 @@ class AuthLoading extends AuthState {}
 class AuthUnauthenticated extends AuthState {}
 
 class AuthSuccess extends AuthState {
-  final User user;
+  final UserModel user;
   AuthSuccess({required this.user});
 
   @override
