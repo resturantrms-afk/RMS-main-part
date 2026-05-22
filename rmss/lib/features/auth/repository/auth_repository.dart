@@ -41,7 +41,7 @@ class AuthRepository {
       'email': email,
       'phoneNumber': phoneNumber,
       'address': address,
-      'role': UserRoles.waiter.name,
+      'role': UserRoles.noRole.name,
       'photoUrl': photoUrl,
       'status': UserStatus.active.name,
       'createdDate':

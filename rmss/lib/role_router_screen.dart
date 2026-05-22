@@ -4,7 +4,7 @@ import 'package:rmss/features/admin/admin_dashboard.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
 import 'package:rmss/features/cashier/cashier_dashboard.dart';
-import 'package:rmss/features/kitchen/kitchen_dashboard.dart';
+import 'package:rmss/features/kitchen/Screens/kitchen_dashboard.dart';
 import 'package:rmss/features/waiter/waiter_dashboard.dart';
 
 class RoleRouterScreen extends StatelessWidget {

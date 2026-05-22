@@ -6,24 +6,8 @@ class WaiterDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Waiter Dashboard'),
-      ),
-      body: const WaiterDashboardBody(),
-    );
-  }
-}
-
-class WaiterDashboardBody extends StatelessWidget {
-  const WaiterDashboardBody({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Welcome to the Waiter Dashboard',
-        style: Theme.of(context).textTheme.titleLarge,
-      ),
+      appBar: AppBar(title: const Text("Waiter Dashboard")),
+      body: const Center(child: Text("Waiter View")),
     );
   }
 }
