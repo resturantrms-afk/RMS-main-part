@@ -73,9 +73,7 @@ class _SplashScreenState extends State<SplashScreen>
         } else if (state is AuthUnauthenticated || state is AuthError) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => const CashierDashboard(),
-            ), //const LoginScreen()),
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
           );
         }
       },
