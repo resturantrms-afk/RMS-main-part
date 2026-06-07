@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_event.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
+import 'package:rmss/features/cashier/views/desktop/cashier_dashboard.dart';
 import 'login_screen.dart';
 import '../../../role_router_screen.dart';
 import '../../../core/constants/app_config.dart';
@@ -72,7 +73,9 @@ class _SplashScreenState extends State<SplashScreen>
         } else if (state is AuthUnauthenticated || state is AuthError) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            MaterialPageRoute(
+              builder: (_) => const CashierDashboard(),
+            ), //const LoginScreen()),
           );
         }
       },

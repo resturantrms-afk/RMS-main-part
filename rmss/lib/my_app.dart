@@ -17,7 +17,7 @@ import 'package:rmss/core/repositories/table_repository.dart';
 import 'package:rmss/core/theme/colors.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/repository/auth_repository.dart';
-import 'package:rmss/features/auth/screens/splash_screen.dart';
+import 'package:rmss/features/auth/views/splash_screen.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

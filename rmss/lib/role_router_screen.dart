@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rmss/features/admin/admin_dashboard.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
-import 'package:rmss/features/cashier/cashier_dashboard.dart';
+import 'package:rmss/features/cashier/views/desktop/cashier_dashboard.dart';
 import 'package:rmss/features/kitchen/kitchen_dashboard.dart';
 import 'package:rmss/features/waiter/waiter_dashboard.dart';
 
@@ -28,9 +28,7 @@ class RoleRouterScreen extends StatelessWidget {
             case "cashier":
               return const CashierDashboard();
             default:
-              return const Scaffold(
-                body: Center(child: Text("No Role Assigned")),
-              );
+              return const Scaffold(body: CashierDashboard());
           }
         }
 

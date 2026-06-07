@@ -5,8 +5,10 @@ import 'package:rmss/core/models/order_model.dart';
 
 class CartBloc extends Bloc<CartEvent, CartState> {
   final List<OrderItemModel> _cartItems = [];
+  final String tableId = 'unknown';
+  final int tableNumber = 1;
 
-  CartBloc() : super(CartUpdated(items: const [])) {
+  CartBloc() : super(const CartState(items: [])) {
     on<AddToCart>((event, emit) {
       // check if the item is already in the cart
       final existingIndex = _cartItems.indexWhere(
@@ -30,18 +32,18 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
       // emit the updated list
 
-      emit(CartUpdated(items: List.from(_cartItems)));
+      emit(CartState(items: List.from(_cartItems)));
     });
     on<RemoveFromCart>((event, emit) {
       _cartItems.removeWhere(
         (item) => item.menuItemId == event.item.menuItemId,
       );
-      emit(CartUpdated(items: List.from(_cartItems)));
+      emit(CartState(items: List.from(_cartItems)));
     });
 
     on<ClearCart>((event, emit) {
       _cartItems.clear();
-      emit(CartUpdated(items: const []));
+      emit(const CartState(items: []));
     });
   }
 }
