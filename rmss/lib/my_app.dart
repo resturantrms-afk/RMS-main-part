@@ -15,9 +15,11 @@ import 'package:rmss/core/repositories/order_repository.dart';
 import 'package:rmss/core/repositories/payment_repository.dart';
 import 'package:rmss/core/repositories/table_repository.dart';
 import 'package:rmss/core/theme/colors.dart';
+import 'package:rmss/core/theme/theme_cubit.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/repository/auth_repository.dart';
 import 'package:rmss/features/auth/views/splash_screen.dart';
+import 'package:rmss/features/cashier/blocs/navigation_cubit/navigation_cubit.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -34,6 +36,8 @@ class MyApp extends StatelessWidget {
       ],
       child: MultiBlocProvider(
         providers: [
+          BlocProvider(create: (context) => NavigationCubit()),
+          BlocProvider(create: (context) => ThemeCubit()),
           BlocProvider(
             create: (context) =>
                 AuthBloc(authRepository: context.read<AuthRepository>()),
@@ -60,12 +64,17 @@ class MyApp extends StatelessWidget {
           ),
           BlocProvider(create: (context) => CartBloc()),
         ],
-        child: MaterialApp(
-          title: AppConfig.appName,
-          debugShowCheckedModeBanner: false,
-          darkTheme: AppTheme.darkTheme,
-          theme: AppTheme.lightTheme,
-          home: const SplashScreen(),
+        child: BlocBuilder<ThemeCubit, ThemeMode>(
+          builder: (context, state) {
+            return MaterialApp(
+              title: AppConfig.appName,
+              debugShowCheckedModeBanner: false,
+              darkTheme: AppTheme.darkTheme,
+              theme: AppTheme.lightTheme,
+              themeMode: state,
+              home: const SplashScreen(),
+            );
+          },
         ),
       ),
     );

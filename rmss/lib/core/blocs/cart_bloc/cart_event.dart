@@ -25,3 +25,13 @@ class RemoveFromCart extends CartEvent {
 }
 
 class ClearCart extends CartEvent {}
+
+class UpdateCartItemQuantity extends CartEvent {
+  final String menuItemId;
+  final int delta; // +1 or -1
+
+  UpdateCartItemQuantity({required this.menuItemId, required this.delta});
+
+  @override
+  List<Object?> get props => [menuItemId, delta];
+}

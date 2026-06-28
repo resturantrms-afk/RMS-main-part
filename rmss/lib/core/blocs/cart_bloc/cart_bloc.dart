@@ -45,5 +45,29 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       _cartItems.clear();
       emit(const CartState(items: []));
     });
+
+    on<UpdateCartItemQuantity>((event, emit) {
+      final index = _cartItems.indexWhere(
+        (i) => i.menuItemId == event.menuItemId,
+      );
+      if (index < 0) return;
+
+      final item = _cartItems[index];
+      final newQty = item.quantity + event.delta;
+
+      if (newQty <= 0) {
+        // If quantity drops to 0 or below, remove the item entirely
+        _cartItems.removeAt(index);
+      } else {
+        _cartItems[index] = OrderItemModel(
+          menuItemId: item.menuItemId,
+          name: item.name,
+          price: item.price,
+          quantity: newQty,
+          notes: item.notes,
+        );
+      }
+      emit(CartState(items: List.from(_cartItems)));
+    });
   }
 }
