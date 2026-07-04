@@ -27,7 +27,7 @@ class _CashierDashboardState extends State<CashierDashboard> {
         final pages = [
           const Home(),
           Menu(preSelectedTable: navState.preSelectedTable),
-          const Orders(),
+          Orders(),
           const Payments(),
           const Settings(),
         ];

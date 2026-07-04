@@ -101,8 +101,7 @@ class LiveTableGrid extends StatelessWidget {
             children: [
               Text(
                 "T${table.tableNumber}",
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
                 ),

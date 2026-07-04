@@ -258,12 +258,9 @@ class _MenuItemPanelState extends State<MenuItemPanel> {
                                           children: [
                                             Text(
                                               item.name,
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 18,
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurface,
                                               ),
                                             ),
                                             const SizedBox(height: 5),

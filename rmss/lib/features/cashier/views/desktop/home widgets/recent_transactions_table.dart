@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rmss/core/blocs/order_bloc/order_bloc.dart';
 import 'package:rmss/core/blocs/order_bloc/order_state.dart';
 import 'package:rmss/core/models/order_model.dart';
+import 'package:rmss/features/cashier/views/desktop/pages/order_details.dart';
+import 'package:rmss/features/cashier/views/desktop/pages/orders.dart';
 
 class RecentTransactionsTable extends StatelessWidget {
   const RecentTransactionsTable({super.key});
@@ -25,12 +27,9 @@ class RecentTransactionsTable extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                const Text(
                   "Recent Transactions",
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 20,
-                  ),
+                  style: TextStyle(fontSize: 20),
                 ),
 
                 TextButton(onPressed: () {}, child: const Text("View All")),
@@ -47,14 +46,17 @@ class RecentTransactionsTable extends StatelessWidget {
           BlocBuilder<OrderBloc, OrderState>(
             builder: (context, orderState) {
               if (orderState is OrderLoaded) {
-                final orders = orderState.items.take(5);
+                final allOrders = orderState.items;
+                allOrders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+                final orders = allOrders.take(5);
 
                 if (orders.isEmpty) {
                   return const Padding(
                     padding: EdgeInsets.all(40),
                     child: Center(
                       child: Text(
-                        "No transactions yet today.",
+                        "No transactions yet",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -85,10 +87,6 @@ class RecentTransactionsTable extends StatelessWidget {
                               DataColumn(label: Text("ACTION"), numeric: true),
                             ],
                             rows: orders.map((order) {
-                              final date = order.createdAt.toDate();
-                              final timeString =
-                                  "${date.hour}:${date.minute.toString().padLeft(2, '0')}";
-
                               return DataRow(
                                 cells: [
                                   // Cell 1: ORDER ID
@@ -101,7 +99,7 @@ class RecentTransactionsTable extends StatelessWidget {
                                   // Cell 2: TIME
                                   DataCell(
                                     Text(
-                                      timeString,
+                                      order.timeAgo(),
                                       style: TextStyle(
                                         color: Theme.of(
                                           context,
@@ -153,20 +151,25 @@ class RecentTransactionsTable extends StatelessWidget {
   Widget _buildActionButton(BuildContext context, OrderModel order) {
     String buttonText = "";
 
-    if (order.status == OrderStatus.paid) {
-      buttonText = "Receipt";
-    } else if (order.status == OrderStatus.served) {
-      buttonText = "Settle";
-    } else if (order.status == OrderStatus.cancelled) {
-      buttonText = "Details";
-    } else {
-      // For pending, preparing, and ready
+    if (order.status == OrderStatus.served) {
+      buttonText = "Complete payment";
+    } else if (order.status == OrderStatus.pending ||
+        order.status == OrderStatus.preparing) {
+      // For pending, preparing
       buttonText = "Cancel";
+    } else {
+      // ready, and cancelled, paid
+      buttonText = "details";
     }
 
     return OutlinedButton(
       onPressed: () {
-        // You can add your logic here later depending on the buttonText!
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OrderDetails(orderId: order.id),
+          ),
+        );
       },
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -181,29 +184,19 @@ class RecentTransactionsTable extends StatelessWidget {
 
   Widget _buildStatusPill(BuildContext context, OrderModel order) {
     Color bgColor;
-    Color textColor;
+    Color textColor = Theme.of(context).colorScheme.onSurface;
 
     switch (order.status) {
       case OrderStatus.paid:
-        bgColor = Theme.of(context).colorScheme.primaryContainer;
-        textColor = Theme.of(context).colorScheme.onPrimaryContainer;
-        break;
       case OrderStatus.cancelled:
-        bgColor = Theme.of(context).colorScheme.errorContainer;
-        textColor = Theme.of(context).colorScheme.onErrorContainer;
+      case OrderStatus.ready:
+        bgColor = Theme.of(context).colorScheme.outline;
         break;
       case OrderStatus.served:
-        bgColor = Theme.of(context).colorScheme.secondaryContainer;
-        textColor = Theme.of(context).colorScheme.onSecondaryContainer;
-        break;
-      case OrderStatus.ready:
+      default:
+        // For pending, preparing, and served
         bgColor = Theme.of(context).colorScheme.primary;
         textColor = Theme.of(context).colorScheme.onPrimary;
-        break;
-      default:
-        // For pending and preparing
-        bgColor = Theme.of(context).colorScheme.onSurface;
-        textColor = Theme.of(context).colorScheme.onSurfaceVariant;
     }
 
     return Container(

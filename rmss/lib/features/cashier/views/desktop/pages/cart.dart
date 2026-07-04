@@ -13,10 +13,12 @@ import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/core/models/table_model.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
+import 'package:rmss/core/blocs/table_bloc/table_bloc.dart';
+import 'package:rmss/core/blocs/table_bloc/table_event.dart';
 
 class Cart extends StatelessWidget {
-  TableModel table;
-  Cart({super.key, required this.table});
+  final TableModel table;
+  const Cart({super.key, required this.table});
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +35,7 @@ class Cart extends StatelessWidget {
                 subtotal; // Total equals subtotal without tax/gratuity
 
             return Scaffold(
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
               body: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Column(
@@ -123,173 +126,162 @@ class Cart extends StatelessWidget {
                     Expanded(
                       child: cartState.items.isEmpty
                           ? _buildEmptyState(context)
-                          : Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 900,
-                                ),
-                                child: Column(
-                                  children: [
-                                    // ── UPPER PART: ITEMS ─────────────────
-                                    Expanded(
-                                      child: SingleChildScrollView(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Current Order',
-                                              style: TextStyle(
-                                                fontSize: 24,
-                                                fontWeight: FontWeight.bold,
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurface,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 16),
-                                            // ── ORDER ITEMS LIST ──────────────
-                                            ...cartState.items.map((item) {
-                                              String? imageUrl;
-                                              if (menuState is MenuLoaded) {
-                                                final menuItem = menuState.items
-                                                    .where(
-                                                      (m) =>
-                                                          m.id ==
-                                                          item.menuItemId,
-                                                    )
-                                                    .firstOrNull;
-                                                imageUrl = menuItem?.imageUrl;
-                                              }
-                                              return Padding(
-                                                padding: const EdgeInsets.only(
-                                                  bottom: 16,
-                                                ),
-                                                child: _CartItemTile(
-                                                  item: item,
-                                                  imageUrl: imageUrl,
-                                                ),
-                                              );
-                                            }),
-                                          ],
+                          : Column(
+                              children: [
+                                // ── UPPER PART: ITEMS ─────────────────
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Current Order',
+                                          style: TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                          ),
                                         ),
-                                      ),
+                                        const SizedBox(height: 16),
+                                        // ── ORDER ITEMS LIST ──────────────
+                                        ...cartState.items.map((item) {
+                                          String? imageUrl;
+                                          if (menuState is MenuLoaded) {
+                                            final menuItem = menuState.items
+                                                .where(
+                                                  (m) =>
+                                                      m.id == item.menuItemId,
+                                                )
+                                                .firstOrNull;
+                                            imageUrl = menuItem?.imageUrl;
+                                          }
+                                          return Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 16,
+                                            ),
+                                            child: _CartItemTile(
+                                              item: item,
+                                              imageUrl: imageUrl,
+                                            ),
+                                          );
+                                        }),
+                                      ],
                                     ),
-                                    const SizedBox(height: 24),
-                                    // ── LOWER PART: SUMMARY CARD ─────────────────
-                                    Container(
-                                      padding: const EdgeInsets.all(24),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.surfaceContainer,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                // ── LOWER PART: SUMMARY CARD ─────────────────
+                                Container(
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerLowest,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.outlineVariant,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Summary',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
                                           color: Theme.of(
                                             context,
-                                          ).colorScheme.outlineVariant,
+                                          ).colorScheme.onSurface,
                                         ),
                                       ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                      Divider(
+                                        height: 32,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outlineVariant,
+                                      ),
+                                      _SummaryRow(
+                                        label: 'Subtotal',
+                                        value:
+                                            '\$${subtotal.toStringAsFixed(2)}',
+                                      ),
+                                      Divider(
+                                        height: 32,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outlineVariant,
+                                      ),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
-                                            'Summary',
+                                            'Total Balance',
                                             style: TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w600,
                                               color: Theme.of(
                                                 context,
                                               ).colorScheme.onSurface,
                                             ),
                                           ),
-                                          Divider(
-                                            height: 32,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.outlineVariant,
-                                          ),
-                                          _SummaryRow(
-                                            label: 'Subtotal',
-                                            value:
-                                                '\$${subtotal.toStringAsFixed(2)}',
-                                          ),
-                                          Divider(
-                                            height: 32,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.outlineVariant,
-                                          ),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(
-                                                'Total Balance',
-                                                style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Theme.of(
-                                                    context,
-                                                  ).colorScheme.onSurface,
-                                                ),
-                                              ),
-                                              Text(
-                                                '\$${total.toStringAsFixed(2)}',
-                                                style: TextStyle(
-                                                  fontSize: 24, // Adjusted size
-                                                  fontWeight: FontWeight.w900,
-                                                  color: Theme.of(
-                                                    context,
-                                                  ).colorScheme.primary,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 24),
-                                          // ── COMPLETE ORDER BUTTON ──
-                                          SizedBox(
-                                            width: double.infinity,
-                                            child: FilledButton.icon(
-                                              onPressed: () => _completeOrder(
-                                                context: context,
-                                                cartState: cartState,
-                                                tableId: tableId,
-                                                tableNumber: tableNumber,
-                                                total: total,
-                                              ),
-                                              style: FilledButton.styleFrom(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      vertical: 16,
-                                                      horizontal: 24,
-                                                    ),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(50),
-                                                ),
-                                                textStyle: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
-                                                  letterSpacing: 2,
-                                                ),
-                                              ),
-                                              icon: const Icon(
-                                                Icons.arrow_forward,
-                                                size: 18,
-                                              ),
-                                              label: const Text(
-                                                'COMPLETE ORDER',
-                                              ),
+                                          Text(
+                                            '\$${total.toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              fontSize: 24, // Adjusted size
+                                              fontWeight: FontWeight.w900,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
                                             ),
                                           ),
                                         ],
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 24),
+                                      // ── COMPLETE ORDER BUTTON ──
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: FilledButton.icon(
+                                          onPressed: () => _completeOrder(
+                                            context: context,
+                                            cartState: cartState,
+                                            tableId: tableId,
+                                            tableNumber: tableNumber,
+                                            total: total,
+                                          ),
+                                          style: FilledButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 16,
+                                              horizontal: 24,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(50),
+                                            ),
+                                            textStyle: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                              letterSpacing: 2,
+                                            ),
+                                          ),
+                                          icon: const Icon(
+                                            Icons.arrow_forward,
+                                            size: 18,
+                                          ),
+                                          label: const Text('COMPLETE ORDER'),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                     ),
                   ],
@@ -337,7 +329,15 @@ class Cart extends StatelessWidget {
     // 4. Clear the local cart
     context.read<CartBloc>().add(ClearCart());
 
-    // 5. Navigate back to menu
+    // 5. Update Table Status to Occupied
+    final updatedTable = TableModel(
+      id: tableId,
+      tableNumber: tableNumber,
+      status: TableStatus.occupied,
+    );
+    context.read<TableBloc>().add(UpdateTable(item: updatedTable));
+
+    // 6. Navigate back to menu
     Navigator.pop(context);
   }
 
@@ -392,7 +392,7 @@ class _CartItemTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainer,
+        color: Theme.of(context).colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
@@ -451,11 +451,10 @@ class _CartItemTile extends StatelessWidget {
 
           const SizedBox(width: 24),
 
-          // ── QTY CONTROLS (matching HTML rounded-full pill) ────────────
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHigh,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(50),
               border: Border.all(
                 color: Theme.of(context).colorScheme.outlineVariant,

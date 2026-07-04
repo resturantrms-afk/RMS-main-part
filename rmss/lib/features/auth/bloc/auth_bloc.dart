@@ -116,5 +116,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthError(message: e.toString()));
       }
     });
+
+    on<UpdateProfileRequested>((event, emit) async {
+      if (state is AuthSuccess) {
+        try {
+          final currentUser = (state as AuthSuccess).user;
+          await authRepository.updateUserData(
+            uid: currentUser.id,
+            name: event.name,
+            photoUrl: event.photoUrl,
+          );
+
+          UserModel? updatedUser = await authRepository.getUserData(currentUser.id);
+          if (updatedUser != null) {
+            emit(AuthSuccess(user: updatedUser));
+          }
+        } catch (e) {
+          // Ignore error for now, maybe print or handle later
+        }
+      }
+    });
   }
 }

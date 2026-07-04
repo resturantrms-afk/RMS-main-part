@@ -110,10 +110,7 @@ class _MenuTopBarState extends State<MenuTopBar> {
                               value: item,
                               child: Text(
                                 "Table ${item.tableNumber}",
-                                style: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface,
+                                style: const TextStyle(
                                   fontWeight: FontWeight.w400,
                                 ),
                               ),
@@ -204,11 +201,7 @@ class _MenuTopBarState extends State<MenuTopBar> {
                     );
                   }
                 },
-                icon: Icon(
-                  Icons.shopping_cart_outlined,
-                  color: Theme.of(context).colorScheme.onSurface,
-                  size: 30,
-                ),
+                icon: const Icon(Icons.shopping_cart_outlined, size: 30),
               ),
             );
           },

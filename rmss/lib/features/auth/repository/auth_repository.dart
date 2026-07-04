@@ -76,4 +76,18 @@ class AuthRepository {
 
     return null;
   }
+
+  Future<void> updateUserData({
+    required String uid,
+    String? name,
+    String? photoUrl,
+  }) async {
+    Map<String, dynamic> updates = {};
+    if (name != null) updates['name'] = name;
+    if (photoUrl != null) updates['photoUrl'] = photoUrl;
+
+    if (updates.isNotEmpty) {
+      await _firestore.collection('users').doc(uid).update(updates);
+    }
+  }
 }

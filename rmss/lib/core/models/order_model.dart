@@ -29,6 +29,21 @@ class OrderModel extends Equatable {
     required this.items,
   });
 
+  String timeAgo() {
+    DateTime orderTime = createdAt.toDate();
+    Duration duration = DateTime.now().difference(orderTime);
+
+    if (duration.inDays > 0) {
+      return "${duration.inDays} days ago";
+    } else if (duration.inHours > 0) {
+      return "${duration.inHours} hrs ago";
+    } else if (duration.inMinutes > 0) {
+      return "${duration.inMinutes} mins ago";
+    } else {
+      return "Just now";
+    }
+  }
+
   factory OrderModel.fromJson(Map<String, dynamic> json, String documentId) {
     return OrderModel(
       id: documentId,
@@ -36,7 +51,7 @@ class OrderModel extends Equatable {
       tableNumber: json['tableNumber'] ?? 0,
       createdBy: json['createdBy'] as Map<String, dynamic>? ?? {},
       source: OrderSource.values.firstWhere(
-        (e) => e.name == (json['status'] ?? 'pos'),
+        (e) => e.name == (json['source'] ?? 'pos'),
         orElse: () => OrderSource.pos,
       ),
 

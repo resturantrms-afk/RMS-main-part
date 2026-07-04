@@ -22,10 +22,10 @@ class WelcomeHero extends StatelessWidget {
                   children: [
                     Text(
                       "Welcome Back, ${state.user.name}",
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
+
                         letterSpacing: 2.5,
                       ),
                     ),
@@ -71,12 +71,12 @@ class WelcomeHero extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.add, color: Theme.of(context).colorScheme.onSurface),
+              Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary),
               const SizedBox(width: 4),
               Text(
                 "New order",
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: Theme.of(context).colorScheme.onPrimary,
                 ),
               ),
             ],

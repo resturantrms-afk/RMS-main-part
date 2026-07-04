@@ -31,7 +31,7 @@ class Home extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            WelcomeHero(),
+            const WelcomeHero(),
             const SizedBox(height: 20),
             Expanded(
               child: SingleChildScrollView(
@@ -109,15 +109,16 @@ class Home extends StatelessWidget {
                                     ),
 
                                     SummaryCard(
-                                      title: "COMPLETED ORDERS Today",
+                                      title: "COMPLETED ORDERS TODAY",
                                       value: completedOrders.toString(),
                                       subText: "",
                                       subTextColor: Colors.transparent,
                                     ),
 
                                     SummaryCard(
-                                      title: "SHIFT REGISTER Today",
-                                      value: shiftRegister.toString(),
+                                      title: "SHIFT REGISTER TODAY",
+                                      value:
+                                          "\$${shiftRegister.toStringAsFixed(2)}",
                                       subText: "Gross",
                                       subTextColor: Theme.of(
                                         context,
