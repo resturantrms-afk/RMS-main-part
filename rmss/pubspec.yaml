@@ -48,6 +48,9 @@ dependencies:
   google_fonts: ^8.1.0
   window_manager: ^0.5.1
   cached_network_image: ^3.4.1
+  pdf: ^3.13.0
+  printing: ^5.15.0
+  intl: ^0.20.3
 
 dev_dependencies:
   flutter_test:

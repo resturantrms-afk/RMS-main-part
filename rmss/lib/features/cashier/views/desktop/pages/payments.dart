@@ -11,6 +11,7 @@ import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
 import 'package:rmss/features/cashier/views/desktop/cashier_dashboard.dart';
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/cashier_top_bar.dart';
+import 'package:rmss/features/cashier/views/desktop/pages/receipt.dart';
 
 class Payments extends StatefulWidget {
   const Payments({super.key});
@@ -110,6 +111,7 @@ class _PaymentsState extends State<Payments> {
                       textAlign: TextAlign.right,
                     ),
                   ),
+                  const Expanded(flex: 5, child: SizedBox()), // Receipt action
                 ],
               ),
             ),
@@ -489,6 +491,33 @@ class _PaymentsState extends State<Payments> {
                   ),
                 ),
               ],
+            ),
+          ),
+
+          // Receipt Action
+          Expanded(
+            flex: 5,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(Icons.receipt_long),
+                color: colorScheme.primary,
+                tooltip: 'View Receipt',
+                onPressed: () {
+                  if (order != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ReceiptPage(order: order),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Order details not found')),
+                    );
+                  }
+                },
+              ),
             ),
           ),
         ],

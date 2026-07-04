@@ -5,6 +5,7 @@ import 'package:rmss/core/blocs/order_bloc/order_state.dart';
 import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/order_details.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/orders.dart';
+import 'package:rmss/features/cashier/views/desktop/pages/receipt.dart';
 
 class RecentTransactionsTable extends StatelessWidget {
   const RecentTransactionsTable({super.key});
@@ -150,8 +151,9 @@ class RecentTransactionsTable extends StatelessWidget {
 
   Widget _buildActionButton(BuildContext context, OrderModel order) {
     String buttonText = "";
-
-    if (order.status == OrderStatus.served) {
+    if (order.status == OrderStatus.paid) {
+      buttonText = "Receipt";
+    } else if (order.status == OrderStatus.served) {
       buttonText = "Complete payment";
     } else if (order.status == OrderStatus.pending ||
         order.status == OrderStatus.preparing) {
@@ -164,12 +166,19 @@ class RecentTransactionsTable extends StatelessWidget {
 
     return OutlinedButton(
       onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OrderDetails(orderId: order.id),
-          ),
-        );
+        if (buttonText == "Receipt") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ReceiptPage(order: order)),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OrderDetails(orderId: order.id),
+            ),
+          );
+        }
       },
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 16),
