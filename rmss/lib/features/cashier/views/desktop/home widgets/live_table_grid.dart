@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rmss/core/blocs/order_bloc/order_bloc.dart';
+import 'package:rmss/core/blocs/order_bloc/order_event.dart';
+import 'package:rmss/core/blocs/order_bloc/order_state.dart';
 import 'package:rmss/core/blocs/table_bloc/table_bloc.dart';
 import 'package:rmss/core/blocs/table_bloc/table_state.dart';
+import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/core/models/table_model.dart';
 import 'package:rmss/features/cashier/blocs/navigation_cubit/navigation_cubit.dart';
+import 'package:rmss/features/cashier/views/desktop/pages/order_details.dart';
 
 class LiveTableGrid extends StatelessWidget {
   const LiveTableGrid({super.key});
@@ -86,7 +91,25 @@ class LiveTableGrid extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
         onTap: () {
           if (table.status == TableStatus.occupied) {
-            print("Go to checkout");
+            final orderState = context.read<OrderBloc>().state;
+
+            if (orderState is OrderLoaded) {
+              try {
+                final order = orderState.items.firstWhere(
+                  (o) =>
+                      o.tableId == table.id &&
+                      o.status != OrderStatus.paid &&
+                      o.status != OrderStatus.cancelled,
+                );
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => OrderDetails(orderId: order.id),
+                  ),
+                );
+              } catch (_) {}
+            }
           } else if (table.status == TableStatus.available) {
             context.read<NavigationCubit>().navigateToMenu(
               preSelectedTable: table,
@@ -104,6 +127,7 @@ class LiveTableGrid extends StatelessWidget {
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
+                  letterSpacing: 1.8,
                 ),
               ),
               const SizedBox(height: 5),

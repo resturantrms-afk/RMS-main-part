@@ -17,6 +17,7 @@ import 'package:rmss/core/blocs/table_bloc/table_state.dart';
 import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/core/models/payment_model.dart';
 import 'package:rmss/core/models/table_model.dart';
+import 'package:rmss/features/cashier/blocs/navigation_cubit/navigation_cubit.dart';
 
 class OrderDetails extends StatelessWidget {
   final String orderId;
@@ -349,6 +350,70 @@ class OrderDetails extends StatelessWidget {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
+                                  // --- ADD THIS NEW BUTTON (ADD ITEMS) ---
+                                  OutlinedButton.icon(
+                                    onPressed:
+                                        order.status != OrderStatus.paid &&
+                                            order.status !=
+                                                OrderStatus.cancelled
+                                        ? () {
+                                            final tableState = context
+                                                .read<TableBloc>()
+                                                .state;
+                                            if (tableState is TablesLoaded) {
+                                              try {
+                                                // Find the actual TableModel based on order's tableId
+                                                final table = tableState.items
+                                                    .firstWhere(
+                                                      (t) =>
+                                                          t.id == order.tableId,
+                                                    );
+
+                                                // 1. Close the OrderDetails popup
+                                                Navigator.pop(context);
+
+                                                // 2. Switch the dashboard tab to the menu with the table selected!
+                                                context
+                                                    .read<NavigationCubit>()
+                                                    .navigateToMenu(
+                                                      preSelectedTable: table,
+                                                    );
+                                              } catch (_) {}
+                                            }
+                                          }
+                                        : null,
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 32,
+                                        vertical: 24,
+                                      ),
+                                      side: BorderSide(
+                                        color: colorScheme.primary.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                      ),
+                                      foregroundColor: colorScheme.primary,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.add_shopping_cart,
+                                      size: 20,
+                                    ),
+                                    label: const Text(
+                                      "ADD ITEMS",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+
                                   OutlinedButton(
                                     onPressed:
                                         order.status == OrderStatus.pending ||

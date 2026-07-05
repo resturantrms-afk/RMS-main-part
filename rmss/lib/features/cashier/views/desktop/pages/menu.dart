@@ -26,7 +26,7 @@ class _MenuState extends State<Menu> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      // 1. Replaced SingleChildScrollView with Padding at the root
+
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
