@@ -9,7 +9,7 @@ import 'package:rmss/features/auth/views/login_screen.dart';
 import 'package:rmss/features/cashier/views/desktop/cashier_dashboard.dart';
 import 'package:rmss/features/cashier/views/mobile/cashier_dashboard_mobile.dart';
 import 'package:rmss/features/kitchen/Screens/kitchen_dashboard.dart';
-import 'package:rmss/features/waiter/waiter_dashboard.dart';
+import 'package:rmss/features/waiter/views/mobile/waiter_dashboard_mobile.dart';
 
 class RoleRouterScreen extends StatelessWidget {
   const RoleRouterScreen({super.key});
@@ -26,7 +26,7 @@ class RoleRouterScreen extends StatelessWidget {
             case "admin":
               return const AdminDashboard();
             case "waiter":
-              return const WaiterDashboard();
+              return const WaiterDashboardMobile();
             case "kitchen":
               return const KitchenDashboard();
             case "cashier":

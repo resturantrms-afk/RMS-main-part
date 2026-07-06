@@ -20,6 +20,12 @@ import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/repository/auth_repository.dart';
 import 'package:rmss/features/auth/views/splash_screen.dart';
 import 'package:rmss/features/cashier/blocs/navigation_cubit/navigation_cubit.dart';
+import 'package:rmss/features/cashier/repository/cashier_notification_repository.dart';
+import 'package:rmss/features/cashier/blocs/notification_bloc/cashier_notification_bloc.dart';
+import 'package:rmss/features/cashier/blocs/notification_bloc/cashier_notification_event.dart';
+import 'package:rmss/features/waiter/repository/waiter_notification_repository.dart';
+import 'package:rmss/features/waiter/blocs/notification_bloc/waiter_notification_bloc.dart';
+import 'package:rmss/features/waiter/blocs/notification_bloc/waiter_notification_event.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -33,6 +39,10 @@ class MyApp extends StatelessWidget {
         RepositoryProvider(create: (context) => MenuRepository()),
         RepositoryProvider(create: (context) => OrderRepository()),
         RepositoryProvider(create: (context) => PaymentRepository()),
+        RepositoryProvider(
+          create: (context) => CashierNotificationRepository(),
+        ),
+        RepositoryProvider(create: (context) => WaiterNotificationRepository()),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -63,6 +73,16 @@ class MyApp extends StatelessWidget {
                   ..add(LoadPayments()),
           ),
           BlocProvider(create: (context) => CartBloc()),
+          BlocProvider(
+            create: (context) => CashierNotificationBloc(
+              repository: context.read<CashierNotificationRepository>(),
+            )..add(StartListeningNotifications()),
+          ),
+          BlocProvider(
+            create: (context) => WaiterNotificationBloc(
+              repository: context.read<WaiterNotificationRepository>(),
+            )..add(WaiterStartListeningNotifications()),
+          ),
         ],
         child: BlocBuilder<ThemeCubit, ThemeMode>(
           builder: (context, state) {
@@ -72,6 +92,10 @@ class MyApp extends StatelessWidget {
               darkTheme: AppTheme.darkTheme,
               theme: AppTheme.lightTheme,
               themeMode: state,
+              builder: (context, child) => GestureDetector(
+                onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                child: child,
+              ),
               home: const SplashScreen(),
             );
           },

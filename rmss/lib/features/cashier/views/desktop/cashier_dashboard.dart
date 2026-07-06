@@ -9,6 +9,9 @@ import 'package:rmss/features/cashier/views/desktop/pages/menu.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/orders.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/payments.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/settings.dart';
+import 'package:rmss/features/cashier/blocs/notification_bloc/cashier_notification_bloc.dart';
+import 'package:rmss/features/cashier/blocs/notification_bloc/cashier_notification_state.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class CashierDashboard extends StatefulWidget {
   const CashierDashboard({super.key});
@@ -31,9 +34,38 @@ class _CashierDashboardState extends State<CashierDashboard> {
           const Payments(),
           const Settings(),
         ];
-        return Scaffold(
-          body: Stack(
-            children: [
+        return BlocListener<CashierNotificationBloc, CashierNotificationState>(
+          listener: (context, state) {
+            if (state is CashierNotificationShow) {
+              if (state.notification.playSound) {
+                final player = AudioPlayer();
+                player.setVolume(state.notification.volume / 100.0);
+                player.play(UrlSource('https://actions.google.com/sounds/v1/alarms/beep_short.ogg'));
+              }
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        state.notification.title,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(state.notification.message),
+                    ],
+                  ),
+                  duration: const Duration(seconds: 4),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                ),
+              );
+            }
+          },
+          child: Scaffold(
+            body: Stack(
+              children: [
               Row(
                 children: [
                   NavigationRail(

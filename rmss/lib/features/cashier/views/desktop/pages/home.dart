@@ -14,6 +14,7 @@ import 'package:rmss/features/cashier/views/desktop/home%20widgets/payment_break
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/recent_transactions_table.dart';
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/summary_card.dart';
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/welcome_hero.dart';
+import 'package:rmss/features/cashier/views/desktop/pages/orders.dart';
 
 class Home extends StatelessWidget {
   const Home({super.key});
@@ -134,8 +135,72 @@ class Home extends StatelessWidget {
                                   ],
                                 ),
                               );
+                            } else if (orderState is OrderError ||
+                                paymentState is PaymentError) {
+                              final errorMessage = orderState is OrderError
+                                  ? orderState.message
+                                  : (paymentState as PaymentError).message;
+                              return Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.dashboard_customize_rounded,
+                                      size: 48,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      "Dashboard Error",
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.error,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      errorMessage,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
                             }
-                            return const CircularProgressIndicator();
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircularProgressIndicator(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    strokeWidth: 3,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    "Syncing Dashboard...",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
                           },
                         );
                       },

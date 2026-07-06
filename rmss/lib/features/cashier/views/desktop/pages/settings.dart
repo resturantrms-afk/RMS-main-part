@@ -9,6 +9,7 @@ import 'package:rmss/features/auth/bloc/auth_event.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/cashier_top_bar.dart';
 import 'package:rmss/core/theme/theme_cubit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Settings extends StatefulWidget {
   const Settings({super.key});
@@ -27,6 +28,20 @@ class _SettingsState extends State<Settings> {
   bool _isEditingName = false;
   bool _isHoveringPhoto = false;
   bool _isUploadingImage = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _soundAlerts = prefs.getBool('cashierSoundAlerts') ?? true;
+      _alertVolume = prefs.getDouble('cashierAlertVolume') ?? 75.0;
+    });
+  }
 
   @override
   void dispose() {
@@ -596,13 +611,18 @@ class _SettingsState extends State<Settings> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               ElevatedButton(
-                                onPressed: () {
-                                  // Save local preferences if needed (like volume/dark mode)
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text("Preferences Saved"),
-                                    ),
-                                  );
+                                onPressed: () async {
+                                  final prefs = await SharedPreferences.getInstance();
+                                  await prefs.setBool('cashierSoundAlerts', _soundAlerts);
+                                  await prefs.setDouble('cashierAlertVolume', _alertVolume);
+                                  
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text("Preferences Saved"),
+                                      ),
+                                    );
+                                  }
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: colorScheme.primary,

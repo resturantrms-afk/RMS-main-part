@@ -125,7 +125,72 @@ class _PaymentsState extends State<Payments> {
                     builder: (context, orderState) {
                       if (paymentState is PaymentsLoading ||
                           orderState is OrderLoading) {
-                        return const Center(child: CircularProgressIndicator());
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(
+                                color: Theme.of(context).colorScheme.primary,
+                                strokeWidth: 3,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "Loading Payments...",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      // And replace the PaymentError block with:
+                      if (paymentState is PaymentError) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.error.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.warning_rounded,
+                                  size: 48,
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "Payment Error",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                paymentState.message,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        );
                       }
 
                       if (paymentState is PaymentsLoaded &&
@@ -178,12 +243,6 @@ class _PaymentsState extends State<Payments> {
                               },
                             );
                           },
-                        );
-                      }
-
-                      if (paymentState is PaymentError) {
-                        return Center(
-                          child: Text("Error: ${paymentState.message}"),
                         );
                       }
 

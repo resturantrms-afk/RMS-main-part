@@ -17,6 +17,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
 
         if (firebaseUser != null) {
+          await authRepository.updateDeviceToken(firebaseUser.uid);
           UserModel? userModel = await authRepository.getUserData(
             firebaseUser.uid,
           );
@@ -51,6 +52,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
 
         if (firebaseUser != null) {
+          await authRepository.updateDeviceToken(firebaseUser.uid);
           UserModel? userModel = await authRepository.getUserData(
             firebaseUser.uid,
           );
@@ -91,6 +93,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       User? firebaseUser = authRepository.getCurrentUser();
 
       if (firebaseUser != null) {
+        await authRepository.updateDeviceToken(firebaseUser.uid);
         UserModel? userModel = await authRepository.getUserData(
           firebaseUser.uid,
         );

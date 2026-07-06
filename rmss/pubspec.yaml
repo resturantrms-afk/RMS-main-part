@@ -51,6 +51,9 @@ dependencies:
   pdf: ^3.13.0
   printing: ^5.15.0
   intl: ^0.20.3
+  shared_preferences: ^2.5.5
+  firebase_messaging: ^15.2.10
+  audioplayers: ^6.8.1
 
 dev_dependencies:
   flutter_test:

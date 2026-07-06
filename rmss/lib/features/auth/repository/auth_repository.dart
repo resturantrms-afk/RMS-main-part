@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:rmss/core/models/user_model.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class AuthRepository {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
@@ -88,6 +89,32 @@ class AuthRepository {
 
     if (updates.isNotEmpty) {
       await _firestore.collection('users').doc(uid).update(updates);
+    }
+  }
+
+  Future<void> updateDeviceToken(String uid) async {
+    try {
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
+      // Only ask for permission if it hasn't been determined yet (e.g., new device)
+      NotificationSettings settings = await messaging.getNotificationSettings();
+      if (settings.authorizationStatus == AuthorizationStatus.notDetermined) {
+        settings = await messaging.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+      }
+      
+      // If granted, get the token and save it
+      if (settings.authorizationStatus == AuthorizationStatus.authorized || 
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
+        String? token = await messaging.getToken();
+        if (token != null) {
+          await _firestore.collection('users').doc(uid).update({'deviceToken': token});
+        }
+      }
+    } catch (e) {
+      // Ignore if FCM is not supported (like on some desktop platforms)
     }
   }
 }
