@@ -3,12 +3,14 @@ import 'package:equatable/equatable.dart';
 
 enum OrderStatus { pending, preparing, ready, served, paid, cancelled }
 
+enum OrderSource { web, pos }
+
 class OrderModel extends Equatable {
   final String id;
   final String tableId;
   final int tableNumber;
   final Map<String, dynamic> createdBy;
-  final String source; // "Web App" or "POS"
+  final OrderSource source; // "Web App" or "POS"
   final double totalPrice;
   final OrderStatus status;
   final Timestamp createdAt;
@@ -27,13 +29,32 @@ class OrderModel extends Equatable {
     required this.items,
   });
 
+  String timeAgo() {
+    DateTime orderTime = createdAt.toDate();
+    Duration duration = DateTime.now().difference(orderTime);
+
+    if (duration.inDays > 0) {
+      return "${duration.inDays} days ago";
+    } else if (duration.inHours > 0) {
+      return "${duration.inHours} hrs ago";
+    } else if (duration.inMinutes > 0) {
+      return "${duration.inMinutes} mins ago";
+    } else {
+      return "Just now";
+    }
+  }
+
   factory OrderModel.fromJson(Map<String, dynamic> json, String documentId) {
     return OrderModel(
       id: documentId,
       tableId: json['tableId'] ?? '',
       tableNumber: json['tableNumber'] ?? 0,
       createdBy: json['createdBy'] as Map<String, dynamic>? ?? {},
-      source: json['source'] ?? '',
+      source: OrderSource.values.firstWhere(
+        (e) => e.name == (json['source'] ?? 'pos'),
+        orElse: () => OrderSource.pos,
+      ),
+
       totalPrice: (json['totalPrice'] ?? 0.0).toDouble(),
       status: OrderStatus.values.firstWhere(
         (e) => e.name == (json['status'] ?? 'pending'),
@@ -52,7 +73,7 @@ class OrderModel extends Equatable {
       'tableId': tableId,
       'tableNumber': tableNumber,
       'createdBy': createdBy,
-      'source': source,
+      'source': source.name,
       'totalPrice': totalPrice,
       'status': status.name,
       'createdAt': createdAt,

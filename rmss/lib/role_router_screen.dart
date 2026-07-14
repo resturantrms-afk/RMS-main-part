@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:rmss/features/admin/admin_dashboard.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
+import 'package:rmss/features/auth/bloc/auth_event.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
-import 'package:rmss/features/cashier/cashier_dashboard.dart';
+import 'package:rmss/features/auth/views/login_screen.dart';
+import 'package:rmss/features/cashier/views/desktop/cashier_dashboard.dart';
+import 'package:rmss/features/cashier/views/mobile/cashier_dashboard_mobile.dart';
 import 'package:rmss/features/kitchen/Screens/kitchen_dashboard.dart';
-import 'package:rmss/features/waiter/waiter_dashboard.dart';
+import 'package:rmss/features/waiter/views/mobile/waiter_dashboard_mobile.dart';
 
 class RoleRouterScreen extends StatelessWidget {
   const RoleRouterScreen({super.key});
@@ -22,19 +26,52 @@ class RoleRouterScreen extends StatelessWidget {
             case "admin":
               return const AdminDashboard();
             case "waiter":
-              return const WaiterDashboard();
+              return const WaiterDashboardMobile();
             case "kitchen":
               return const KitchenDashboard();
             case "cashier":
-              return const CashierDashboard();
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth < 800) {
+                    return const CashierDashboardMobile();
+                  } else {
+                    return const CashierDashboard();
+                  }
+                },
+              );
             default:
-              return const Scaffold(
-                body: Center(child: Text("No Role Assigned")),
+              return Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "No Role Was Assigned Yet",
+                        style: TextStyle(
+                          fontSize: 40,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      GestureDetector(
+                        onTap: () =>
+                            context.read<AuthBloc>().add(LogoutRequested()),
+                        child: Text(
+                          "Click to Logout",
+                          style: TextStyle(
+                            fontSize: 40,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               );
           }
         }
 
-        return const Scaffold(body: Center(child: Text("No Role Assigned")));
+        return const LoginScreen();
       },
     );
   }

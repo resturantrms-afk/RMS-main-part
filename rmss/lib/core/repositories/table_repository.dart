@@ -23,4 +23,20 @@ class TableRepository {
   Future<void> deleteTable(TableModel item) async {
     await _firestore.collection('tables').doc(item.id).delete();
   }
+
+  Future<TableModel?> getTableByNumber(int number) async {
+    final snapshot = await _firestore
+        .collection('tables')
+        .where('tableNumber', isEqualTo: number)
+        .limit(1)
+        .get();
+    if (snapshot.docs.isNotEmpty) {
+      return TableModel.fromJson(
+        snapshot.docs.first.data(),
+        snapshot.docs.first.id,
+      );
+    } else {
+      return null;
+    }
+  }
 }

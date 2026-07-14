@@ -15,12 +15,26 @@ import 'package:rmss/core/repositories/order_repository.dart';
 import 'package:rmss/core/repositories/payment_repository.dart';
 import 'package:rmss/core/repositories/table_repository.dart';
 import 'package:rmss/core/theme/colors.dart';
+<<<<<<< HEAD
 import 'package:rmss/features/kitchen/services/kitchen_notification_service.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/repository/auth_repository.dart';
 import 'package:rmss/features/auth/screens/splash_screen.dart';
 import 'package:rmss/features/kitchen/widget/kitchen_header.dart';
 import 'package:rmss/features/kitchen/Screens/kitchen_main_layout.dart';
+=======
+import 'package:rmss/core/theme/theme_cubit.dart';
+import 'package:rmss/features/auth/bloc/auth_bloc.dart';
+import 'package:rmss/features/auth/repository/auth_repository.dart';
+import 'package:rmss/features/auth/views/splash_screen.dart';
+import 'package:rmss/features/cashier/blocs/navigation_cubit/navigation_cubit.dart';
+import 'package:rmss/features/cashier/repository/cashier_notification_repository.dart';
+import 'package:rmss/features/cashier/blocs/notification_bloc/cashier_notification_bloc.dart';
+import 'package:rmss/features/cashier/blocs/notification_bloc/cashier_notification_event.dart';
+import 'package:rmss/features/waiter/repository/waiter_notification_repository.dart';
+import 'package:rmss/features/waiter/blocs/notification_bloc/waiter_notification_bloc.dart';
+import 'package:rmss/features/waiter/blocs/notification_bloc/waiter_notification_event.dart';
+>>>>>>> aa1f94d0acbd4d5c3cbe47af019f25cc39ce403c
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -34,10 +48,19 @@ class MyApp extends StatelessWidget {
         RepositoryProvider(create: (context) => MenuRepository()),
         RepositoryProvider(create: (context) => OrderRepository()),
         RepositoryProvider(create: (context) => PaymentRepository()),
+<<<<<<< HEAD
         RepositoryProvider(create: (context) => KitchenNotificationService()..startListening()),
+=======
+        RepositoryProvider(
+          create: (context) => CashierNotificationRepository(),
+        ),
+        RepositoryProvider(create: (context) => WaiterNotificationRepository()),
+>>>>>>> aa1f94d0acbd4d5c3cbe47af019f25cc39ce403c
       ],
       child: MultiBlocProvider(
         providers: [
+          BlocProvider(create: (context) => NavigationCubit()),
+          BlocProvider(create: (context) => ThemeCubit()),
           BlocProvider(
             create: (context) =>
                 AuthBloc(authRepository: context.read<AuthRepository>()),
@@ -63,13 +86,41 @@ class MyApp extends StatelessWidget {
                   ..add(LoadPayments()),
           ),
           BlocProvider(create: (context) => CartBloc()),
+          BlocProvider(
+            create: (context) => CashierNotificationBloc(
+              repository: context.read<CashierNotificationRepository>(),
+            )..add(StartListeningNotifications()),
+          ),
+          BlocProvider(
+            create: (context) => WaiterNotificationBloc(
+              repository: context.read<WaiterNotificationRepository>(),
+            )..add(WaiterStartListeningNotifications()),
+          ),
         ],
+<<<<<<< HEAD
         child: MaterialApp(
           title: AppConfig.appName,
           debugShowCheckedModeBanner: false,
           darkTheme: AppTheme.darkTheme,
           theme: AppTheme.lightTheme,
           home: const KitchenMainLayout(),
+=======
+        child: BlocBuilder<ThemeCubit, ThemeMode>(
+          builder: (context, state) {
+            return MaterialApp(
+              title: AppConfig.appName,
+              debugShowCheckedModeBanner: false,
+              darkTheme: AppTheme.darkTheme,
+              theme: AppTheme.lightTheme,
+              themeMode: state,
+              builder: (context, child) => GestureDetector(
+                onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                child: child,
+              ),
+              home: const SplashScreen(),
+            );
+          },
+>>>>>>> aa1f94d0acbd4d5c3cbe47af019f25cc39ce403c
         ),
       ),
     );

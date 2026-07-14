@@ -6,7 +6,7 @@ enum PaymentMethod { cash, zaad }
 class PaymentModel extends Equatable {
   final String id;
   final String orderId;
-  final Map<String, dynamic> processedBy; // e.g. {cashier : id} or {admin : id}
+  final Map<String, dynamic> processedBy;
   final PaymentMethod paymentMethod;
   final double amountPaid;
   final Timestamp createdAt;

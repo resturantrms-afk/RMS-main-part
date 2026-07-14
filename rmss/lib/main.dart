@@ -15,4 +15,8 @@ Future<void> main() async {
   await dotenv.load(fileName: ".env");
 
   runApp(const MyApp());
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> aa1f94d0acbd4d5c3cbe47af019f25cc39ce403c

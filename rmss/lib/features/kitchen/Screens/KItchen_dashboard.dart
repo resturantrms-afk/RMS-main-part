@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+<<<<<<< HEAD
+=======
+
+import 'package:rmss/features/auth/bloc/auth_bloc.dart';
+import 'package:rmss/features/auth/bloc/auth_event.dart';
+>>>>>>> aa1f94d0acbd4d5c3cbe47af019f25cc39ce403c
 
 import '../../../core/blocs/order_bloc/order_bloc.dart';
 import '../../../core/blocs/order_bloc/order_state.dart';
@@ -25,6 +31,7 @@ class _KitchenDashboardState extends State<KitchenDashboard> {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     return BlocBuilder<OrderBloc, OrderState>(
       builder: (context, state) {
         if (state is OrderLoading) {
@@ -187,6 +194,19 @@ class _KitchenDashboardState extends State<KitchenDashboard> {
                       ),
               ),
             ],
+=======
+    return Scaffold(
+      appBar: AppBar(title: const Text("Kitchen Dashboard")),
+      body: Center(
+        child: GestureDetector(
+          onTap: () => context.read<AuthBloc>().add(LogoutRequested()),
+          child: Text(
+            "Click to Logout",
+            style: TextStyle(
+              fontSize: 40,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+>>>>>>> aa1f94d0acbd4d5c3cbe47af019f25cc39ce403c
           ),
         );
       },

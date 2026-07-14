@@ -100,6 +100,7 @@ class UserModel extends Equatable {
 
   @override
   List<Object?> get props => [
+<<<<<<< HEAD
         id,
         name,
         email,
@@ -112,4 +113,18 @@ class UserModel extends Equatable {
         lastLoginDate,
         deviceToken,
       ];
+=======
+    id,
+    name,
+    email,
+    phoneNumber,
+    address,
+    role,
+    photoUrl,
+    status,
+    createdDate,
+    lastLoginDate,
+    deviceToken,
+  ];
+>>>>>>> aa1f94d0acbd4d5c3cbe47af019f25cc39ce403c
 }
