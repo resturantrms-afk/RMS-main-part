@@ -15,9 +15,12 @@ import 'package:rmss/core/repositories/order_repository.dart';
 import 'package:rmss/core/repositories/payment_repository.dart';
 import 'package:rmss/core/repositories/table_repository.dart';
 import 'package:rmss/core/theme/colors.dart';
+import 'package:rmss/features/kitchen/services/kitchen_notification_service.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/repository/auth_repository.dart';
 import 'package:rmss/features/auth/screens/splash_screen.dart';
+import 'package:rmss/features/kitchen/widget/kitchen_header.dart';
+import 'package:rmss/features/kitchen/Screens/kitchen_main_layout.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -31,6 +34,7 @@ class MyApp extends StatelessWidget {
         RepositoryProvider(create: (context) => MenuRepository()),
         RepositoryProvider(create: (context) => OrderRepository()),
         RepositoryProvider(create: (context) => PaymentRepository()),
+        RepositoryProvider(create: (context) => KitchenNotificationService()..startListening()),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -65,7 +69,7 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           darkTheme: AppTheme.darkTheme,
           theme: AppTheme.lightTheme,
-          home: const SplashScreen(),
+          home: const KitchenMainLayout(),
         ),
       ),
     );

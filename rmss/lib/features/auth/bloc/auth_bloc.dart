@@ -87,6 +87,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     });
 
+    on<ProfileUpdateRequested>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        final updatedUser = await authRepository.updateUserData(event.user);
+        if (updatedUser != null) {
+          emit(AuthSuccess(user: updatedUser));
+        } else {
+          emit(AuthError(message: 'Unable to update profile data'));
+        }
+      } catch (e) {
+        emit(AuthError(message: e.toString()));
+      }
+    });
+
     on<CheckAuthStatus>((event, emit) async {
       User? firebaseUser = authRepository.getCurrentUser();
 

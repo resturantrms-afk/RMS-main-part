@@ -70,6 +70,46 @@ class UserModel extends Equatable {
     };
   }
 
+  UserModel copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? phoneNumber,
+    String? address,
+    UserRoles? role,
+    String? photoUrl,
+    UserStatus? status,
+    Timestamp? createdDate,
+    Timestamp? lastLoginDate,
+    String? deviceToken,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      address: address ?? this.address,
+      role: role ?? this.role,
+      photoUrl: photoUrl ?? this.photoUrl,
+      status: status ?? this.status,
+      createdDate: createdDate ?? this.createdDate,
+      lastLoginDate: lastLoginDate ?? this.lastLoginDate,
+      deviceToken: deviceToken ?? this.deviceToken,
+    );
+  }
+
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [
+        id,
+        name,
+        email,
+        phoneNumber,
+        address,
+        role,
+        photoUrl,
+        status,
+        createdDate,
+        lastLoginDate,
+        deviceToken,
+      ];
 }

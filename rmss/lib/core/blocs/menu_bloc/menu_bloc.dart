@@ -21,6 +21,20 @@ class MenuBloc extends Bloc<MenuEvent, MenuState> {
       }
     });
 
+on<ToggleMenuAvailability>((event, emit) async {
+  try {
+    final updated = event.item.copyWith(
+      status: event.item.status == MenuItemStatus.available
+          ? MenuItemStatus.unavailable
+          : MenuItemStatus.available,
+    );
+
+    await _repository.updateMenuItem(updated);
+  } catch (e) {
+    emit(MenuError(message: e.toString()));
+  }
+});
+
     on<UpdateMenuItem>((event, emit) async {
       try {
         await _repository.updateMenuItem(event.item);

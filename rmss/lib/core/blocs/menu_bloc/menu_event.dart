@@ -6,6 +6,15 @@ abstract class MenuEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+class ToggleMenuAvailability extends MenuEvent {
+  final MenuItemModel item;
+
+  ToggleMenuAvailability({required this.item});
+
+  @override
+  List<Object?> get props => [item];
+}
+
 class LoadMenu extends MenuEvent {}
 
 class AddMenuItem extends MenuEvent {

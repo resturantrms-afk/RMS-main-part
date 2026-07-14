@@ -21,6 +21,26 @@ class MenuItemModel extends Equatable {
     required this.status,
   });
 
+  MenuItemModel copyWith({
+  String? id,
+  String? name,
+  String? description,
+  double? price,
+  String? imageUrl,
+  List<String>? category,
+  MenuItemStatus? status,
+}) {
+  return MenuItemModel(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    description: description ?? this.description,
+    price: price ?? this.price,
+    imageUrl: imageUrl ?? this.imageUrl,
+    category: category ?? this.category,
+    status: status ?? this.status,
+  );
+}
+
   factory MenuItemModel.fromJson(Map<String, dynamic> json, String documentId) {
     return MenuItemModel(
       id: documentId,

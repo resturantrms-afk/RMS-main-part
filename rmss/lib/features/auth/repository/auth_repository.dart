@@ -19,6 +19,13 @@ class AuthRepository {
     await _firebaseAuth.signOut();
   }
 
+  Future<UserModel?> updateUserData(UserModel user) async {
+    final uid = user.id;
+
+    await _firestore.collection('users').doc(uid).update(user.toJson());
+    return getUserData(uid);
+  }
+
   Future<User?> signUp({
     required String name,
     required String email,
