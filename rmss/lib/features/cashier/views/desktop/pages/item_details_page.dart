@@ -39,7 +39,7 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
     return Scaffold(
       backgroundColor: Theme.of(
         context,
-      ).colorScheme.background, // Uses full page background
+      ).colorScheme.surfaceContainer, // Uses full page background
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -89,10 +89,9 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                   // Title (Larger for full screen)
                   Text(
                     widget.item.name,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 48,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onBackground,
                     ),
                   ),
                   const SizedBox(height: 12),

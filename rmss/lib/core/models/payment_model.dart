@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 
-enum PaymentMethod { cash, zaad }
+enum PaymentMethod { cash, zaad, edahab }
 
 class PaymentModel extends Equatable {
   final String id;

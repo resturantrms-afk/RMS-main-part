@@ -8,6 +8,8 @@ import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/core/models/payment_model.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
+import 'package:rmss/core/repositories/order_repository.dart';
+import 'package:rmss/core/repositories/payment_repository.dart';
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/cashier_top_bar.dart';
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/live_table_grid.dart';
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/payment_breakdown_card.dart';
@@ -16,8 +18,15 @@ import 'package:rmss/features/cashier/views/desktop/home%20widgets/summary_card.
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/welcome_hero.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/orders.dart';
 
-class Home extends StatelessWidget {
+class Home extends StatefulWidget {
   const Home({super.key});
+
+  @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  DateTime selectedDate = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +41,14 @@ class Home extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            const WelcomeHero(),
+            WelcomeHero(
+              selectedDate: selectedDate,
+              onDateSelected: (date) {
+                setState(() {
+                  selectedDate = date;
+                });
+              },
+            ),
             const SizedBox(height: 20),
             Expanded(
               child: SingleChildScrollView(
@@ -50,52 +66,13 @@ class Home extends StatelessWidget {
                                 myUserId = authState.user.id;
                               }
 
-                              bool isToday(DateTime date) {
-                                final now = DateTime.now();
-                                return date.year == now.year &&
-                                    date.month == now.month &&
-                                    date.day == now.day;
-                              }
+                              final orderRepo = context.read<OrderRepository>();
+                              final paymentRepo = context.read<PaymentRepository>();
 
-                              int counterOrders = 0;
-                              int completedOrders = 0;
-                              int unPaidTabs = 0;
-                              double shiftRegister = 0;
-
-                              for (OrderModel order in orderState.items) {
-                                if (order.source == OrderSource.pos) {
-                                  counterOrders += 1;
-                                }
-
-                                if (order.status == OrderStatus.served) {
-                                  unPaidTabs += 1;
-                                }
-
-                                if (order.status == OrderStatus.paid) {
-                                  bool orderIsToday = isToday(
-                                    order.createdAt.toDate(),
-                                  );
-                                  bool isMine =
-                                      order.createdBy['id'] == myUserId;
-                                  if (orderIsToday && isMine) {
-                                    completedOrders += 1;
-                                  }
-                                }
-                              }
-
-                              for (PaymentModel paymentModel
-                                  in paymentState.items) {
-                                bool paymentIsToday = isToday(
-                                  paymentModel.createdAt.toDate(),
-                                );
-
-                                bool isProcessesByMe = paymentModel.processedBy
-                                    .containsValue(myUserId);
-
-                                if (paymentIsToday && isProcessesByMe) {
-                                  shiftRegister += paymentModel.amountPaid;
-                                }
-                              }
+                              int counterOrders = orderRepo.getCounterOrdersForDate(orderState.items, selectedDate);
+                              int completedOrders = orderRepo.getCompletedOrdersForUserAndDate(orderState.items, myUserId, selectedDate);
+                              int unPaidTabs = orderRepo.getUnpaidTabs(orderState.items);
+                              double shiftRegister = paymentRepo.getShiftRegisterForUserAndDate(paymentState.items, myUserId, selectedDate);
 
                               return IntrinsicHeight(
                                 child: Row(
@@ -105,22 +82,22 @@ class Home extends StatelessWidget {
                                     SummaryCard(
                                       title: "Counter Orders",
                                       value: counterOrders.toString(),
-                                      subText: "",
-                                      subTextColor: Colors.transparent,
+                                      subText: "POS Orders Today",
+                                      subTextColor: Theme.of(context).colorScheme.onSurfaceVariant,
                                     ),
 
                                     SummaryCard(
                                       title: "COMPLETED ORDERS TODAY",
                                       value: completedOrders.toString(),
-                                      subText: "",
-                                      subTextColor: Colors.transparent,
+                                      subText: "Processed by you",
+                                      subTextColor: Theme.of(context).colorScheme.onSurfaceVariant,
                                     ),
 
                                     SummaryCard(
                                       title: "SHIFT REGISTER TODAY",
                                       value:
                                           "\$${shiftRegister.toStringAsFixed(2)}",
-                                      subText: "Gross",
+                                      subText: "Gross Shift Revenue",
                                       subTextColor: Theme.of(
                                         context,
                                       ).colorScheme.onSurfaceVariant,
@@ -207,15 +184,15 @@ class Home extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 20),
-                    const IntrinsicHeight(
+                    IntrinsicHeight(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(flex: 2, child: LiveTableGrid()),
+                          const Expanded(flex: 2, child: LiveTableGrid()),
                           const SizedBox(width: 20),
-                          const Expanded(
+                          Expanded(
                             flex: 1,
-                            child: PaymentBreakdownCard(),
+                            child: PaymentBreakdownCard(selectedDate: selectedDate),
                           ),
                         ],
                       ),

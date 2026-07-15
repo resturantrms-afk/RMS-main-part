@@ -1,0 +1,200 @@
+@startuml Restaurant Management System
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam monochrome false
+skinparam shadowing false
+
+package "Core Domain Models" {
+    
+    enum UserRoles {
+        admin
+        cashier
+        kitchen
+        waiter
+        noRole
+    }
+
+    enum UserStatus {
+        active
+        inactive
+    }
+
+    class UserModel {
+        +String id
+        +String name
+        +String email
+        +String phoneNumber
+        +String address
+        +UserRoles role
+        +UserStatus status
+        +Timestamp createdDate
+        +Timestamp lastLoginDate
+        +String deviceToken
+    }
+
+    enum TableStatus {
+        available
+        occupied
+        needsCleaning
+    }
+
+    class TableModel {
+        +String id
+        +int tableNumber
+        +TableStatus status
+    }
+
+    enum MenuItemStatus {
+        available
+        unavailable
+    }
+
+    class MenuItemModel {
+        +String id
+        +String name
+        +String description
+        +double price
+        +String imageUrl
+        +List<String> category
+        +MenuItemStatus status
+    }
+
+    enum OrderStatus {
+        pending
+        preparing
+        ready
+        served
+        paid
+        cancelled
+    }
+
+    enum OrderSource {
+        web
+        pos
+    }
+
+    class OrderItemModel {
+        +String menuItemId
+        +String name
+        +double price
+        +int quantity
+        +String notes
+    }
+
+    class OrderModel {
+        +String id
+        +String tableId
+        +int tableNumber
+        +Map<String, dynamic> createdBy
+        +OrderSource source
+        +double totalPrice
+        +OrderStatus status
+        +Timestamp createdAt
+        +List<OrderItemModel> items
+    }
+
+    enum PaymentMethod {
+        cash
+        zaad
+        edahab
+    }
+
+    class PaymentModel {
+        +String id
+        +String orderId
+        +Map<String, dynamic> processedBy
+        +PaymentMethod paymentMethod
+        +double amountPaid
+        +Timestamp createdAt
+    }
+
+    UserModel *-down- UserRoles
+    UserModel *-down- UserStatus
+    TableModel *-down- TableStatus
+    MenuItemModel *-down- MenuItemStatus
+    OrderModel *-down- OrderStatus
+    OrderModel *-down- OrderSource
+    OrderModel *-- OrderItemModel
+    PaymentModel *-down- PaymentMethod
+    
+    OrderModel "many" -- "1" TableModel : placed at
+    PaymentModel "1" -- "1" OrderModel : pays for
+}
+
+package "Repositories (Data Layer)" {
+    class MenuRepository {
+        +Stream<List<MenuItemModel>> getMenuItems()
+        +addMenuItem()
+        +updateMenuItem()
+        +deleteMenuItem()
+    }
+    
+    class OrderRepository {
+        +Stream<List<OrderModel>> getOrders()
+        +addOrder()
+        +updateOrder()
+        +deleteOrder()
+        +getActiveOrders()
+    }
+    
+    class PaymentRepository {
+        +Stream<List<PaymentModel>> getPayments()
+        +addPayment()
+        +getTotalRevenueForDate()
+    }
+    
+    class TableRepository {
+        +Stream<List<TableModel>> getTables()
+        +addTable()
+        +updateTable()
+        +deleteTable()
+    }
+
+    MenuRepository ..> MenuItemModel : manages
+    OrderRepository ..> OrderModel : manages
+    PaymentRepository ..> PaymentModel : manages
+    TableRepository ..> TableModel : manages
+}
+
+package "Reports (Planned Module)" #LightCyan {
+    class ReportModel {
+        +String reportId
+        +String title
+        +String type
+        +DateTime generatedAt
+        +Map<String, dynamic> data
+    }
+
+    class ReportRepository {
+        +generateDailyRevenueReport()
+        +generateStaffPerformanceReport()
+        +generatePopularItemsReport()
+    }
+    
+    ReportRepository ..> OrderModel : analyzes
+    ReportRepository ..> PaymentModel : analyzes
+    ReportRepository ..> ReportModel : creates
+}
+
+package "AI Services (Planned Module)" #LightYellow {
+    class AIEngine {
+        +predictInventoryNeeds()
+        +recommendMenuItems(OrderModel)
+        +analyzeCustomerTrends()
+        +detectAnomaliesInSales()
+    }
+
+    class AIPredictionModel {
+        +String predictionId
+        +String type
+        +double confidenceScore
+        +Map<String, dynamic> result
+    }
+    
+    AIEngine ..> OrderModel : learns from
+    AIEngine ..> PaymentModel : learns from
+    AIEngine ..> AIPredictionModel : outputs
+}
+
+@enduml

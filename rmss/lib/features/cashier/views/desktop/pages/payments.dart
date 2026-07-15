@@ -71,6 +71,12 @@ class _PaymentsState extends State<Payments> {
                 const SizedBox(width: 12),
                 _buildFilterButton(
                   context: context,
+                  label: "eDAHAB",
+                  method: PaymentMethod.edahab,
+                ),
+                const SizedBox(width: 12),
+                _buildFilterButton(
+                  context: context,
                   label: "CASH",
                   method: PaymentMethod.cash,
                 ),
@@ -231,7 +237,7 @@ class _PaymentsState extends State<Payments> {
                                     .cast<OrderModel?>()
                                     .firstWhere(
                                       (o) => o?.id == payment.orderId,
-                                      orElse: () => null,
+                                      orElse: () => null as OrderModel?,
                                     );
 
                                 return _buildPaymentRow(
@@ -454,7 +460,7 @@ class _PaymentsState extends State<Payments> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    userName,
+                    "$userName (${userIdRaw.isNotEmpty ? userIdRaw.substring(0, 4) : 'N/A'})",
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -490,17 +496,23 @@ class _PaymentsState extends State<Payments> {
                     Icon(
                       payment.paymentMethod == PaymentMethod.zaad
                           ? Icons.phone_iphone
-                          : Icons.payments,
+                          : payment.paymentMethod == PaymentMethod.edahab
+                              ? Icons.account_balance_wallet
+                              : Icons.payments,
                       size: 16,
                       color: payment.paymentMethod == PaymentMethod.zaad
                           ? Colors.blue.shade400
-                          : Colors.green.shade400,
+                          : payment.paymentMethod == PaymentMethod.edahab
+                              ? Theme.of(context).colorScheme.secondary
+                              : Colors.green.shade400,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       payment.paymentMethod == PaymentMethod.zaad
                           ? "Zaad"
-                          : "Cash",
+                          : payment.paymentMethod == PaymentMethod.edahab
+                              ? "eDahab"
+                              : "Cash",
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,

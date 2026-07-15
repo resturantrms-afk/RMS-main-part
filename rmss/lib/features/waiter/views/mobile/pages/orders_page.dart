@@ -8,6 +8,11 @@ import 'package:rmss/core/blocs/table_bloc/table_bloc.dart';
 import 'package:rmss/core/blocs/table_bloc/table_event.dart';
 import 'package:rmss/core/blocs/table_bloc/table_state.dart';
 import 'package:rmss/core/models/table_model.dart';
+import 'package:rmss/features/auth/bloc/auth_bloc.dart';
+import 'package:rmss/features/auth/bloc/auth_state.dart';
+import 'package:rmss/core/models/roles/waiter_model.dart';
+import 'package:rmss/core/repositories/user_repository.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
@@ -325,6 +330,18 @@ class _OrdersPageState extends State<OrdersPage> {
                   ),
                 ),
               );
+
+              // Log the 'served' action
+              final authState = context.read<AuthBloc>().state;
+              if (authState is AuthSuccess) {
+                final action = WaiterAction(
+                  tableId: order.tableId,
+                  actionType: WaiterActionType.served,
+                  date: Timestamp.now(),
+                  orderId: order.id,
+                );
+                context.read<UserRepository>().logWaiterAction(authState.user.id, action);
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: colorScheme.primary,
@@ -414,6 +431,17 @@ class _OrdersPageState extends State<OrdersPage> {
                   ),
                 ),
               );
+
+              // Log the 'cleaned' action
+              final authState = context.read<AuthBloc>().state;
+              if (authState is AuthSuccess) {
+                final action = WaiterAction(
+                  tableId: table.id,
+                  actionType: WaiterActionType.cleaned,
+                  date: Timestamp.now(),
+                );
+                context.read<UserRepository>().logWaiterAction(authState.user.id, action);
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: colorScheme.primary,

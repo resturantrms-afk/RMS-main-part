@@ -6,6 +6,10 @@ import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/order_details.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/orders.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/receipt.dart';
+import 'package:rmss/core/blocs/payment_bloc/payment_bloc.dart';
+import 'package:rmss/core/blocs/payment_bloc/payment_state.dart';
+import 'package:rmss/features/auth/bloc/auth_bloc.dart';
+import 'package:rmss/features/auth/bloc/auth_state.dart';
 
 class RecentTransactionsTable extends StatelessWidget {
   const RecentTransactionsTable({super.key});
@@ -47,10 +51,24 @@ class RecentTransactionsTable extends StatelessWidget {
           BlocBuilder<OrderBloc, OrderState>(
             builder: (context, orderState) {
               if (orderState is OrderLoaded) {
-                final allOrders = orderState.items;
-                allOrders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                final authState = context.read<AuthBloc>().state;
+                final myUserId = authState is AuthSuccess ? authState.user.id : "";
+                
+                final paymentState = context.read<PaymentBloc>().state;
+                final allPayments = paymentState is PaymentsLoaded ? paymentState.items : [];
 
-                final orders = allOrders.take(5);
+                final filteredOrders = orderState.items.where((order) {
+                  if (order.status == OrderStatus.paid) {
+                    final matchingPayments = allPayments.where((p) => p.orderId == order.id);
+                    if (matchingPayments.isEmpty) return false;
+                    return matchingPayments.first.processedBy['user'] == myUserId;
+                  }
+                  return true; // Show other statuses
+                }).toList();
+
+                filteredOrders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+                final orders = filteredOrders.take(5);
 
                 if (orders.isEmpty) {
                   return const Padding(

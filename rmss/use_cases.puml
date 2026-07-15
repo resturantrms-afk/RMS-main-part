@@ -1,0 +1,72 @@
+@startuml Restaurant Management System - Use Cases
+
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Admin" as admin
+actor "Waiter" as waiter
+actor "Kitchen Staff" as kitchen
+actor "Cashier" as cashier
+actor "AI System" as ai <<System>>
+
+rectangle "Restaurant Management System" {
+    
+    package "User & System Management" {
+        usecase "Manage Users & Roles" as UC_ManageUsers
+        usecase "Manage Menu Items" as UC_ManageMenu
+        usecase "Manage Tables" as UC_ManageTables
+    }
+
+    package "Order Management" {
+        usecase "View Tables Status" as UC_ViewTables
+        usecase "Create New Order" as UC_CreateOrder
+        usecase "Modify Existing Order" as UC_ModifyOrder
+        usecase "View Pending Orders" as UC_ViewOrders
+        usecase "Update Order Status" as UC_UpdateOrderStatus
+    }
+
+    package "Payment Management" {
+        usecase "View Unpaid Tabs" as UC_ViewUnpaid
+        usecase "Process Payment" as UC_ProcessPayment
+    }
+
+    package "Reports & Analytics (Planned)" {
+        usecase "View Daily/Monthly Reports" as UC_ViewReports
+        usecase "Generate Auto-Reports" as UC_GenReports
+    }
+
+    package "AI Features (Planned)" {
+        usecase "View Business Insights" as UC_ViewInsights
+        usecase "Predict Inventory Needs" as UC_PredictInventory
+        usecase "Analyze Customer Trends" as UC_AnalyzeTrends
+    }
+}
+
+' Admin Relationships
+admin --> UC_ManageUsers
+admin --> UC_ManageMenu
+admin --> UC_ManageTables
+admin --> UC_ViewReports
+admin --> UC_ViewInsights
+
+' Waiter Relationships
+waiter --> UC_ViewTables
+waiter --> UC_CreateOrder
+waiter --> UC_ModifyOrder
+waiter --> UC_UpdateOrderStatus
+
+' Kitchen Staff Relationships
+kitchen --> UC_ViewOrders
+kitchen --> UC_UpdateOrderStatus
+
+' Cashier Relationships
+cashier --> UC_ViewUnpaid
+cashier --> UC_ProcessPayment
+cashier --> UC_ViewOrders
+
+' System / AI Relationships
+ai --> UC_GenReports
+ai --> UC_PredictInventory
+ai --> UC_AnalyzeTrends
+
+@enduml

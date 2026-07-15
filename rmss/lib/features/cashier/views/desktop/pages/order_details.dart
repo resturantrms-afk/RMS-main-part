@@ -789,6 +789,17 @@ class OrderDetails extends StatelessWidget {
               ),
               child: const Text("ZAAD"),
             ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogContext); // Close dialog
+                _processPaymentAndComplete(context, order, PaymentMethod.edahab);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.secondary,
+                foregroundColor: colorScheme.onSecondary,
+              ),
+              child: const Text("eDAHAB"),
+            ),
           ],
         );
       },

@@ -3,9 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rmss/core/blocs/payment_bloc/payment_bloc.dart';
 import 'package:rmss/core/blocs/payment_bloc/payment_state.dart';
 import 'package:rmss/core/models/payment_model.dart';
+import 'package:rmss/core/repositories/payment_repository.dart';
+import 'package:rmss/features/auth/bloc/auth_bloc.dart';
+import 'package:rmss/features/auth/bloc/auth_state.dart';
 
 class PaymentBreakdownCard extends StatelessWidget {
-  const PaymentBreakdownCard({super.key});
+  final DateTime selectedDate;
+
+  const PaymentBreakdownCard({super.key, required this.selectedDate});
 
   @override
   Widget build(BuildContext context) {
@@ -20,22 +25,17 @@ class PaymentBreakdownCard extends StatelessWidget {
       child: BlocBuilder<PaymentBloc, PaymentState>(
         builder: (context, state) {
           if (state is PaymentsLoaded) {
-            double totalCash = 0;
-            double totalZaad = 0;
-
-            state.items.forEach((item) {
-              if (item.paymentMethod == PaymentMethod.cash) {
-                totalCash += item.amountPaid;
-              } else {
-                totalZaad += item.amountPaid;
-              }
-            });
-
-            double grandTotal = totalCash + totalZaad;
-
-            double cashPercent = grandTotal == 0 ? 0 : totalCash / grandTotal;
-
-            double zaadPercent = grandTotal == 0 ? 0 : totalZaad / grandTotal;
+            String myUserId = "";
+            final authState = context.read<AuthBloc>().state;
+            if (authState is AuthSuccess) {
+              myUserId = authState.user.id;
+            }
+            final myPayments = state.items.where((p) => p.processedBy['user'] == myUserId).toList();
+            
+            final distribution = context.read<PaymentRepository>().getPaymentMethodDistribution(myPayments, selectedDate);
+            final cashPercent = distribution[PaymentMethod.cash] ?? 0;
+            final zaadPercent = distribution[PaymentMethod.zaad] ?? 0;
+            final edahabPercent = distribution[PaymentMethod.edahab] ?? 0;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,6 +51,14 @@ class PaymentBreakdownCard extends StatelessWidget {
                   "${(zaadPercent * 100).toStringAsFixed(0)}%",
                   zaadPercent,
                   Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(height: 24),
+                _buildProgressRow(
+                  context,
+                  "eDahab",
+                  "${(edahabPercent * 100).toStringAsFixed(0)}%",
+                  edahabPercent,
+                  Theme.of(context).colorScheme.secondary,
                 ),
                 const SizedBox(height: 24),
                 _buildProgressRow(

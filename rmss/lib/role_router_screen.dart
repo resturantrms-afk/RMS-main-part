@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rmss/features/admin/views/desktop/admin_dashboard.dart';
+import 'package:rmss/features/admin/views/mobile/admin_dashboard_mobile.dart';
 
-import 'package:rmss/features/admin/admin_dashboard.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_event.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
@@ -30,15 +31,8 @@ class RoleRouterScreen extends StatelessWidget {
             case "kitchen":
               return const KitchenDashboard();
             case "cashier":
-              return LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth < 800) {
-                    return const CashierDashboardMobile();
-                  } else {
-                    return const CashierDashboard();
-                  }
-                },
-              );
+              return const CashierDashboard();
+
             default:
               return Scaffold(
                 body: Center(
