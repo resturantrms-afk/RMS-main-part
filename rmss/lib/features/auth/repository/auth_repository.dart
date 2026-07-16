@@ -20,6 +20,13 @@ class AuthRepository {
     await _firebaseAuth.signOut();
   }
 
+  Future<UserModel?> updateUserData(UserModel user) async {
+    final uid = user.id;
+
+    await _firestore.collection('users').doc(uid).update(user.toJson());
+    return getUserData(uid);
+  }
+
   Future<User?> signUp({
     required String name,
     required String email,
@@ -78,20 +85,6 @@ class AuthRepository {
     return null;
   }
 
-  Future<void> updateUserData({
-    required String uid,
-    String? name,
-    String? photoUrl,
-  }) async {
-    Map<String, dynamic> updates = {};
-    if (name != null) updates['name'] = name;
-    if (photoUrl != null) updates['photoUrl'] = photoUrl;
-
-    if (updates.isNotEmpty) {
-      await _firestore.collection('users').doc(uid).update(updates);
-    }
-  }
-
   Future<void> updateDeviceToken(String uid) async {
     try {
       FirebaseMessaging messaging = FirebaseMessaging.instance;
@@ -104,13 +97,15 @@ class AuthRepository {
           sound: true,
         );
       }
-      
+
       // If granted, get the token and save it
-      if (settings.authorizationStatus == AuthorizationStatus.authorized || 
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional) {
         String? token = await messaging.getToken();
         if (token != null) {
-          await _firestore.collection('users').doc(uid).update({'deviceToken': token});
+          await _firestore.collection('users').doc(uid).update({
+            'deviceToken': token,
+          });
         }
       }
     } catch (e) {

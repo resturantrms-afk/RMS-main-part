@@ -16,14 +16,22 @@ import 'package:rmss/core/repositories/payment_repository.dart';
 import 'package:rmss/core/repositories/table_repository.dart';
 import 'package:rmss/core/repositories/user_repository.dart';
 import 'package:rmss/core/theme/colors.dart';
+
 import 'package:rmss/core/theme/theme_cubit.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/repository/auth_repository.dart';
 import 'package:rmss/features/auth/views/splash_screen.dart';
+
 import 'package:rmss/features/admin/blocs/users_bloc/admin_users_bloc.dart';
 import 'package:rmss/features/admin/blocs/reports_bloc/reports_bloc.dart';
 import 'package:rmss/features/admin/repository/reports_repository.dart';
 import 'package:rmss/features/admin/blocs/ai_bloc/ai_bloc.dart';
+import 'package:rmss/features/admin/blocs/navigation_cubit/navigation_cubit.dart'
+    as admin_nav;
+import 'package:rmss/features/admin/repository/admin_notification_repository.dart';
+import 'package:rmss/features/admin/blocs/notification_bloc/admin_notification_bloc.dart';
+import 'package:rmss/features/admin/blocs/notification_bloc/admin_notification_event.dart'
+    as admin_notif_event;
 import 'package:rmss/features/cashier/blocs/navigation_cubit/navigation_cubit.dart';
 import 'package:rmss/features/cashier/repository/cashier_notification_repository.dart';
 import 'package:rmss/features/cashier/blocs/notification_bloc/cashier_notification_bloc.dart';
@@ -31,12 +39,6 @@ import 'package:rmss/features/cashier/blocs/notification_bloc/cashier_notificati
 import 'package:rmss/features/waiter/repository/waiter_notification_repository.dart';
 import 'package:rmss/features/waiter/blocs/notification_bloc/waiter_notification_bloc.dart';
 import 'package:rmss/features/waiter/blocs/notification_bloc/waiter_notification_event.dart';
-import 'package:rmss/features/admin/blocs/navigation_cubit/navigation_cubit.dart'
-    as admin_nav;
-import 'package:rmss/features/admin/repository/admin_notification_repository.dart';
-import 'package:rmss/features/admin/blocs/notification_bloc/admin_notification_bloc.dart';
-import 'package:rmss/features/admin/blocs/notification_bloc/admin_notification_event.dart'
-    as admin_notif_event;
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -50,13 +52,11 @@ class MyApp extends StatelessWidget {
         RepositoryProvider(create: (context) => MenuRepository()),
         RepositoryProvider(create: (context) => OrderRepository()),
         RepositoryProvider(create: (context) => PaymentRepository()),
-        RepositoryProvider(create: (context) => UserRepository()),
         RepositoryProvider(
           create: (context) => CashierNotificationRepository(),
         ),
         RepositoryProvider(create: (context) => AdminNotificationRepository()),
         RepositoryProvider(create: (context) => WaiterNotificationRepository()),
-        RepositoryProvider(create: (context) => ReportsRepository()),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -72,11 +72,11 @@ class MyApp extends StatelessWidget {
                 AdminUsersBloc(userRepository: context.read<UserRepository>()),
           ),
           BlocProvider(
-            create: (context) => ReportsBloc(reportsRepository: context.read<ReportsRepository>()),
+            create: (context) => ReportsBloc(
+              reportsRepository: context.read<ReportsRepository>(),
+            ),
           ),
-          BlocProvider(
-            create: (context) => AiBloc(),
-          ),
+          BlocProvider(create: (context) => AiBloc()),
           BlocProvider(
             create: (context) =>
                 MenuBloc(repository: context.read<MenuRepository>())

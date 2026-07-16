@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:rmss/core/models/user_model.dart';
 
 abstract class AuthEvent extends Equatable {
   @override
@@ -44,6 +45,15 @@ class SignUpRequested extends AuthEvent {
 }
 
 class LogoutRequested extends AuthEvent {}
+
+class ProfileUpdateRequested extends AuthEvent {
+  final UserModel user;
+
+  ProfileUpdateRequested({required this.user});
+
+  @override
+  List<Object?> get props => [user];
+}
 
 class CheckAuthStatus extends AuthEvent {}
 

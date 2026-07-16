@@ -24,6 +24,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           price: existingItem.price,
           quantity: existingItem.quantity + event.item.quantity,
           notes: '${existingItem.notes} \n ${event.item.notes}',
+          imageUrl: existingItem.imageUrl,
         );
       } else {
         // if it is a new item, add it to the list

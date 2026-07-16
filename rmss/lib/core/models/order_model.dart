@@ -56,12 +56,10 @@ class OrderModel extends Equatable {
       ),
 
       totalPrice: (json['totalPrice'] ?? 0.0).toDouble(),
-
       status: OrderStatus.values.firstWhere(
         (e) => e.name == (json['status'] ?? 'pending'),
         orElse: () => OrderStatus.pending,
       ),
-
       createdAt: json['createdAt'] ?? Timestamp.now(),
       items: (json['items'] as List<dynamic>? ?? [])
           .map((item) => OrderItemModel.fromJson(item))
@@ -83,6 +81,30 @@ class OrderModel extends Equatable {
     };
   }
 
+  OrderModel copyWith({
+    String? id,
+    String? tableId,
+    int? tableNumber,
+    Map<String, dynamic>? createdBy,
+    OrderSource? source,
+    double? totalPrice,
+    OrderStatus? status,
+    Timestamp? createdAt,
+    List<OrderItemModel>? items,
+  }) {
+    return OrderModel(
+      id: id ?? this.id,
+      tableId: tableId ?? this.tableId,
+      tableNumber: tableNumber ?? this.tableNumber,
+      createdBy: createdBy ?? this.createdBy,
+      source: source ?? this.source,
+      totalPrice: totalPrice ?? this.totalPrice,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      items: items ?? this.items,
+    );
+  }
+
   @override
   List<Object?> get props => [
     id,
@@ -93,6 +115,7 @@ class OrderModel extends Equatable {
     totalPrice,
     status,
     createdAt,
+    items,
   ];
 }
 
@@ -102,6 +125,7 @@ class OrderItemModel extends Equatable {
   final double price;
   final int quantity;
   final String notes;
+  final String imageUrl;
 
   const OrderItemModel({
     required this.menuItemId,
@@ -109,6 +133,7 @@ class OrderItemModel extends Equatable {
     required this.price,
     required this.quantity,
     required this.notes,
+    this.imageUrl = '',
   });
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
@@ -118,6 +143,7 @@ class OrderItemModel extends Equatable {
       price: (json['price'] ?? 0.0).toDouble(),
       quantity: json['quantity'] ?? 0,
       notes: json['notes'] ?? '',
+      imageUrl: json['imageUrl'] ?? '',
     );
   }
 
@@ -128,9 +154,17 @@ class OrderItemModel extends Equatable {
       'price': price,
       'quantity': quantity,
       'notes': notes,
+      'imageUrl': imageUrl,
     };
   }
 
   @override
-  List<Object?> get props => [menuItemId, name, price, quantity, notes];
+  List<Object?> get props => [
+    menuItemId,
+    name,
+    price,
+    quantity,
+    notes,
+    imageUrl,
+  ];
 }

@@ -89,6 +89,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     });
 
+    on<ProfileUpdateRequested>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        final updatedUser = await authRepository.updateUserData(event.user);
+        if (updatedUser != null) {
+          emit(AuthSuccess(user: updatedUser));
+        } else {
+          emit(AuthError(message: 'Unable to update profile data'));
+        }
+      } catch (e) {
+        emit(AuthError(message: e.toString()));
+      }
+    });
+
     on<CheckAuthStatus>((event, emit) async {
       User? firebaseUser = authRepository.getCurrentUser();
 
@@ -124,13 +138,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (state is AuthSuccess) {
         try {
           final currentUser = (state as AuthSuccess).user;
-          await authRepository.updateUserData(
-            uid: currentUser.id,
-            name: event.name,
-            photoUrl: event.photoUrl,
-          );
+          await authRepository.updateUserData(currentUser);
 
-          UserModel? updatedUser = await authRepository.getUserData(currentUser.id);
+          UserModel? updatedUser = await authRepository.getUserData(
+            currentUser.id,
+          );
           if (updatedUser != null) {
             emit(AuthSuccess(user: updatedUser));
           }

@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rmss/features/admin/views/desktop/admin_dashboard.dart';
-import 'package:rmss/features/admin/views/mobile/admin_dashboard_mobile.dart';
 
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_event.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
 import 'package:rmss/features/auth/views/login_screen.dart';
 import 'package:rmss/features/cashier/views/desktop/cashier_dashboard.dart';
-import 'package:rmss/features/cashier/views/mobile/cashier_dashboard_mobile.dart';
-import 'package:rmss/features/kitchen/Screens/kitchen_dashboard.dart';
+import 'package:rmss/features/kitchen/Screens/kitchen_dashbaord.dart';
+
 import 'package:rmss/features/waiter/views/mobile/waiter_dashboard_mobile.dart';
 
 class RoleRouterScreen extends StatelessWidget {
