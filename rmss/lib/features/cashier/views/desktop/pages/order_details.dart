@@ -205,7 +205,7 @@ class OrderDetails extends StatelessWidget {
                                 Row(
                                   children: [
                                     Text(
-                                      "Time Elapsed",
+                                      "Last Edited",
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: colorScheme.onSurfaceVariant,
@@ -214,6 +214,29 @@ class OrderDetails extends StatelessWidget {
                                     const SizedBox(width: 8),
                                     Text(
                                       order.timeAgo(),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 32),
+                                    Text(
+                                      "Created At",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      (() {
+                                        DateTime ct = order.createdAt.toDate();
+                                        Duration d = DateTime.now().difference(ct);
+                                        if (d.inDays > 0) return "${d.inDays} days ago";
+                                        if (d.inHours > 0) return "${d.inHours} hrs ago";
+                                        if (d.inMinutes > 0) return "${d.inMinutes} mins ago";
+                                        return "Just now";
+                                      })(),
                                       style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
@@ -480,6 +503,7 @@ class OrderDetails extends StatelessWidget {
                                               totalPrice: order.totalPrice,
                                               status: OrderStatus.cancelled,
                                               createdAt: order.createdAt,
+                                              updatedAt: Timestamp.now(),
                                               items: order.items,
                                             );
                                             context.read<OrderBloc>().add(
@@ -823,6 +847,7 @@ class OrderDetails extends StatelessWidget {
       paymentMethod: method,
       amountPaid: order.totalPrice,
       createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
     );
     context.read<PaymentBloc>().add(AddPayment(item: payment));
 
@@ -836,6 +861,7 @@ class OrderDetails extends StatelessWidget {
       totalPrice: order.totalPrice,
       status: OrderStatus.paid,
       createdAt: order.createdAt,
+      updatedAt: Timestamp.now(),
       items: order.items,
     );
     context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));

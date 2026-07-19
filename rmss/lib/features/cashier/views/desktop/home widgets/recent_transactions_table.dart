@@ -4,7 +4,6 @@ import 'package:rmss/core/blocs/order_bloc/order_bloc.dart';
 import 'package:rmss/core/blocs/order_bloc/order_state.dart';
 import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/order_details.dart';
-import 'package:rmss/features/cashier/views/desktop/pages/orders.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/receipt.dart';
 import 'package:rmss/core/blocs/payment_bloc/payment_bloc.dart';
 import 'package:rmss/core/blocs/payment_bloc/payment_state.dart';
@@ -52,21 +51,30 @@ class RecentTransactionsTable extends StatelessWidget {
             builder: (context, orderState) {
               if (orderState is OrderLoaded) {
                 final authState = context.read<AuthBloc>().state;
-                final myUserId = authState is AuthSuccess ? authState.user.id : "";
-                
+                final myUserId = authState is AuthSuccess
+                    ? authState.user.id
+                    : "";
+
                 final paymentState = context.read<PaymentBloc>().state;
-                final allPayments = paymentState is PaymentsLoaded ? paymentState.items : [];
+                final allPayments = paymentState is PaymentsLoaded
+                    ? paymentState.items
+                    : [];
 
                 final filteredOrders = orderState.items.where((order) {
                   if (order.status == OrderStatus.paid) {
-                    final matchingPayments = allPayments.where((p) => p.orderId == order.id);
+                    final matchingPayments = allPayments.where(
+                      (p) => p.orderId == order.id,
+                    );
                     if (matchingPayments.isEmpty) return false;
-                    return matchingPayments.first.processedBy['user'] == myUserId;
+                    return matchingPayments.first.processedBy['user'] ==
+                        myUserId;
                   }
                   return true; // Show other statuses
                 }).toList();
 
-                filteredOrders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                filteredOrders.sort(
+                  (a, b) => b.updatedAt.compareTo(a.updatedAt),
+                );
 
                 final orders = filteredOrders.take(5);
 

@@ -48,7 +48,7 @@ class RecentTransactionsTable extends StatelessWidget {
             builder: (context, orderState) {
               if (orderState is OrderLoaded) {
                 final allOrders = orderState.items;
-                allOrders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                allOrders.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
                 final orders = allOrders.take(5);
 

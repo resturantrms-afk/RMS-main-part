@@ -9,7 +9,8 @@ import 'package:rmss/core/models/order_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
-import 'package:rmss/features/cashier/views/desktop/cashier_dashboard.dart';
+import 'package:rmss/features/admin/blocs/users_bloc/admin_users_bloc.dart';
+import 'package:rmss/features/admin/blocs/users_bloc/admin_users_state.dart';
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/cashier_top_bar.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/receipt.dart';
 
@@ -113,7 +114,14 @@ class _PaymentsState extends State<Payments> {
                   Expanded(
                     flex: 10,
                     child: _buildHeaderText(
-                      "Time Passed",
+                      "Created At",
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                  Expanded(
+                    flex: 10,
+                    child: _buildHeaderText(
+                      "Last Edited",
                       textAlign: TextAlign.right,
                     ),
                   ),
@@ -211,7 +219,7 @@ class _PaymentsState extends State<Payments> {
 
                         // Sort by createdAt descending
                         filteredPayments.sort(
-                          (a, b) => b.createdAt.compareTo(a.createdAt),
+                          (a, b) => b.updatedAt.compareTo(a.updatedAt),
                         );
 
                         if (filteredPayments.isEmpty) {
@@ -227,24 +235,29 @@ class _PaymentsState extends State<Payments> {
 
                         return BlocBuilder<AuthBloc, AuthState>(
                           builder: (context, authState) {
-                            return ListView.separated(
-                              itemCount: filteredPayments.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final payment = filteredPayments[index];
-                                final order = orderState.items
-                                    .cast<OrderModel?>()
-                                    .firstWhere(
-                                      (o) => o?.id == payment.orderId,
-                                      orElse: () => null as OrderModel?,
-                                    );
+                            return BlocBuilder<AdminUsersBloc, AdminUsersState>(
+                              builder: (context, usersState) {
+                                return ListView.separated(
+                                  itemCount: filteredPayments.length,
+                                  separatorBuilder: (context, index) =>
+                                      const SizedBox(height: 12),
+                                  itemBuilder: (context, index) {
+                                    final payment = filteredPayments[index];
+                                    final order = orderState.items
+                                        .cast<OrderModel?>()
+                                        .firstWhere(
+                                          (o) => o?.id == payment.orderId,
+                                          orElse: () => null as OrderModel?,
+                                        );
 
-                                return _buildPaymentRow(
-                                  context,
-                                  payment,
-                                  order,
-                                  authState,
+                                    return _buildPaymentRow(
+                                      context,
+                                      payment,
+                                      order,
+                                      authState,
+                                      usersState,
+                                    );
+                                  },
                                 );
                               },
                             );
@@ -324,11 +337,12 @@ class _PaymentsState extends State<Payments> {
     PaymentModel payment,
     OrderModel? order,
     AuthState authState,
+    AdminUsersState usersState,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Compute time ago for payment
-    DateTime paymentTime = payment.createdAt.toDate();
+    // Compute time ago for payment based on updatedAt
+    DateTime paymentTime = payment.updatedAt.toDate();
     Duration duration = DateTime.now().difference(paymentTime);
     String timePassed = "N/A";
     if (duration.inDays > 0) {
@@ -341,12 +355,39 @@ class _PaymentsState extends State<Payments> {
       timePassed = "Just now";
     }
 
+    // Compute created at
+    DateTime createdTime = payment.createdAt.toDate();
+    Duration createdDuration = DateTime.now().difference(createdTime);
+    String createdPassed = "N/A";
+    if (createdDuration.inDays > 0) {
+      createdPassed = "${createdDuration.inDays} days ago";
+    } else if (createdDuration.inHours > 0) {
+      createdPassed = "${createdDuration.inHours} hrs ago";
+    } else if (createdDuration.inMinutes > 0) {
+      createdPassed = "${createdDuration.inMinutes} mins ago";
+    } else {
+      createdPassed = "Just now";
+    }
+
     String userIdRaw = payment.processedBy['user'] ?? '';
     String userName = userIdRaw.length > 4
         ? "Staff ${userIdRaw.substring(0, 4).toUpperCase()}"
         : "Staff";
     String imageUrl =
         "https://ui-avatars.com/api/?name=${userName}&background=E88328&color=fff";
+
+    // Try finding from all users
+    if (usersState is AdminUsersLoaded) {
+      try {
+        final staffUser = usersState.allUsers.firstWhere(
+          (u) => u.id == userIdRaw,
+        );
+        userName = staffUser.name;
+        imageUrl = staffUser.photoUrl;
+      } catch (_) {
+        // Fallback to AuthState below if not found
+      }
+    }
 
     if (authState is AuthSuccess) {
       if (userIdRaw == authState.user.id || userIdRaw.isEmpty) {
@@ -497,22 +538,22 @@ class _PaymentsState extends State<Payments> {
                       payment.paymentMethod == PaymentMethod.zaad
                           ? Icons.phone_iphone
                           : payment.paymentMethod == PaymentMethod.edahab
-                              ? Icons.account_balance_wallet
-                              : Icons.payments,
+                          ? Icons.account_balance_wallet
+                          : Icons.payments,
                       size: 16,
                       color: payment.paymentMethod == PaymentMethod.zaad
                           ? Colors.blue.shade400
                           : payment.paymentMethod == PaymentMethod.edahab
-                              ? Theme.of(context).colorScheme.secondary
-                              : Colors.green.shade400,
+                          ? Theme.of(context).colorScheme.secondary
+                          : Colors.green.shade400,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       payment.paymentMethod == PaymentMethod.zaad
                           ? "Zaad"
                           : payment.paymentMethod == PaymentMethod.edahab
-                              ? "eDahab"
-                              : "Cash",
+                          ? "eDahab"
+                          : "Cash",
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -535,7 +576,37 @@ class _PaymentsState extends State<Payments> {
             ),
           ),
 
-          // Time Passed
+          // Time Passed (Created At)
+          Expanded(
+            flex: 10,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (createdDuration.inMinutes < 60) ...[
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: colorScheme.secondary.withValues(alpha: 0.8),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  createdPassed,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Time Passed (Last Edited)
           Expanded(
             flex: 10,
             child: Row(

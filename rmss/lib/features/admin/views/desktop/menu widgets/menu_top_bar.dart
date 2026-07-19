@@ -7,6 +7,7 @@ import 'package:rmss/core/blocs/table_bloc/table_state.dart';
 import 'package:rmss/core/models/table_model.dart';
 import 'package:rmss/features/admin/views/desktop/pages/cart.dart';
 import 'package:rmss/features/admin/views/desktop/pages/order_history.dart';
+import 'package:rmss/features/admin/views/desktop/menu widgets/add_menu_item_popup.dart';
 
 class MenuTopBar extends StatefulWidget {
   final TextEditingController searchController;
@@ -186,6 +187,19 @@ class _MenuTopBarState extends State<MenuTopBar> {
               ),
 
               const Spacer(),
+
+              FilledButton.icon(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => const AddMenuItemPopup(),
+                  );
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Add Menu Item'),
+              ),
+
+              const SizedBox(width: 16),
 
               // This will now always have the perfect up-to-date data!
               selectedTable != null &&

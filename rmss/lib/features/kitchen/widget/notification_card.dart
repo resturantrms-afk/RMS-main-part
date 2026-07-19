@@ -13,46 +13,48 @@ class NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Card(
       color: notification.isRead
-          ? const Color(0xFF1E1E1E)
-          : const Color(0xFF2A1F10),
+          ? colorScheme.surfaceContainer
+          : colorScheme.surfaceContainerHigh,
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Colors.orange.withOpacity(0.2),
+          backgroundColor: colorScheme.primary.withValues(alpha: 0.2),
           child: Icon(
             notification.icon,
-            color: Colors.orange,
+            color: colorScheme.primary,
           ),
         ),
         title: Text(
           notification.title,
           style: TextStyle(
-            color: notification.isRead ? Colors.white70 : Colors.white,
+            color: notification.isRead ? colorScheme.onSurfaceVariant : colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
         subtitle: Text(
           notification.description,
-          style: const TextStyle(color: Colors.grey),
+          style: TextStyle(color: colorScheme.onSurfaceVariant),
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               notification.time,
-              style: const TextStyle(
-                color: Colors.grey,
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant,
                 fontSize: 11,
               ),
             ),
             if (!notification.isRead)
-              const Padding(
-                padding: EdgeInsets.only(top: 4),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
                 child: CircleAvatar(
                   radius: 4,
-                  backgroundColor: Colors.orange,
+                  backgroundColor: colorScheme.primary,
                 ),
               ),
           ],

@@ -40,8 +40,9 @@ class _KitchenHeaderState extends State<KitchenHeader> {
     return '$h:$m';
   }
 
-  @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       child: Row(
@@ -52,10 +53,10 @@ class _KitchenHeaderState extends State<KitchenHeader> {
           Row(
             children: [
 
-              const Text(
+              Text(
                 "CROWN",
                 style: TextStyle(
-                  color: Color(0xFFFF8C42),
+                  color: colorScheme.primary,
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
@@ -67,15 +68,15 @@ class _KitchenHeaderState extends State<KitchenHeader> {
               Container(
                 width: 1,
                 height: 25,
-                color: Colors.white24,
+                color: colorScheme.onSurface.withValues(alpha: 0.24),
               ),
 
               const SizedBox(width: 12),
 
-              const Text(
+              Text(
                 "Kitchen Console",
                 style: TextStyle(
-                  color: Color(0xFFF5E6D3),
+                  color: colorScheme.onSurface,
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
                 ),
@@ -87,9 +88,9 @@ class _KitchenHeaderState extends State<KitchenHeader> {
           Row(
             children: [
 
-              const Icon(
+              Icon(
                 Icons.access_time,
-                color: Color(0xFFFF8C42),
+                color: colorScheme.primary,
                 size: 20,
               ),
 
@@ -102,8 +103,8 @@ class _KitchenHeaderState extends State<KitchenHeader> {
                   final timeStr = snapshot.hasData ? '${snapshot.data!.hour.toString().padLeft(2,'0')}:${snapshot.data!.minute.toString().padLeft(2,'0')}' : _formattedTime();
                   return Text(
                     timeStr,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -119,19 +120,19 @@ class _KitchenHeaderState extends State<KitchenHeader> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.cocoaBrown,
+                  color: colorScheme.surfaceContainer,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.white10,
+                    color: colorScheme.onSurface.withValues(alpha: 0.1),
                   ),
                 ),
 
                 child: Row(
                   children: [
 
-                    const Icon(
+                    Icon(
                       Icons.badge_outlined,
-                      color: Color(0xFFFF8C42),
+                      color: colorScheme.primary,
                       size: 18,
                     ),
 
@@ -141,10 +142,10 @@ class _KitchenHeaderState extends State<KitchenHeader> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
 
-                        const Text(
+                        Text(
                           "Chef de Cuisine",
                           style: TextStyle(
-                            color: Color(0xFFF5E6D3),
+                            color: colorScheme.onSurface.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
                         ),
@@ -153,8 +154,8 @@ class _KitchenHeaderState extends State<KitchenHeader> {
 
                         Text(
                           _displayName,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),

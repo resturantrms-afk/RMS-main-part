@@ -11,25 +11,26 @@ class OrderCard extends StatelessWidget {
     required this.onTap,
   });
 
-  Color _statusColor() {
+  Color _statusColor(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (order.status) {
       case OrderStatus.pending:
-        return Colors.orange;
+        return colorScheme.outline;
 
       case OrderStatus.preparing:
-        return Colors.blue;
+        return colorScheme.primary;
 
       case OrderStatus.ready:
-        return Colors.green;
+        return colorScheme.secondary;
 
       case OrderStatus.served:
-        return Colors.purple;
+        return colorScheme.tertiary;
 
       case OrderStatus.paid:
-        return Colors.teal;
+        return colorScheme.tertiary;
 
       case OrderStatus.cancelled:
-        return Colors.red;
+        return colorScheme.error;
     }
   }
 
@@ -59,10 +60,10 @@ class OrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: Theme.of(context).colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey.shade800,
+          color: Theme.of(context).colorScheme.outlineVariant,
         ),
       ),
       padding: const EdgeInsets.all(16),
@@ -74,8 +75,8 @@ class OrderCard extends StatelessWidget {
             children: [
               Text(
                 "TABLE ${order.tableNumber}",
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -84,7 +85,7 @@ class OrderCard extends StatelessWidget {
               Text(
                 order.status.name.toUpperCase(),
                 style: TextStyle(
-                  color: _statusColor(),
+                  color: _statusColor(context),
                   fontWeight: FontWeight.bold,
                   fontSize: 11,
                 ),
@@ -92,8 +93,8 @@ class OrderCard extends StatelessWidget {
             ],
           ),
 
-          const Divider(
-            color: Colors.white24,
+          Divider(
+            color: Theme.of(context).colorScheme.outlineVariant,
             height: 24,
           ),
 
@@ -107,8 +108,8 @@ class OrderCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(
                     "• ${item.quantity}x ${item.name}",
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 13,
                     ),
                   ),
@@ -120,9 +121,17 @@ class OrderCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              ),
               onPressed: onTap,
               child: Text(
                 _buttonText(),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),

@@ -599,169 +599,236 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
 
                   const SizedBox(height: 24),
 
-                  // ── BOTTOM ROW: COUNTER, ADD TO ORDER & SAVE ──
-                  Row(
+                  // ── BOTTOM ROWS: COUNTER, ADD TO ORDER, DELETE & SAVE ──
+                  Column(
                     children: [
-                      // The Pill-Shaped Counter
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        child: Row(
-                          children: [
-                            InkWell(
-                              onTap: _decrement,
+                      Row(
+                        children: [
+                          // The Pill-Shaped Counter
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHigh,
                               borderRadius: BorderRadius.circular(50),
-                              child: Container(
-                                width: 56,
-                                height: 56,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.surfaceContainerLow,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.remove,
-                                  size: 24,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: 56,
-                              child: Text(
-                                '$_quantity',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            InkWell(
-                              onTap: _increment,
-                              borderRadius: BorderRadius.circular(50),
-                              child: Container(
-                                width: 56,
-                                height: 56,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.add,
-                                  size: 24,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(width: 16),
-
-                      // Add to Order Button
-                      Expanded(
-                        child: SizedBox(
-                          height: 68,
-                          child: OutlinedButton(
-                            onPressed: () {
-                              context.read<CartBloc>().add(
-                                AddToCart(
-                                  item: OrderItemModel(
-                                    menuItemId: widget.item.id,
-                                    name: _nameController.text,
-                                    price: currentPrice,
-                                    quantity: _quantity,
-                                    notes: "",
-                                  ),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Added to order')),
-                              );
-                              Navigator.pop(context);
-                            },
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: Theme.of(context).colorScheme.primary,
-                                width: 2,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                              ),
                             ),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
-                                  'ADD TO ORDER',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.5,
-                                    fontSize: 14,
+                                InkWell(
+                                  onTap: _decrement,
+                                  borderRadius: BorderRadius.circular(50),
+                                  child: Container(
+                                    width: 56,
+                                    height: 56,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerLow,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.remove,
+                                      size: 24,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
                                 ),
-                                Text(
-                                  '\$${totalPrice.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
+                                SizedBox(
+                                  width: 56,
+                                  child: Text(
+                                    '$_quantity',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: _increment,
+                                  borderRadius: BorderRadius.circular(50),
+                                  child: Container(
+                                    width: 56,
+                                    height: 56,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.add,
+                                      size: 24,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimary,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
+
+                          const SizedBox(width: 16),
+
+                          // Add to Order Button
+                          Expanded(
+                            child: SizedBox(
+                              height: 68,
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  context.read<CartBloc>().add(
+                                    AddToCart(
+                                      item: OrderItemModel(
+                                        menuItemId: widget.item.id,
+                                        name: _nameController.text,
+                                        price: currentPrice,
+                                        quantity: _quantity,
+                                        notes: "",
+                                      ),
+                                    ),
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Added to order')),
+                                  );
+                                  Navigator.pop(context);
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    width: 2,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(50),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      'ADD TO ORDER',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.5,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    Text(
+                                      '\$${totalPrice.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-
-                      const SizedBox(width: 16),
-
-                      // Update Item Button
-                      Expanded(
-                        child: SizedBox(
-                          height: 68,
-                          child: FilledButton(
-                            onPressed: _updateItem,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                              ),
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'SAVE CHANGES',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.5,
-                                    fontSize: 14,
+                      
+                      const SizedBox(height: 16),
+                      
+                      Row(
+                        children: [
+                          // Delete Item Button
+                          Expanded(
+                            child: SizedBox(
+                              height: 68,
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Delete Item'),
+                                      content: const Text('Are you sure you wanna delete this item?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('CANCEL'),
+                                        ),
+                                        FilledButton(
+                                          onPressed: () {
+                                            context.read<MenuBloc>().add(DeleteMenuItem(item: widget.item));
+                                            Navigator.pop(context); // close dialog
+                                            Navigator.pop(context); // close item details page
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Item deleted successfully')),
+                                            );
+                                          },
+                                          style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                                          child: const Text('DELETE'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Colors.red, width: 2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(50),
                                   ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 24),
                                 ),
-                              ],
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'DELETE ITEM',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.5,
+                                        fontSize: 14,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+
+                          const SizedBox(width: 16),
+
+                          // Update Item Button
+                          Expanded(
+                            child: SizedBox(
+                              height: 68,
+                              child: FilledButton(
+                                onPressed: _updateItem,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(50),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'SAVE CHANGES',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.5,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

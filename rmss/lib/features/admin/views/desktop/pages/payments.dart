@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rmss/core/blocs/order_bloc/order_event.dart';
 import 'package:rmss/core/blocs/payment_bloc/payment_bloc.dart';
+import 'package:rmss/core/blocs/payment_bloc/payment_event.dart';
 import 'package:rmss/core/blocs/payment_bloc/payment_state.dart';
 import 'package:rmss/core/blocs/order_bloc/order_bloc.dart';
 import 'package:rmss/core/blocs/order_bloc/order_state.dart';
@@ -9,6 +12,8 @@ import 'package:rmss/core/models/order_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
+import 'package:rmss/features/admin/blocs/users_bloc/admin_users_bloc.dart';
+import 'package:rmss/features/admin/blocs/users_bloc/admin_users_state.dart';
 
 import 'package:rmss/features/admin/views/desktop/home%20widgets/admin_top_bar.dart';
 import 'package:rmss/features/admin/views/desktop/pages/receipt.dart';
@@ -21,7 +26,7 @@ class Payments extends StatefulWidget {
 }
 
 class _PaymentsState extends State<Payments> {
-  PaymentMethod? _selectedFilter; // null means 'All'
+  String _selectedFilter = 'ALL';
 
   @override
   Widget build(BuildContext context) {
@@ -60,25 +65,31 @@ class _PaymentsState extends State<Payments> {
                 _buildFilterButton(
                   context: context,
                   label: "ALL",
-                  method: null,
+                  filterValue: "ALL",
                 ),
                 const SizedBox(width: 12),
                 _buildFilterButton(
                   context: context,
                   label: "ZAAD",
-                  method: PaymentMethod.zaad,
+                  filterValue: "ZAAD",
                 ),
                 const SizedBox(width: 12),
                 _buildFilterButton(
                   context: context,
                   label: "eDAHAB",
-                  method: PaymentMethod.edahab,
+                  filterValue: "EDAHAB",
                 ),
                 const SizedBox(width: 12),
                 _buildFilterButton(
                   context: context,
                   label: "CASH",
-                  method: PaymentMethod.cash,
+                  filterValue: "CASH",
+                ),
+                const SizedBox(width: 12),
+                _buildFilterButton(
+                  context: context,
+                  label: "VOIDED",
+                  filterValue: "VOIDED",
                 ),
               ],
             ),
@@ -103,6 +114,7 @@ class _PaymentsState extends State<Payments> {
                   Expanded(flex: 10, child: _buildHeaderText("Table")),
                   Expanded(flex: 15, child: _buildHeaderText("Processed By")),
                   Expanded(flex: 15, child: _buildHeaderText("Method")),
+                  Expanded(flex: 10, child: _buildHeaderText("Status")),
                   Expanded(
                     flex: 10,
                     child: _buildHeaderText(
@@ -113,11 +125,18 @@ class _PaymentsState extends State<Payments> {
                   Expanded(
                     flex: 10,
                     child: _buildHeaderText(
-                      "Time Passed",
+                      "Created At",
                       textAlign: TextAlign.right,
                     ),
                   ),
-                  const Expanded(flex: 5, child: SizedBox()), // Receipt action
+                  Expanded(
+                    flex: 10,
+                    child: _buildHeaderText(
+                      "Last Edited",
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                  const Expanded(flex: 10, child: SizedBox()), // Actions
                 ],
               ),
             ),
@@ -203,15 +222,31 @@ class _PaymentsState extends State<Payments> {
                           orderState is OrderLoaded) {
                         // Filter payments
                         var filteredPayments = paymentState.items;
-                        if (_selectedFilter != null) {
+
+                        if (_selectedFilter == "VOIDED") {
                           filteredPayments = filteredPayments
-                              .where((p) => p.paymentMethod == _selectedFilter)
+                              .where((p) => p.status == PaymentStatus.voided)
                               .toList();
+                        } else {
+                          // Hide voided payments from other filters
+                          filteredPayments = filteredPayments
+                              .where((p) => p.status != PaymentStatus.voided)
+                              .toList();
+
+                          if (_selectedFilter != "ALL") {
+                            filteredPayments = filteredPayments
+                                .where(
+                                  (p) =>
+                                      p.paymentMethod.name.toUpperCase() ==
+                                      _selectedFilter,
+                                )
+                                .toList();
+                          }
                         }
 
-                        // Sort by createdAt descending
+                        // Sort by updatedAt descending
                         filteredPayments.sort(
-                          (a, b) => b.createdAt.compareTo(a.createdAt),
+                          (a, b) => b.updatedAt.compareTo(a.updatedAt),
                         );
 
                         if (filteredPayments.isEmpty) {
@@ -227,24 +262,29 @@ class _PaymentsState extends State<Payments> {
 
                         return BlocBuilder<AuthBloc, AuthState>(
                           builder: (context, authState) {
-                            return ListView.separated(
-                              itemCount: filteredPayments.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final payment = filteredPayments[index];
-                                final order = orderState.items
-                                    .cast<OrderModel?>()
-                                    .firstWhere(
-                                      (o) => o?.id == payment.orderId,
-                                      orElse: () => null as OrderModel?,
-                                    );
+                            return BlocBuilder<AdminUsersBloc, AdminUsersState>(
+                              builder: (context, usersState) {
+                                return ListView.separated(
+                                  itemCount: filteredPayments.length,
+                                  separatorBuilder: (context, index) =>
+                                      const SizedBox(height: 12),
+                                  itemBuilder: (context, index) {
+                                    final payment = filteredPayments[index];
+                                    final order = orderState.items
+                                        .cast<OrderModel?>()
+                                        .firstWhere(
+                                          (o) => o?.id == payment.orderId,
+                                          orElse: () => null as OrderModel?,
+                                        );
 
-                                return _buildPaymentRow(
-                                  context,
-                                  payment,
-                                  order,
-                                  authState,
+                                    return _buildPaymentRow(
+                                      context,
+                                      payment,
+                                      order,
+                                      authState,
+                                      usersState,
+                                    );
+                                  },
                                 );
                               },
                             );
@@ -267,15 +307,15 @@ class _PaymentsState extends State<Payments> {
   Widget _buildFilterButton({
     required BuildContext context,
     required String label,
-    required PaymentMethod? method,
+    required String filterValue,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isSelected = _selectedFilter == method;
+    final isSelected = _selectedFilter == filterValue;
 
     return InkWell(
       onTap: () {
         setState(() {
-          _selectedFilter = method;
+          _selectedFilter = filterValue;
         });
       },
       borderRadius: BorderRadius.circular(999),
@@ -324,11 +364,12 @@ class _PaymentsState extends State<Payments> {
     PaymentModel payment,
     OrderModel? order,
     AuthState authState,
+    AdminUsersState usersState,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Compute time ago for payment
-    DateTime paymentTime = payment.createdAt.toDate();
+    // Compute time ago for payment based on updatedAt
+    DateTime paymentTime = payment.updatedAt.toDate();
     Duration duration = DateTime.now().difference(paymentTime);
     String timePassed = "N/A";
     if (duration.inDays > 0) {
@@ -341,12 +382,39 @@ class _PaymentsState extends State<Payments> {
       timePassed = "Just now";
     }
 
+    // Compute created at
+    DateTime createdTime = payment.createdAt.toDate();
+    Duration createdDuration = DateTime.now().difference(createdTime);
+    String createdPassed = "N/A";
+    if (createdDuration.inDays > 0) {
+      createdPassed = "${createdDuration.inDays} days ago";
+    } else if (createdDuration.inHours > 0) {
+      createdPassed = "${createdDuration.inHours} hrs ago";
+    } else if (createdDuration.inMinutes > 0) {
+      createdPassed = "${createdDuration.inMinutes} mins ago";
+    } else {
+      createdPassed = "Just now";
+    }
+
     String userIdRaw = payment.processedBy['user'] ?? '';
     String userName = userIdRaw.length > 4
         ? "Staff ${userIdRaw.substring(0, 4).toUpperCase()}"
         : "Staff";
     String imageUrl =
         "https://ui-avatars.com/api/?name=${userName}&background=E88328&color=fff";
+
+    // Try finding from all users
+    if (usersState is AdminUsersLoaded) {
+      try {
+        final staffUser = usersState.allUsers.firstWhere(
+          (u) => u.id == userIdRaw,
+        );
+        userName = staffUser.name;
+        imageUrl = staffUser.photoUrl;
+      } catch (_) {
+        // Fallback to AuthState below if not found
+      }
+    }
 
     if (authState is AuthSuccess) {
       if (userIdRaw == authState.user.id || userIdRaw.isEmpty) {
@@ -525,17 +593,76 @@ class _PaymentsState extends State<Payments> {
             ),
           ),
 
+          // Status
+          Expanded(
+            flex: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: payment.status == PaymentStatus.completed
+                    ? colorScheme.primaryContainer
+                    : colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                payment.status.name.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: payment.status == PaymentStatus.completed
+                      ? colorScheme.onPrimaryContainer
+                      : colorScheme.onErrorContainer,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+          ),
+
           // Amount
           Expanded(
             flex: 10,
             child: Text(
               "\$${payment.amountPaid.toStringAsFixed(2)}",
               textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.primary,
+              ),
             ),
           ),
 
-          // Time Passed
+          // Time Passed (Created At)
+          Expanded(
+            flex: 10,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (createdDuration.inMinutes < 60) ...[
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: colorScheme.secondary.withValues(alpha: 0.8),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  createdPassed,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Time Passed (Last Edited)
           Expanded(
             flex: 10,
             child: Row(
@@ -565,30 +692,94 @@ class _PaymentsState extends State<Payments> {
             ),
           ),
 
-          // Receipt Action
+          // Actions
           Expanded(
-            flex: 5,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                icon: const Icon(Icons.receipt_long),
-                color: colorScheme.primary,
-                tooltip: 'View Receipt',
-                onPressed: () {
-                  if (order != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ReceiptPage(order: order),
+            flex: 10,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  color: colorScheme.error,
+                  tooltip: 'Delete Payment',
+                  onPressed: () async {
+                    if (payment.status == PaymentStatus.voided) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Cannot void an already voided payment',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                    final bool? confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Void Payment?'),
+                        content: const Text(
+                          'Are you sure you want to void this payment record? The order will be reverted to waiting for payment.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: Text(
+                              'Void',
+                              style: TextStyle(color: colorScheme.error),
+                            ),
+                          ),
+                        ],
                       ),
                     );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Order details not found')),
-                    );
-                  }
-                },
-              ),
+                    if (confirm == true && context.mounted) {
+                      // 1. Void the payment
+                      final voidedPayment = payment.copyWith(
+                        status: PaymentStatus.voided,
+                        updatedAt: Timestamp.now(),
+                      );
+                      context.read<PaymentBloc>().add(
+                        UpdatePayment(item: voidedPayment),
+                      );
+
+                      // 2. Revert order status to served
+                      if (order != null) {
+                        final revertedOrder = order.copyWith(
+                          status: OrderStatus.served,
+                          updatedAt: Timestamp.now(),
+                        );
+                        context.read<OrderBloc>().add(
+                          UpdateOrder(item: revertedOrder),
+                        );
+                      }
+                    }
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.receipt_long),
+                  color: colorScheme.primary,
+                  tooltip: 'View Receipt',
+                  onPressed: () {
+                    if (order != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ReceiptPage(order: order),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Order details not found'),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
             ),
           ),
         ],

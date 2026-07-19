@@ -15,7 +15,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF2A1E17),
+      backgroundColor: Colors.transparent,
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is AuthSuccess) {
@@ -25,39 +25,51 @@ class ProfileScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Profile & Settings',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Manage your account and kitchen preferences',
-                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 14,
+                    ),
                   ),
                   const SizedBox(height: 30),
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E1E),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerLowest,
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
                     ),
                     child: Row(
                       children: [
                         CircleAvatar(
                           radius: 40,
-                          backgroundColor: Colors.orange,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
                           backgroundImage: user.photoUrl.isNotEmpty
                               ? NetworkImage(user.photoUrl)
                               : null,
                           child: user.photoUrl.isEmpty
-                              ? const Icon(
+                              ? Icon(
                                   Icons.person,
                                   size: 40,
-                                  color: Colors.white,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimary,
                                 )
                               : null,
                         ),
@@ -67,8 +79,8 @@ class ProfileScreen extends StatelessWidget {
                           children: [
                             Text(
                               user.name,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -76,12 +88,18 @@ class ProfileScreen extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               user.email,
-                              style: const TextStyle(color: Colors.grey),
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               user.role.name.toUpperCase(),
-                              style: const TextStyle(color: Colors.orange),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                             ),
                           ],
                         ),
@@ -89,16 +107,17 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  const Text(
+                  Text(
                     'Account',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 15),
                   _buildTile(
+                    context,
                     Icons.edit,
                     'Edit Profile',
                     'Update your information',
@@ -110,6 +129,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   _buildTile(
+                    context,
                     Icons.lock_outline,
                     'Change Password',
                     'Update account password',
@@ -121,6 +141,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   _buildTile(
+                    context,
                     Icons.logout,
                     'Logout',
                     'Sign out of your account',
@@ -128,10 +149,10 @@ class ProfileScreen extends StatelessWidget {
                         context.read<AuthBloc>().add(LogoutRequested()),
                   ),
                   const SizedBox(height: 30),
-                  const Text(
+                  Text(
                     'Kitchen Statistics',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -169,6 +190,7 @@ class ProfileScreen extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: _buildStatCard(
+                                  context,
                                   'Orders',
                                   '$totalOrders',
                                   Icons.receipt_long,
@@ -177,6 +199,7 @@ class ProfileScreen extends StatelessWidget {
                               const SizedBox(width: 15),
                               Expanded(
                                 child: _buildStatCard(
+                                  context,
                                   'Completed',
                                   '$completedOrders',
                                   Icons.check_circle,
@@ -189,6 +212,7 @@ class ProfileScreen extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: _buildStatCard(
+                                  context,
                                   'Pending',
                                   '$pendingOrders',
                                   Icons.schedule,
@@ -197,6 +221,7 @@ class ProfileScreen extends StatelessWidget {
                               const SizedBox(width: 15),
                               Expanded(
                                 child: _buildStatCard(
+                                  context,
                                   'Items',
                                   '$totalItems',
                                   Icons.inventory_2,
@@ -209,16 +234,17 @@ class ProfileScreen extends StatelessWidget {
                     },
                   ),
                   const SizedBox(height: 30),
-                  const Text(
+                  Text(
                     'Application',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 15),
                   _buildTile(
+                    context,
                     Icons.info_outline,
                     'App Version',
                     'Restaurant Management System v1.0.0',
@@ -234,14 +260,14 @@ class ProfileScreen extends StatelessWidget {
             return Center(
               child: Text(
                 state.message,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             );
           }
-          return const Center(
+          return Center(
             child: Text(
               'No user signed in',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             ),
           );
         },
@@ -250,48 +276,76 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildTile(
+    BuildContext context,
     IconData icon,
     String title,
     String subtitle, {
     VoidCallback? onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Theme.of(context).colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        onTap: onTap,
-        leading: Icon(icon, color: Colors.orange),
-        title: Text(title, style: const TextStyle(color: Colors.white)),
-        subtitle: Text(subtitle, style: const TextStyle(color: Colors.grey)),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          color: Colors.grey,
-          size: 16,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListTile(
+              leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+              title: Text(
+                title,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              subtitle: Text(
+                subtitle,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              trailing: Icon(
+                Icons.arrow_forward_ios,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                size: 16,
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon) {
+  Widget _buildStatCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Theme.of(context).colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         children: [
-          Icon(icon, color: Colors.orange, size: 28),
+          Icon(icon, color: Theme.of(context).colorScheme.primary, size: 28),
 
           const SizedBox(height: 10),
 
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
@@ -299,7 +353,12 @@ class ProfileScreen extends StatelessWidget {
 
           const SizedBox(height: 5),
 
-          Text(title, style: const TextStyle(color: Colors.grey)),
+          Text(
+            title,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );

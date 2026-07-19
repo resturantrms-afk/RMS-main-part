@@ -57,7 +57,7 @@ class _OrdersState extends State<Orders> {
                         )
                         .toList();
 
-              filteredItems.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+              filteredItems.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,7 +284,7 @@ class _OrdersState extends State<Orders> {
                                               ),
                                               const SizedBox(width: 4),
                                               Text(
-                                                order.timeAgo(),
+                                                "Last Edited: ${order.timeAgo()}",
                                                 style: TextStyle(
                                                   fontSize: 13,
                                                   color: Theme.of(

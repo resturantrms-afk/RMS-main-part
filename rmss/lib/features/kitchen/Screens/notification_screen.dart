@@ -10,12 +10,10 @@ class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() =>
-      _NotificationsScreenState();
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState
-    extends State<NotificationsScreen> {
+class _NotificationsScreenState extends State<NotificationsScreen> {
   late final KitchenNotificationService _notificationService;
   final List<NotificationModel> notifications = [];
 
@@ -43,8 +41,7 @@ class _NotificationsScreenState
     super.dispose();
   }
 
-  int get unreadCount =>
-      notifications.where((n) => !n.isRead).length;
+  int get unreadCount => notifications.where((n) => !n.isRead).length;
 
   void markAllRead() {
     setState(() {
@@ -56,8 +53,10 @@ class _NotificationsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF2A1E17),
+      backgroundColor: colorScheme.surfaceContainer,
 
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -66,20 +65,16 @@ class _NotificationsScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
 
           children: [
-
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-
                 Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Notifications",
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colorScheme.onSurface,
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                       ),
@@ -87,9 +82,7 @@ class _NotificationsScreenState
 
                     Text(
                       "$unreadCount unread alerts",
-                      style: const TextStyle(
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -99,11 +92,10 @@ class _NotificationsScreenState
                     _notificationService.markAllRead();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
                   ),
-                  child: const Text(
-                    "Mark All Read",
-                  ),
+                  child: const Text("Mark All Read"),
                 ),
               ],
             ),
@@ -114,9 +106,7 @@ class _NotificationsScreenState
               child: ListView.builder(
                 itemCount: notifications.length,
                 itemBuilder: (context, index) {
-
-                  final notification =
-                      notifications[index];
+                  final notification = notifications[index];
 
                   return NotificationCard(
                     notification: notification,

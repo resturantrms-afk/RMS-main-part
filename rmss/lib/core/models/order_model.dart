@@ -14,6 +14,7 @@ class OrderModel extends Equatable {
   final double totalPrice;
   final OrderStatus status;
   final Timestamp createdAt;
+  final Timestamp updatedAt;
 
   final List<OrderItemModel> items;
 
@@ -26,11 +27,12 @@ class OrderModel extends Equatable {
     required this.totalPrice,
     required this.status,
     required this.createdAt,
+    required this.updatedAt,
     required this.items,
   });
 
   String timeAgo() {
-    DateTime orderTime = createdAt.toDate();
+    DateTime orderTime = updatedAt.toDate();
     Duration duration = DateTime.now().difference(orderTime);
 
     if (duration.inDays > 0) {
@@ -61,6 +63,7 @@ class OrderModel extends Equatable {
         orElse: () => OrderStatus.pending,
       ),
       createdAt: json['createdAt'] ?? Timestamp.now(),
+      updatedAt: json['updatedAt'] ?? json['createdAt'] ?? Timestamp.now(),
       items: (json['items'] as List<dynamic>? ?? [])
           .map((item) => OrderItemModel.fromJson(item))
           .toList(),
@@ -77,6 +80,7 @@ class OrderModel extends Equatable {
       'totalPrice': totalPrice,
       'status': status.name,
       'createdAt': createdAt,
+      'updatedAt': updatedAt,
       'items': items.map((item) => item.toJson()).toList(),
     };
   }
@@ -90,6 +94,7 @@ class OrderModel extends Equatable {
     double? totalPrice,
     OrderStatus? status,
     Timestamp? createdAt,
+    Timestamp? updatedAt,
     List<OrderItemModel>? items,
   }) {
     return OrderModel(
@@ -101,6 +106,7 @@ class OrderModel extends Equatable {
       totalPrice: totalPrice ?? this.totalPrice,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       items: items ?? this.items,
     );
   }
@@ -115,6 +121,7 @@ class OrderModel extends Equatable {
     totalPrice,
     status,
     createdAt,
+    updatedAt,
     items,
   ];
 }

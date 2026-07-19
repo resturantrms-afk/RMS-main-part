@@ -23,6 +23,7 @@ import 'package:rmss/features/auth/repository/auth_repository.dart';
 import 'package:rmss/features/auth/views/splash_screen.dart';
 
 import 'package:rmss/features/admin/blocs/users_bloc/admin_users_bloc.dart';
+import 'package:rmss/features/admin/blocs/users_bloc/admin_users_event.dart';
 import 'package:rmss/features/admin/blocs/reports_bloc/reports_bloc.dart';
 import 'package:rmss/features/admin/repository/reports_repository.dart';
 import 'package:rmss/features/admin/blocs/ai_bloc/ai_bloc.dart';
@@ -48,6 +49,7 @@ class MyApp extends StatelessWidget {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider(create: (context) => AuthRepository()),
+        RepositoryProvider(create: (context) => UserRepository()),
         RepositoryProvider(create: (context) => TableRepository()),
         RepositoryProvider(create: (context) => MenuRepository()),
         RepositoryProvider(create: (context) => OrderRepository()),
@@ -69,7 +71,8 @@ class MyApp extends StatelessWidget {
           ),
           BlocProvider(
             create: (context) =>
-                AdminUsersBloc(userRepository: context.read<UserRepository>()),
+                AdminUsersBloc(userRepository: context.read<UserRepository>())
+                  ..add(LoadAllUsers()),
           ),
           BlocProvider(
             create: (context) => ReportsBloc(

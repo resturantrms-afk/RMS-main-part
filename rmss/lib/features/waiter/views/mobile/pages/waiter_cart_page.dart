@@ -394,6 +394,7 @@ class WaiterCartPage extends StatelessWidget {
         totalPrice: existingOrder.totalPrice + total,
         status: OrderStatus.pending,
         createdAt: existingOrder.createdAt,
+        updatedAt: Timestamp.now(),
         items: updatedItems,
       );
 
@@ -417,6 +418,7 @@ class WaiterCartPage extends StatelessWidget {
         totalPrice: total,
         status: OrderStatus.pending,
         createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
         items: cartState.items,
       );
 

@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:rmss/core/models/user_model.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_event.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
+import 'package:rmss/core/services/api_services.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -19,6 +22,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
   late final TextEditingController _photoUrlController;
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -49,6 +53,40 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     context.read<AuthBloc>().add(ProfileUpdateRequested(user: updatedUser));
   }
 
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _isUploading = true;
+      });
+
+      final url = await ApiServices.uploadImage(File(pickedFile.path));
+
+      if (url != null) {
+        setState(() {
+          _photoUrlController.text = url;
+          _isUploading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Image uploaded successfully')),
+          );
+        }
+      } else {
+        setState(() {
+          _isUploading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to upload image')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
@@ -62,32 +100,96 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           }
         }
         if (state is AuthError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
       builder: (context, state) {
         final isLoading = state is AuthLoading;
 
         return Scaffold(
-          backgroundColor: const Color(0xFF2A1E17),
+          backgroundColor: Theme.of(context).colorScheme.surface,
           appBar: AppBar(
-            backgroundColor: const Color(0xFF1E1E1E),
-            title: const Text('Edit Profile'),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: IconThemeData(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            title: Text(
+              'Edit Profile',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            ),
           ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildTextField('Name', _nameController),
+                Center(
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.2),
+                        backgroundImage: _photoUrlController.text.isNotEmpty
+                            ? NetworkImage(_photoUrlController.text)
+                            : null,
+                        child: _photoUrlController.text.isEmpty
+                            ? Icon(
+                                Icons.person,
+                                size: 50,
+                                color: Theme.of(context).colorScheme.primary,
+                              )
+                            : null,
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: _isUploading ? null : _pickAndUploadImage,
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            child: _isUploading
+                                ? SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimary,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.camera_alt,
+                                    size: 18,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimary,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                _buildTextField(context, 'Name', _nameController),
                 const SizedBox(height: 16),
-                _buildTextField('Phone Number', _phoneController, keyboardType: TextInputType.phone),
+                _buildTextField(
+                  context,
+                  'Phone Number',
+                  _phoneController,
+                  keyboardType: TextInputType.phone,
+                ),
                 const SizedBox(height: 16),
-                _buildTextField('Address', _addressController),
-                const SizedBox(height: 16),
-                _buildTextField('Photo URL', _photoUrlController),
+                _buildTextField(context, 'Address', _addressController),
                 const SizedBox(height: 30),
                 SizedBox(
                   width: double.infinity,
@@ -95,13 +197,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   child: ElevatedButton(
                     onPressed: isLoading ? null : _saveProfile,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
+                    child: isLoading || _isUploading
+                        ? CircularProgressIndicator(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          )
                         : const Text('Save Changes'),
                   ),
                 ),
@@ -113,22 +218,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, {TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField(
+    BuildContext context,
+    String label,
+    TextEditingController controller, {
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFF1E1E1E),
+            fillColor: Theme.of(context).colorScheme.surfaceContainer,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide.none,

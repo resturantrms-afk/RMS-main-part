@@ -326,6 +326,7 @@ class _OrdersPageState extends State<OrdersPage> {
                     totalPrice: order.totalPrice,
                     status: OrderStatus.served,
                     createdAt: order.createdAt,
+                    updatedAt: Timestamp.now(),
                     items: order.items,
                   ),
                 ),

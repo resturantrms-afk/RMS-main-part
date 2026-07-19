@@ -4,8 +4,7 @@ import 'package:rmss/core/blocs/order_bloc/order_bloc.dart';
 import 'package:rmss/core/blocs/order_bloc/order_state.dart';
 import 'package:rmss/core/blocs/payment_bloc/payment_bloc.dart';
 import 'package:rmss/core/blocs/payment_bloc/payment_state.dart';
-import 'package:rmss/core/models/order_model.dart';
-import 'package:rmss/core/models/payment_model.dart';
+
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
 import 'package:rmss/core/repositories/order_repository.dart';
@@ -16,7 +15,6 @@ import 'package:rmss/features/cashier/views/desktop/home%20widgets/payment_break
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/recent_transactions_table.dart';
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/summary_card.dart';
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/welcome_hero.dart';
-import 'package:rmss/features/cashier/views/desktop/pages/orders.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -67,12 +65,29 @@ class _HomeState extends State<Home> {
                               }
 
                               final orderRepo = context.read<OrderRepository>();
-                              final paymentRepo = context.read<PaymentRepository>();
+                              final paymentRepo = context
+                                  .read<PaymentRepository>();
 
-                              int counterOrders = orderRepo.getCounterOrdersForDate(orderState.items, selectedDate);
-                              int completedOrders = orderRepo.getCompletedOrdersForUserAndDate(orderState.items, myUserId, selectedDate);
-                              int unPaidTabs = orderRepo.getUnpaidTabs(orderState.items);
-                              double shiftRegister = paymentRepo.getShiftRegisterForUserAndDate(paymentState.items, myUserId, selectedDate);
+                              int counterOrders = orderRepo
+                                  .getCounterOrdersForDate(
+                                    orderState.items,
+                                    selectedDate,
+                                  );
+                              int completedOrders = orderRepo
+                                  .getCompletedOrdersForUserAndDate(
+                                    orderState.items,
+                                    myUserId,
+                                    selectedDate,
+                                  );
+                              int unPaidTabs = orderRepo.getUnpaidTabs(
+                                orderState.items,
+                              );
+                              double shiftRegister = paymentRepo
+                                  .getShiftRegisterForUserAndDate(
+                                    paymentState.items,
+                                    myUserId,
+                                    selectedDate,
+                                  );
 
                               return IntrinsicHeight(
                                 child: Row(
@@ -83,14 +98,18 @@ class _HomeState extends State<Home> {
                                       title: "Counter Orders",
                                       value: counterOrders.toString(),
                                       subText: "POS Orders Today",
-                                      subTextColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      subTextColor: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                     ),
 
                                     SummaryCard(
                                       title: "COMPLETED ORDERS TODAY",
                                       value: completedOrders.toString(),
                                       subText: "Processed by you",
-                                      subTextColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      subTextColor: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                     ),
 
                                     SummaryCard(
@@ -192,7 +211,9 @@ class _HomeState extends State<Home> {
                           const SizedBox(width: 20),
                           Expanded(
                             flex: 1,
-                            child: PaymentBreakdownCard(selectedDate: selectedDate),
+                            child: PaymentBreakdownCard(
+                              selectedDate: selectedDate,
+                            ),
                           ),
                         ],
                       ),

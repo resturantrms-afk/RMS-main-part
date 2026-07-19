@@ -12,23 +12,25 @@ class InventorySummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       children: [
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1511),
+              color: colorScheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(color: colorScheme.outlineVariant),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Available Items',
                   style: TextStyle(
-                    color: Colors.white70,
+                    color: colorScheme.onSurfaceVariant,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -36,8 +38,8 @@ class InventorySummary extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   '$activeItems',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
@@ -51,17 +53,17 @@ class InventorySummary extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1511),
+              color: colorScheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(color: colorScheme.outlineVariant),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Out of Stock',
                   style: TextStyle(
-                    color: Colors.white70,
+                    color: colorScheme.onSurfaceVariant,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -69,8 +71,8 @@ class InventorySummary extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   '$outOfStockItems',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),

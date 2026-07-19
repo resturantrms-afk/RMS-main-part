@@ -16,11 +16,13 @@ class _KitchenSidebarState extends State<KitchenSidebar> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300), // Smooth animation timing
       curve: Curves.easeInOut, // Smooth acceleration curve
       width: _isExpanded ? 200 : 85, // Dynamic width toggling based on state
-      color: const Color(0xFF1A1A1A),
+      color: colorScheme.surfaceContainer,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -43,7 +45,7 @@ class _KitchenSidebarState extends State<KitchenSidebar> {
                     _isExpanded ? "CROWN" : "C",
                     key: ValueKey<bool>(_isExpanded), // Forces animation switch on text change
                     style: TextStyle(
-                      color: Colors.orange[400],
+                      color: colorScheme.primary,
                       fontSize: _isExpanded ? 24 : 32,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.2,
@@ -95,12 +97,14 @@ class _KitchenSidebarState extends State<KitchenSidebar> {
 
   // Dynamic helper method that reshapes the layout based on the sidebar's expansion state
   Widget _buildSidebarButton(IconData icon, String label, bool isSelected, VoidCallback onTap) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
-        splashColor: Colors.orange.withOpacity(0.1),
+        splashColor: colorScheme.primary.withValues(alpha: 0.1),
         child: Container(
           width: _isExpanded ? 180 : 70, // Expands button width dynamically
           padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 12.0),
@@ -111,14 +115,14 @@ class _KitchenSidebarState extends State<KitchenSidebar> {
                   children: [
                     Icon(
                       icon,
-                      color: isSelected ? Colors.orange[400] : Colors.grey[600],
+                      color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
                       size: 24,
                     ),
                     const SizedBox(width: 16),
                     Text(
                       label,
                       style: TextStyle(
-                        color: isSelected ? Colors.orange[400] : Colors.grey[300],
+                        color: isSelected ? colorScheme.primary : colorScheme.onSurface,
                         fontSize: 14,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
@@ -131,14 +135,14 @@ class _KitchenSidebarState extends State<KitchenSidebar> {
                   children: [
                     Icon(
                       icon,
-                      color: isSelected ? Colors.orange[400] : Colors.grey[600],
+                      color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
                       size: 26,
                     ),
                     const SizedBox(height: 6),
                     Text(
                       label,
                       style: TextStyle(
-                        color: isSelected ? Colors.orange[400] : Colors.grey[600],
+                        color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
                         fontSize: 11,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),

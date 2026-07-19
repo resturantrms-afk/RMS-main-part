@@ -354,6 +354,7 @@ class Cart extends StatelessWidget {
         status: OrderStatus
             .pending, // Puts it back to pending so the kitchen sees the new items
         createdAt: existingOrder.createdAt, // Keep original time
+        updatedAt: Timestamp.now(),
         items: updatedItems,
       );
 
@@ -377,6 +378,7 @@ class Cart extends StatelessWidget {
         totalPrice: total,
         status: OrderStatus.pending,
         createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
         items: cartState.items,
       );
 

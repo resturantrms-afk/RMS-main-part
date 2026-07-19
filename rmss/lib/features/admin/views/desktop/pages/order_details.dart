@@ -11,6 +11,7 @@ import 'package:rmss/core/blocs/menu_bloc/menu_bloc.dart';
 import 'package:rmss/core/blocs/menu_bloc/menu_state.dart';
 import 'package:rmss/core/blocs/payment_bloc/payment_bloc.dart';
 import 'package:rmss/core/blocs/payment_bloc/payment_event.dart';
+import 'package:rmss/core/blocs/payment_bloc/payment_state.dart';
 import 'package:rmss/core/blocs/table_bloc/table_bloc.dart';
 import 'package:rmss/core/blocs/table_bloc/table_event.dart';
 import 'package:rmss/core/blocs/table_bloc/table_state.dart';
@@ -205,7 +206,7 @@ class OrderDetails extends StatelessWidget {
                                 Row(
                                   children: [
                                     Text(
-                                      "Time Elapsed",
+                                      "Last Edited",
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: colorScheme.onSurfaceVariant,
@@ -214,6 +215,29 @@ class OrderDetails extends StatelessWidget {
                                     const SizedBox(width: 8),
                                     Text(
                                       order.timeAgo(),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 32),
+                                    Text(
+                                      "Created At",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      (() {
+                                        DateTime ct = order.createdAt.toDate();
+                                        Duration d = DateTime.now().difference(ct);
+                                        if (d.inDays > 0) return "${d.inDays} days ago";
+                                        if (d.inHours > 0) return "${d.inHours} hrs ago";
+                                        if (d.inMinutes > 0) return "${d.inMinutes} mins ago";
+                                        return "Just now";
+                                      })(),
                                       style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
@@ -465,58 +489,85 @@ class OrderDetails extends StatelessWidget {
                                   const SizedBox(width: 16),
 
                                   OutlinedButton(
-                                    onPressed:
-                                        order.status == OrderStatus.pending ||
-                                            order.status ==
-                                                OrderStatus.preparing
-                                        ? () {
-                                            // 1. Cancel the Order
-                                            final updatedOrder = OrderModel(
-                                              id: order.id,
-                                              tableId: order.tableId,
-                                              tableNumber: order.tableNumber,
-                                              createdBy: order.createdBy,
-                                              source: order.source,
-                                              totalPrice: order.totalPrice,
-                                              status: OrderStatus.cancelled,
-                                              createdAt: order.createdAt,
-                                              items: order.items,
-                                            );
-                                            context.read<OrderBloc>().add(
-                                              UpdateOrder(item: updatedOrder),
-                                            );
-
-                                            // 2. Free up the Table
-                                            final tableState = context
-                                                .read<TableBloc>()
-                                                .state;
-                                            if (tableState is TablesLoaded) {
-                                              try {
-                                                final table = tableState.items
-                                                    .firstWhere(
-                                                      (t) =>
-                                                          t.id == order.tableId,
-                                                    );
-                                                final updatedTable = TableModel(
-                                                  id: table.id,
-                                                  tableNumber:
-                                                      table.tableNumber,
-                                                  status: TableStatus
-                                                      .available, // Make it available
-                                                );
-                                                context.read<TableBloc>().add(
-                                                  UpdateTable(
-                                                    item: updatedTable,
+                                    onPressed: order.status != OrderStatus.cancelled
+                                        ? () async {
+                                            final bool? confirm = await showDialog<bool>(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                title: const Text('Cancel Order?'),
+                                                content: Text(
+                                                  order.status == OrderStatus.paid
+                                                      ? 'Are you sure you want to cancel this order? \n\n WARNING: This will also void the payment history that accompanies it.'
+                                                      : 'Are you sure you want to cancel this order?',
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context, false),
+                                                    child: const Text('No'),
                                                   ),
-                                                );
-                                              } catch (_) {}
-                                            }
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context, true),
+                                                    child: Text(
+                                                      'Yes, Cancel',
+                                                      style: TextStyle(color: colorScheme.error),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
 
-                                            // 3. Go back
-                                            Navigator.pop(context);
+                                            if (confirm == true && context.mounted) {
+                                              // 1. Cancel the Order
+                                              final updatedOrder = order.copyWith(status: OrderStatus.cancelled, updatedAt: Timestamp.now());
+                                              context.read<OrderBloc>().add(
+                                                UpdateOrder(item: updatedOrder),
+                                              );
+
+                                              // 2. Void associated payment if the order was paid
+                                              if (order.status == OrderStatus.paid) {
+                                                final paymentState = context.read<PaymentBloc>().state;
+                                                if (paymentState is PaymentsLoaded) {
+                                                  try {
+                                                    final payment = paymentState.items.firstWhere(
+                                                      (p) => p.orderId == order.id,
+                                                    );
+                                                    final voidedPayment = payment.copyWith(status: PaymentStatus.voided, updatedAt: Timestamp.now());
+                                                    context.read<PaymentBloc>().add(
+                                                      UpdatePayment(item: voidedPayment),
+                                                    );
+                                                  } catch (_) {}
+                                                }
+                                              }
+
+                                              // 3. Free up the Table
+                                              final tableState = context.read<TableBloc>().state;
+                                              if (tableState is TablesLoaded) {
+                                                try {
+                                                  final table = tableState.items.firstWhere(
+                                                    (t) => t.id == order.tableId,
+                                                  );
+                                                  
+                                                  TableStatus targetStatus = TableStatus.available;
+                                                  if (order.status == OrderStatus.served || order.status == OrderStatus.paid) {
+                                                    targetStatus = TableStatus.needsCleaning;
+                                                  }
+                                                  
+                                                  final updatedTable = TableModel(
+                                                    id: table.id,
+                                                    tableNumber: table.tableNumber,
+                                                    status: targetStatus,
+                                                  );
+                                                  context.read<TableBloc>().add(
+                                                    UpdateTable(item: updatedTable),
+                                                  );
+                                                } catch (_) {}
+                                              }
+
+                                              // 4. Go back
+                                              Navigator.pop(context);
+                                            }
                                           }
                                         : null,
-
                                     style: OutlinedButton.styleFrom(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 32,
@@ -792,7 +843,11 @@ class OrderDetails extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(dialogContext); // Close dialog
-                _processPaymentAndComplete(context, order, PaymentMethod.edahab);
+                _processPaymentAndComplete(
+                  context,
+                  order,
+                  PaymentMethod.edahab,
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.secondary,
@@ -823,6 +878,7 @@ class OrderDetails extends StatelessWidget {
       paymentMethod: method,
       amountPaid: order.totalPrice,
       createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
     );
     context.read<PaymentBloc>().add(AddPayment(item: payment));
 
@@ -836,6 +892,7 @@ class OrderDetails extends StatelessWidget {
       totalPrice: order.totalPrice,
       status: OrderStatus.paid,
       createdAt: order.createdAt,
+      updatedAt: Timestamp.now(),
       items: order.items,
     );
     context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));
