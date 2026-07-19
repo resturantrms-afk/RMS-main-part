@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:rmss/core/models/table_model.dart';
 import 'package:rmss/core/models/order_model.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,9 +22,10 @@ class CashierNotification {
 
 class CashierNotificationRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final StreamController<CashierNotification> _controller = StreamController<CashierNotification>.broadcast();
+  final StreamController<CashierNotification> _controller =
+      StreamController<CashierNotification>.broadcast();
   StreamSubscription? _ordersSub;
-  
+
   bool _isInitialOrdersLoaded = false;
 
   Stream<CashierNotification> get notificationsStream {
@@ -36,10 +36,12 @@ class CashierNotificationRepository {
   void _startListening() {
     if (_ordersSub != null) return;
 
-    _ordersSub ??= _firestore.collection('orders').snapshots().listen((snapshot) async {
+    _ordersSub ??= _firestore.collection('orders').snapshots().listen((
+      snapshot,
+    ) async {
       if (!_isInitialOrdersLoaded) {
         _isInitialOrdersLoaded = true;
-        return; 
+        return;
       }
 
       final prefs = await SharedPreferences.getInstance();
@@ -47,16 +49,20 @@ class CashierNotificationRepository {
       final volume = prefs.getDouble('cashierAlertVolume') ?? 75.0;
 
       for (var change in snapshot.docChanges) {
-        if (change.type == DocumentChangeType.modified || change.type == DocumentChangeType.added) {
+        if (change.type == DocumentChangeType.modified ||
+            change.type == DocumentChangeType.added) {
           final order = OrderModel.fromJson(change.doc.data()!, change.doc.id);
           if (order.status == OrderStatus.served) {
-            _controller.add(CashierNotification(
-              title: "Order Served",
-              message: "Order for Table ${order.tableNumber} has been served.",
-              timestamp: DateTime.now(),
-              playSound: playSound,
-              volume: volume,
-            ));
+            _controller.add(
+              CashierNotification(
+                title: "Order Served",
+                message:
+                    "Order for Table ${order.tableNumber} has been served.",
+                timestamp: DateTime.now(),
+                playSound: playSound,
+                volume: volume,
+              ),
+            );
           }
         }
       }

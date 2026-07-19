@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:rmss/core/constants/app_colors.dart';
 
 class KitchenHeader extends StatefulWidget {
   const KitchenHeader({super.key});
@@ -11,7 +10,7 @@ class KitchenHeader extends StatefulWidget {
 }
 
 class _KitchenHeaderState extends State<KitchenHeader> {
-  String _displayName = '...' ;
+  String _displayName = '...';
 
   @override
   void initState() {
@@ -23,12 +22,17 @@ class _KitchenHeaderState extends State<KitchenHeader> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    FirebaseFirestore.instance.collection('users').doc(uid).snapshots().listen((snap) {
+    FirebaseFirestore.instance.collection('users').doc(uid).snapshots().listen((
+      snap,
+    ) {
       if (!mounted) return;
       final data = snap.data();
       if (data == null) return;
       setState(() {
-        _displayName = (data['name'] as String?) ?? (data['displayName'] as String?) ?? 'Unknown';
+        _displayName =
+            (data['name'] as String?) ??
+            (data['displayName'] as String?) ??
+            'Unknown';
       });
     }, onError: (_) {});
   }
@@ -42,17 +46,15 @@ class _KitchenHeaderState extends State<KitchenHeader> {
 
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-
           // LEFT SECTION
           Row(
             children: [
-
               Text(
                 "CROWN",
                 style: TextStyle(
@@ -87,20 +89,20 @@ class _KitchenHeaderState extends State<KitchenHeader> {
           // RIGHT SECTION
           Row(
             children: [
-
-              Icon(
-                Icons.access_time,
-                color: colorScheme.primary,
-                size: 20,
-              ),
+              Icon(Icons.access_time, color: colorScheme.primary, size: 20),
 
               const SizedBox(width: 6),
 
               // Live clock
               StreamBuilder<DateTime>(
-                stream: Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now()),
+                stream: Stream.periodic(
+                  const Duration(seconds: 1),
+                  (_) => DateTime.now(),
+                ),
                 builder: (context, snapshot) {
-                  final timeStr = snapshot.hasData ? '${snapshot.data!.hour.toString().padLeft(2,'0')}:${snapshot.data!.minute.toString().padLeft(2,'0')}' : _formattedTime();
+                  final timeStr = snapshot.hasData
+                      ? '${snapshot.data!.hour.toString().padLeft(2, '0')}:${snapshot.data!.minute.toString().padLeft(2, '0')}'
+                      : _formattedTime();
                   return Text(
                     timeStr,
                     style: TextStyle(
@@ -129,7 +131,6 @@ class _KitchenHeaderState extends State<KitchenHeader> {
 
                 child: Row(
                   children: [
-
                     Icon(
                       Icons.badge_outlined,
                       color: colorScheme.primary,
@@ -141,7 +142,6 @@ class _KitchenHeaderState extends State<KitchenHeader> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
                         Text(
                           "Chef de Cuisine",
                           style: TextStyle(

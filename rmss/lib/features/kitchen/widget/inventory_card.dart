@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:rmss/core/constants/app_colors.dart';
 
 class InventoryCard extends StatelessWidget {
   final String name;
@@ -22,14 +21,18 @@ class InventoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: available ? colorScheme.surfaceContainer : colorScheme.errorContainer,
+        color: available
+            ? colorScheme.surfaceContainer
+            : colorScheme.errorContainer,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: available ? colorScheme.outlineVariant : colorScheme.error.withValues(alpha: 0.5),
+          color: available
+              ? colorScheme.outlineVariant
+              : colorScheme.error.withValues(alpha: 0.5),
         ),
         boxShadow: [
           BoxShadow(
@@ -42,10 +45,8 @@ class InventoryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           Row(
             children: [
-
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
@@ -79,7 +80,6 @@ class InventoryCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -140,23 +140,34 @@ class InventoryCard extends StatelessWidget {
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: available ? colorScheme.primary.withValues(alpha: 0.15) : colorScheme.onSurface.withValues(alpha: 0.12),
+                  color: available
+                      ? colorScheme.primary.withValues(alpha: 0.15)
+                      : colorScheme.onSurface.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      available ? Icons.check_circle : Icons.remove_circle_outline,
+                      available
+                          ? Icons.check_circle
+                          : Icons.remove_circle_outline,
                       size: 14,
-                      color: available ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                      color: available
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       available ? "In Stock" : "Sold Out",
                       style: TextStyle(
-                        color: available ? colorScheme.primary : colorScheme.onSurface,
+                        color: available
+                            ? colorScheme.primary
+                            : colorScheme.onSurface,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),

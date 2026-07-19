@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:rmss/core/models/table_model.dart';
 import 'package:rmss/core/models/order_model.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,9 +22,10 @@ class AdminNotification {
 
 class AdminNotificationRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final StreamController<AdminNotification> _controller = StreamController<AdminNotification>.broadcast();
+  final StreamController<AdminNotification> _controller =
+      StreamController<AdminNotification>.broadcast();
   StreamSubscription? _ordersSub;
-  
+
   bool _isInitialOrdersLoaded = false;
 
   Stream<AdminNotification> get notificationsStream {
@@ -36,10 +36,12 @@ class AdminNotificationRepository {
   void _startListening() {
     if (_ordersSub != null) return;
 
-    _ordersSub ??= _firestore.collection('orders').snapshots().listen((snapshot) async {
+    _ordersSub ??= _firestore.collection('orders').snapshots().listen((
+      snapshot,
+    ) async {
       if (!_isInitialOrdersLoaded) {
         _isInitialOrdersLoaded = true;
-        return; 
+        return;
       }
 
       final prefs = await SharedPreferences.getInstance();
@@ -47,16 +49,20 @@ class AdminNotificationRepository {
       final volume = prefs.getDouble('adminAlertVolume') ?? 75.0;
 
       for (var change in snapshot.docChanges) {
-        if (change.type == DocumentChangeType.modified || change.type == DocumentChangeType.added) {
+        if (change.type == DocumentChangeType.modified ||
+            change.type == DocumentChangeType.added) {
           final order = OrderModel.fromJson(change.doc.data()!, change.doc.id);
           if (order.status == OrderStatus.served) {
-            _controller.add(AdminNotification(
-              title: "Order Served",
-              message: "Order for Table ${order.tableNumber} has been served.",
-              timestamp: DateTime.now(),
-              playSound: playSound,
-              volume: volume,
-            ));
+            _controller.add(
+              AdminNotification(
+                title: "Order Served",
+                message:
+                    "Order for Table ${order.tableNumber} has been served.",
+                timestamp: DateTime.now(),
+                playSound: playSound,
+                volume: volume,
+              ),
+            );
           }
         }
       }
