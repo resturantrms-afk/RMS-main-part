@@ -53,6 +53,7 @@ class OrderHistory extends StatelessWidget {
                         // Back button
                         InkWell(
                           borderRadius: BorderRadius.circular(30),
+                          mouseCursor: SystemMouseCursors.click,
                           onTap: () => Navigator.pop(context),
                           child: Container(
                             padding: const EdgeInsets.symmetric(

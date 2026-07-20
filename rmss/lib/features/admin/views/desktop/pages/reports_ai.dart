@@ -4,20 +4,9 @@ import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/association
 import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/menu_analysis_tab.dart';
 import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/revenue_split_tab.dart';
 import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/staff_payments_tab.dart';
+import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/ai_data_mining_tab.dart';
 
-// ─────────────────────────────────────────────────────────────
-// Period filter enum
-// ─────────────────────────────────────────────────────────────
-enum ReportPeriod { today, thisWeek, thisMonth, lastSixMonths }
 
-extension ReportPeriodLabel on ReportPeriod {
-  String get label => switch (this) {
-        ReportPeriod.today => 'Today',
-        ReportPeriod.thisWeek => 'This Week',
-        ReportPeriod.thisMonth => 'This Month',
-        ReportPeriod.lastSixMonths => 'Last 6 Months',
-      };
-}
 
 // ─────────────────────────────────────────────────────────────
 // Sub-tabs
@@ -27,6 +16,7 @@ const _tabs = [
   'Staff Payments',
   'Association Analysis',
   'Revenue Split',
+  'AI Data Mining',
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -41,7 +31,6 @@ class ReportsAiPage extends StatefulWidget {
 
 class _ReportsAiPageState extends State<ReportsAiPage> {
   int _selectedTab = 0;
-  ReportPeriod _selectedPeriod = ReportPeriod.today;
 
   @override
   Widget build(BuildContext context) {
@@ -63,13 +52,6 @@ class _ReportsAiPageState extends State<ReportsAiPage> {
             ),
             const SizedBox(height: 20),
 
-            // ── Period filter bar ────────────────────────────────────────
-            _PeriodFilterBar(
-              selected: _selectedPeriod,
-              onSelected: (p) => setState(() => _selectedPeriod = p),
-            ),
-            const SizedBox(height: 20),
-
             // ── Content — switches per tab ───────────────────────────────
             Expanded(
               child: IndexedStack(
@@ -86,6 +68,9 @@ class _ReportsAiPageState extends State<ReportsAiPage> {
 
                   // Tab 3 — Revenue Split
                   RevenueSplitTab(),
+
+                  // Tab 4 - AI Data Mining
+                  AiDataMiningTab(),
                 ],
               ),
             ),
@@ -96,117 +81,7 @@ class _ReportsAiPageState extends State<ReportsAiPage> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Period filter bar
-// ─────────────────────────────────────────────────────────────
-class _PeriodFilterBar extends StatelessWidget {
-  final ReportPeriod selected;
-  final ValueChanged<ReportPeriod> onSelected;
 
-  const _PeriodFilterBar({required this.selected, required this.onSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: cs.outlineVariant),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: ReportPeriod.values
-            .map((p) => _PeriodPill(
-                  period: p,
-                  isActive: p == selected,
-                  onTap: () => onSelected(p),
-                ))
-            .toList(),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Single period pill
-// ─────────────────────────────────────────────────────────────
-class _PeriodPill extends StatefulWidget {
-  final ReportPeriod period;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _PeriodPill({
-    required this.period,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  State<_PeriodPill> createState() => _PeriodPillState();
-}
-
-class _PeriodPillState extends State<_PeriodPill> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-          decoration: BoxDecoration(
-            color: widget.isActive
-                ? cs.primary
-                : _hovered
-                    ? cs.surfaceContainerHigh
-                    : Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: widget.isActive
-                ? [
-                    BoxShadow(
-                      color: cs.primary.withValues(alpha: 0.30),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Text(
-            widget.period.label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight:
-                  widget.isActive ? FontWeight.w700 : FontWeight.w500,
-              letterSpacing: 0.2,
-              color: widget.isActive
-                  ? Colors.white
-                  : _hovered
-                      ? cs.onSurface
-                      : cs.onSurfaceVariant,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────
 // Page header: title + sub-tabs + export button
@@ -243,9 +118,12 @@ class _PageHeader extends StatelessWidget {
               Row(
                 children: List.generate(_tabs.length, (i) {
                   final isActive = i == selectedTab;
-                  return GestureDetector(
-                    onTap: () => onTabSelected(i),
-                    child: _SubTab(label: _tabs[i], isActive: isActive),
+                  return MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: () => onTabSelected(i),
+                      child: _SubTab(label: _tabs[i], isActive: isActive),
+                    ),
                   );
                 }),
               ),

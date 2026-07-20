@@ -49,6 +49,7 @@ class Cart extends StatelessWidget {
                         // Back button
                         InkWell(
                           borderRadius: BorderRadius.circular(30),
+                          mouseCursor: SystemMouseCursors.click,
                           onTap: () => Navigator.pop(context),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -532,6 +533,7 @@ class _CartItemTile extends StatelessWidget {
                 // Minus button
                 InkWell(
                   borderRadius: BorderRadius.circular(50),
+                  mouseCursor: SystemMouseCursors.click,
                   onTap: () => context.read<CartBloc>().add(
                     UpdateCartItemQuantity(
                       menuItemId: item.menuItemId,
@@ -568,6 +570,7 @@ class _CartItemTile extends StatelessWidget {
                 // Plus button
                 InkWell(
                   borderRadius: BorderRadius.circular(50),
+                  mouseCursor: SystemMouseCursors.click,
                   onTap: () => context.read<CartBloc>().add(
                     UpdateCartItemQuantity(
                       menuItemId: item.menuItemId,
@@ -613,6 +616,7 @@ class _CartItemTile extends StatelessWidget {
           // ── REMOVE BUTTON ─────────────────────────────────────────────
           InkWell(
             borderRadius: BorderRadius.circular(50),
+            mouseCursor: SystemMouseCursors.click,
             onTap: () =>
                 context.read<CartBloc>().add(RemoveFromCart(item: item)),
             child: Container(

@@ -35,9 +35,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Menu(preSelectedTable: navState.preSelectedTable),
           Orders(),
           const Payments(),
-          const ReportsAiPage(),
-          const UsersPage(),
           const TablesPage(),
+          const UsersPage(),
+          const ReportsAiPage(),
           const Settings(),
         ];
         return BlocListener<AdminNotificationBloc, AdminNotificationState>(
@@ -203,13 +203,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           icon: Icons.payment,
                         ),
                         _buildDestination(
-                          label: "Reports & AI",
-                          icon: Icons.stacked_line_chart,
+                          label: "Tables",
+                          icon: Icons.table_restaurant,
                         ),
                         _buildDestination(label: "Users", icon: Icons.people),
                         _buildDestination(
-                          label: "Tables",
-                          icon: Icons.table_restaurant,
+                          label: "Reports & AI",
+                          icon: Icons.stacked_line_chart,
                         ),
                         _buildDestination(
                           label: "Setting",
@@ -256,27 +256,30 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   bottom: 32,
                   left: 20.5,
 
-                  child: GestureDetector(
-                    onTap: () =>
-                        context.read<AuthBloc>().add(LogoutRequested()),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.logout,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 12),
-                        isExpanded
-                            ? Text(
-                                "Sign out",
-                                style: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                              )
-                            : const SizedBox.shrink(),
-                      ],
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: () =>
+                          context.read<AuthBloc>().add(LogoutRequested()),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.logout,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 12),
+                          isExpanded
+                              ? Text(
+                                  "Sign out",
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                        ],
+                      ),
                     ),
                   ),
                 ),

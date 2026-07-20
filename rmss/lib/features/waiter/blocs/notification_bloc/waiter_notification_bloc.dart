@@ -4,11 +4,13 @@ import 'package:rmss/features/waiter/blocs/notification_bloc/waiter_notification
 import 'package:rmss/features/waiter/blocs/notification_bloc/waiter_notification_state.dart';
 import 'package:rmss/features/waiter/repository/waiter_notification_repository.dart';
 
-class WaiterNotificationBloc extends Bloc<WaiterNotificationEvent, WaiterNotificationState> {
+class WaiterNotificationBloc
+    extends Bloc<WaiterNotificationEvent, WaiterNotificationState> {
   final WaiterNotificationRepository repository;
   StreamSubscription? _sub;
 
-  WaiterNotificationBloc({required this.repository}) : super(WaiterNotificationInitial()) {
+  WaiterNotificationBloc({required this.repository})
+    : super(WaiterNotificationInitial()) {
     on<WaiterStartListeningNotifications>((event, emit) {
       _sub?.cancel();
       _sub = repository.notificationsStream.listen((notification) {

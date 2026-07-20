@@ -32,7 +32,13 @@ class RecentTransactionsTable extends StatelessWidget {
                   style: TextStyle(fontSize: 20),
                 ),
 
-                TextButton(onPressed: () {}, child: const Text("View All")),
+                TextButton(
+                  style: ButtonStyle(
+                    mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+                  ),
+                  onPressed: () {},
+                  child: const Text("View All"),
+                ),
               ],
             ),
           ),

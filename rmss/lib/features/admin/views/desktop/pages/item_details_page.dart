@@ -322,6 +322,7 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                             });
                           },
                           borderRadius: BorderRadius.circular(50),
+                          mouseCursor: SystemMouseCursors.click,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 24,
@@ -355,6 +356,7 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                             });
                           },
                           borderRadius: BorderRadius.circular(50),
+                          mouseCursor: SystemMouseCursors.click,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 24,
@@ -418,18 +420,21 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _categories.remove(cat);
-                                  });
-                                },
-                                child: Icon(
-                                  Icons.close,
-                                  size: 14,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
+                              MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _categories.remove(cat);
+                                    });
+                                  },
+                                  child: Icon(
+                                    Icons.close,
+                                    size: 14,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
                               ),
                             ],
@@ -618,6 +623,7 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                                 InkWell(
                                   onTap: _decrement,
                                   borderRadius: BorderRadius.circular(50),
+                                  mouseCursor: SystemMouseCursors.click,
                                   child: Container(
                                     width: 56,
                                     height: 56,
@@ -650,6 +656,7 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                                 InkWell(
                                   onTap: _increment,
                                   borderRadius: BorderRadius.circular(50),
+                                  mouseCursor: SystemMouseCursors.click,
                                   child: Container(
                                     width: 56,
                                     height: 56,
@@ -749,6 +756,7 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                                       content: const Text('Are you sure you wanna delete this item?'),
                                       actions: [
                                         TextButton(
+                                          style: ButtonStyle(mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click)),
                                           onPressed: () => Navigator.pop(context),
                                           child: const Text('CANCEL'),
                                         ),

@@ -1,90 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:rmss/core/models/user_model.dart';
+import 'package:rmss/features/admin/blocs/users_bloc/admin_users_bloc.dart';
+import 'package:rmss/features/admin/blocs/users_bloc/admin_users_event.dart';
+import 'package:rmss/features/admin/blocs/users_bloc/admin_users_state.dart';
 import 'package:rmss/features/admin/views/desktop/home%20widgets/admin_top_bar.dart';
-
-// ─────────────────────────────────────────────
-// Mock data model
-// ─────────────────────────────────────────────
-enum StaffRole { admin, manager, staff }
-
-enum StaffStatus { active, inactive }
-
-class StaffMember {
-  final String id;
-  final String name;
-  final String address;
-  final String email;
-  final String phone;
-  final StaffStatus status;
-  final StaffRole role;
-  final String? avatarInitials; // used when no image
-  final String? avatarUrl;
-
-  const StaffMember({
-    required this.id,
-    required this.name,
-    required this.address,
-    required this.email,
-    required this.phone,
-    required this.status,
-    required this.role,
-    this.avatarInitials,
-    this.avatarUrl,
-  });
-}
-
-const _mockStaff = [
-  StaffMember(
-    id: '#ER-123',
-    name: 'Eleanor Richards',
-    address: '123 Maple St, NY',
-    email: 'e.richards@bistro.com',
-    phone: '(555) 123-4567',
-    status: StaffStatus.active,
-    role: StaffRole.admin,
-    avatarInitials: 'ER',
-  ),
-  StaffMember(
-    id: '#MC-456',
-    name: 'Marcus Chen',
-    address: '456 Oak Rd, CA',
-    email: 'm.chen@bistro.com',
-    phone: '(555) 987-6543',
-    status: StaffStatus.active,
-    role: StaffRole.manager,
-    avatarInitials: 'MC',
-  ),
-  StaffMember(
-    id: '#SJ-789',
-    name: 'Sarah Jenkins',
-    address: '789 Pine Ave, TX',
-    email: 's.jenkins@bistro.com',
-    phone: '(555) 234-5678',
-    status: StaffStatus.inactive,
-    role: StaffRole.staff,
-    avatarInitials: 'SJ',
-  ),
-  StaffMember(
-    id: '#TL-321',
-    name: 'Tom Lawson',
-    address: '10 River Dr, FL',
-    email: 't.lawson@bistro.com',
-    phone: '(555) 456-7890',
-    status: StaffStatus.active,
-    role: StaffRole.staff,
-    avatarInitials: 'TL',
-  ),
-  StaffMember(
-    id: '#AI-654',
-    name: 'Aida Ivers',
-    address: '22 Sunset Blvd, CA',
-    email: 'a.ivers@bistro.com',
-    phone: '(555) 654-3210',
-    status: StaffStatus.active,
-    role: StaffRole.manager,
-    avatarInitials: 'AI',
-  ),
-];
 
 // ─────────────────────────────────────────────
 // Page widget
@@ -97,18 +20,16 @@ class UsersPage extends StatefulWidget {
 }
 
 class _UsersPageState extends State<UsersPage> {
-  StaffMember? _selectedStaff;
+  UserModel? _selectedUser;
 
-  // Search
   final TextEditingController _searchCtrl = TextEditingController();
 
-  // Edit-panel form state (mock only)
   late TextEditingController _nameCtrl;
   late TextEditingController _emailCtrl;
   late TextEditingController _addressCtrl;
-  StaffRole _editRole = StaffRole.admin;
-  StaffStatus _editStatus = StaffStatus.active;
-  bool _accountEnabled = true;
+  late TextEditingController _phoneCtrl;
+  UserRoles _editRole = UserRoles.waiter;
+  UserStatus _editStatus = UserStatus.active;
 
   @override
   void initState() {
@@ -117,6 +38,8 @@ class _UsersPageState extends State<UsersPage> {
     _nameCtrl = TextEditingController();
     _emailCtrl = TextEditingController();
     _addressCtrl = TextEditingController();
+    _phoneCtrl = TextEditingController();
+    context.read<AdminUsersBloc>().add(LoadAllUsers());
   }
 
   @override
@@ -125,29 +48,30 @@ class _UsersPageState extends State<UsersPage> {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
     _addressCtrl.dispose();
+    _phoneCtrl.dispose();
     super.dispose();
   }
 
-  void _selectStaff(StaffMember member) {
+  void _selectUser(UserModel user) {
     setState(() {
-      _selectedStaff = member;
-      _nameCtrl.text = member.name;
-      _emailCtrl.text = member.email;
-      _addressCtrl.text = member.address;
-      _editRole = member.role;
-      _editStatus = member.status;
-      _accountEnabled = member.status == StaffStatus.active;
+      _selectedUser = user;
+      _nameCtrl.text = user.name;
+      _emailCtrl.text = user.email;
+      _addressCtrl.text = user.address;
+      _phoneCtrl.text = user.phoneNumber;
+      _editRole = user.role;
+      _editStatus = user.status;
     });
   }
 
-  List<StaffMember> get _filteredStaff {
+  List<UserModel> _filterUsers(List<UserModel> users) {
     final q = _searchCtrl.text.toLowerCase();
-    if (q.isEmpty) return _mockStaff;
-    return _mockStaff.where((s) {
-      return s.name.toLowerCase().contains(q) ||
-          s.email.toLowerCase().contains(q) ||
-          s.id.toLowerCase().contains(q) ||
-          s.role.name.toLowerCase().contains(q);
+    if (q.isEmpty) return users;
+    return users.where((u) {
+      return u.name.toLowerCase().contains(q) ||
+          u.email.toLowerCase().contains(q) ||
+          u.id.toLowerCase().contains(q) ||
+          u.role.name.toLowerCase().contains(q);
     }).toList();
   }
 
@@ -163,116 +87,265 @@ class _UsersPageState extends State<UsersPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const AdminTopBar(),
-            const SizedBox(height: 32),
-            // ── Top bar ──────────────────────────────────────
-            _TopBar(searchController: _searchCtrl),
             const SizedBox(height: 24),
 
-            // ── Page heading ─────────────────────────────────
-            Text(
-              'Users Management',
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.w800,
-                color: colorScheme.onSurface,
-                shadows: [
-                  Shadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
+            // ── Header row ────────────────────────────────────
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Breadcrumb + title
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Admin',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.8,
+                            color: colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.5),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Text(
+                            '/',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.3),
+                            ),
+                          ),
+                        ),
+                        Text(
+                          'Users',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.8,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    RichText(
+                      text: TextSpan(
+                        style: TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w800,
+                          color: colorScheme.onSurface,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        children: [
+                          const TextSpan(text: 'Staff '),
+                          TextSpan(
+                            text: 'Management',
+                            style: TextStyle(color: colorScheme.primary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const Spacer(),
+
+                // Search
+                _SearchBar(searchController: _searchCtrl),
+                const SizedBox(width: 16),
+
+                // Add user button
+                _AddUserButton(),
+              ],
             ),
-            const SizedBox(height: 24),
+
+            const SizedBox(height: 32),
 
             // ── Body (table + optional side panel) ───────────
             Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Table section
-                  Expanded(
-                    child: _StaffTable(
-                      staff: _filteredStaff,
-                      selectedStaff: _selectedStaff,
-                      onSelect: _selectStaff,
-                      onEdit: _selectStaff,
-                      onDelete: (member) async {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (_) => _ConfirmDialog(
-                            title: 'Delete User',
-                            message:
-                                'Are you sure you want to delete "${member.name}"? This action cannot be undone.',
-                            confirmLabel: 'DELETE',
-                            isDanger: true,
+              child: BlocBuilder<AdminUsersBloc, AdminUsersState>(
+                builder: (context, state) {
+                  if (state is AdminUsersLoading) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            color: colorScheme.primary,
+                            strokeWidth: 3,
                           ),
-                        );
-                        if (confirm == true) {
-                          setState(() => _selectedStaff = null);
-                        }
-                      },
-                    ),
-                  ),
-
-                  // Edit panel
-                  if (_selectedStaff != null) ...[
-                    const SizedBox(width: 20),
-                    _EditPanel(
-                      staff: _selectedStaff!,
-                      nameCtrl: _nameCtrl,
-                      emailCtrl: _emailCtrl,
-                      addressCtrl: _addressCtrl,
-                      role: _editRole,
-                      status: _editStatus,
-                      accountEnabled: _accountEnabled,
-                      onRoleChanged: (r) => setState(() => _editRole = r),
-                      onStatusChanged: (s) => setState(() => _editStatus = s),
-                      onToggleEnabled: (v) =>
-                          setState(() => _accountEnabled = v),
-                      onCancel: () => setState(() => _selectedStaff = null),
-                      onSave: () async {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (_) => const _ConfirmDialog(
-                            title: 'Save Changes',
-                            message:
-                                'Are you sure you want to save the changes made to this user?',
-                            confirmLabel: 'SAVE',
-                            isDanger: false,
-                          ),
-                        );
-                        if (confirm == true && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('Changes saved (mock)'),
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.primary,
-                              behavior: SnackBarBehavior.floating,
+                          const SizedBox(height: 16),
+                          Text(
+                            'Loading Users...',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.primary,
+                              letterSpacing: 1.2,
                             ),
-                          );
-                        }
-                      },
-                      onDelete: () async {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (_) => _ConfirmDialog(
-                            title: 'Delete User',
-                            message:
-                                'Are you sure you want to delete "${_selectedStaff!.name}"? This action cannot be undone.',
-                            confirmLabel: 'DELETE',
-                            isDanger: true,
                           ),
-                        );
-                        if (confirm == true) {
-                          setState(() => _selectedStaff = null);
-                        }
-                      },
-                    ),
-                  ],
-                ],
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (state is AdminUsersError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: colorScheme.error.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.warning_rounded,
+                              size: 48,
+                              color: colorScheme.error,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error Loading Users',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.error,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            state.message,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final allUsers =
+                      state is AdminUsersLoaded ? state.allUsers : <UserModel>[];
+                  final filtered = _filterUsers(allUsers);
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── Staff table ───────────────────────────────
+                      Expanded(
+                        child: _StaffTable(
+                          users: filtered,
+                          selectedUser: _selectedUser,
+                          onSelect: _selectUser,
+                          onEdit: _selectUser,
+                          onDelete: (user) async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (_) => _ConfirmDialog(
+                                title: 'Delete User',
+                                message:
+                                    'Are you sure you want to delete "${user.name}"? This action cannot be undone.',
+                                confirmLabel: 'DELETE',
+                                isDanger: true,
+                              ),
+                            );
+                            if (confirm == true && context.mounted) {
+                              context
+                                  .read<AdminUsersBloc>()
+                                  .add(DeleteUser(userId: user.id));
+                              setState(() => _selectedUser = null);
+                            }
+                          },
+                        ),
+                      ),
+
+                      // ── Edit panel ───────────────────────────────
+                      if (_selectedUser != null) ...[
+                        const SizedBox(width: 20),
+                        _EditPanel(
+                          user: _selectedUser!,
+                          nameCtrl: _nameCtrl,
+                          emailCtrl: _emailCtrl,
+                          addressCtrl: _addressCtrl,
+                          phoneCtrl: _phoneCtrl,
+                          role: _editRole,
+                          status: _editStatus,
+                          onRoleChanged: (r) => setState(() => _editRole = r),
+                          onStatusChanged: (s) =>
+                              setState(() => _editStatus = s),
+                          onCancel: () =>
+                              setState(() => _selectedUser = null),
+                          onSave: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (_) => const _ConfirmDialog(
+                                title: 'Save Changes',
+                                message:
+                                    'Are you sure you want to save the changes made to this user?',
+                                confirmLabel: 'SAVE',
+                                isDanger: false,
+                              ),
+                            );
+                            if (confirm == true && context.mounted) {
+                              final updated = _selectedUser!.copyWith(
+                                name: _nameCtrl.text,
+                                email: _emailCtrl.text,
+                                address: _addressCtrl.text,
+                                phoneNumber: _phoneCtrl.text,
+                                role: _editRole,
+                                status: _editStatus,
+                              );
+                              context
+                                  .read<AdminUsersBloc>()
+                                  .add(UpdateUser(user: updated));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content:
+                                      const Text('User updated successfully'),
+                                  backgroundColor: colorScheme.primary,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          },
+                          onDelete: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (_) => _ConfirmDialog(
+                                title: 'Delete User',
+                                message:
+                                    'Are you sure you want to delete "${_selectedUser!.name}"? This action cannot be undone.',
+                                confirmLabel: 'DELETE',
+                                isDanger: true,
+                              ),
+                            );
+                            if (confirm == true && context.mounted) {
+                              context
+                                  .read<AdminUsersBloc>()
+                                  .add(DeleteUser(userId: _selectedUser!.id));
+                              setState(() => _selectedUser = null);
+                            }
+                          },
+                        ),
+                      ],
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -283,425 +356,413 @@ class _UsersPageState extends State<UsersPage> {
 }
 
 // ─────────────────────────────────────────────
-// Top bar widget
+// Search bar
 // ─────────────────────────────────────────────
-class _TopBar extends StatefulWidget {
+class _SearchBar extends StatefulWidget {
   final TextEditingController searchController;
-  const _TopBar({required this.searchController});
+  const _SearchBar({required this.searchController});
 
   @override
-  State<_TopBar> createState() => _TopBarState();
+  State<_SearchBar> createState() => _SearchBarState();
 }
 
-class _TopBarState extends State<_TopBar> {
-  final FocusNode _searchFocusNode = FocusNode();
+class _SearchBarState extends State<_SearchBar> {
+  final FocusNode _focus = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    _searchFocusNode.addListener(() {
+    _focus.addListener(() {
       if (mounted) setState(() {});
     });
   }
 
   @override
   void dispose() {
-    _searchFocusNode.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        // Animated search field — left-aligned, expands on focus
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-          width: _searchFocusNode.hasFocus ? 500 : 300,
-          child: TextField(
-            controller: widget.searchController,
-            focusNode: _searchFocusNode,
-            decoration: InputDecoration(
-              hoverColor: colorScheme.surfaceContainerHigh,
-              hintText: 'Search users…',
-              hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-              prefixIcon: Icon(
-                Icons.search,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              filled: true,
-              fillColor: colorScheme.surfaceContainerLowest,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: BorderSide.none,
-              ),
-            ),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      width: _focus.hasFocus ? 420 : 260,
+      child: TextField(
+        controller: widget.searchController,
+        focusNode: _focus,
+        decoration: InputDecoration(
+          hintText: 'Search users…',
+          hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+          prefixIcon: Icon(Icons.search, color: colorScheme.onSurfaceVariant),
+          filled: true,
+          fillColor: colorScheme.surfaceContainerLowest,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(999),
+            borderSide: BorderSide.none,
           ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
         ),
-        const Spacer(),
-        // New user button — right next to search
-        FilledButton.icon(
-          onPressed: () => showDialog(
-            context: context,
-            builder: (_) => const _AddUserDialog(),
-          ),
-          style: FilledButton.styleFrom(
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-          ),
-          icon: const Icon(Icons.add, size: 18),
-          label: const Text(
-            'NEW USER',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.4,
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
 // ─────────────────────────────────────────────
-// Staff table with header + rows + pagination
+// Add user button (opens dialog)
 // ─────────────────────────────────────────────
-class _StaffTable extends StatefulWidget {
-  final List<StaffMember> staff;
-  final StaffMember? selectedStaff;
-  final ValueChanged<StaffMember> onSelect;
-  final ValueChanged<StaffMember> onEdit;
-  final ValueChanged<StaffMember> onDelete;
+class _AddUserButton extends StatefulWidget {
+  @override
+  State<_AddUserButton> createState() => _AddUserButtonState();
+}
+
+class _AddUserButtonState extends State<_AddUserButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedScale(
+        scale: _hovered ? 1.04 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        child: GestureDetector(
+          onTap: () => showDialog(
+            context: context,
+            builder: (_) => BlocProvider.value(
+              value: context.read<AdminUsersBloc>(),
+              child: const _AddUserDialog(),
+            ),
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+            decoration: BoxDecoration(
+              color: colorScheme.primary,
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.primary.withValues(alpha: 0.35),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.person_add_outlined,
+                    color: colorScheme.onPrimary, size: 20),
+                const SizedBox(width: 10),
+                Text(
+                  'NEW USER',
+                  style: TextStyle(
+                    color: colorScheme.onPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Staff table – payments-style row layout
+// ─────────────────────────────────────────────
+class _StaffTable extends StatelessWidget {
+  final List<UserModel> users;
+  final UserModel? selectedUser;
+  final ValueChanged<UserModel> onSelect;
+  final ValueChanged<UserModel> onEdit;
+  final ValueChanged<UserModel> onDelete;
 
   const _StaffTable({
-    required this.staff,
-    required this.selectedStaff,
+    required this.users,
+    required this.selectedUser,
     required this.onSelect,
     required this.onEdit,
     required this.onDelete,
   });
 
   @override
-  State<_StaffTable> createState() => _StaffTableState();
-}
-
-class _StaffTableState extends State<_StaffTable> {
-  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.outlineVariant),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+    return Column(
+      children: [
+        // ── Column headers (payments-style) ───────────────
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              ),
+            ),
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Column(
-          children: [
-            // ── Table toolbar ────────────────────────────
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainer.withValues(alpha: 0.5),
-                border: Border(
-                  bottom: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-                  ),
-                ),
+          child: Row(
+            children: [
+              Expanded(flex: 18, child: _headerText('Name')),
+              Expanded(flex: 10, child: _headerText('ID')),
+              Expanded(flex: 18, child: _headerText('Email')),
+              Expanded(flex: 13, child: _headerText('Phone')),
+              Expanded(flex: 10, child: _headerText('Status')),
+              Expanded(flex: 10, child: _headerText('Role')),
+              Expanded(
+                flex: 10,
+                child: _headerText('Actions', textAlign: TextAlign.right),
               ),
-              child: Row(
-                children: [
-                  Text(
-                    'Staff Members',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      'EXPORT',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.3,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ── Column headers ───────────────────────────
-            Container(
-              color: colorScheme.surfaceContainerHigh,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              child: Row(
-                children: [
-                  _headerCell('NAME', flex: 22),
-                  _headerCell('ID', flex: 12),
-                  _headerCell('EMAIL', flex: 22),
-                  _headerCell('PHONE', flex: 16),
-                  _headerCell('STATUS', flex: 13),
-                  _headerCell('ROLE', flex: 13),
-                  _headerCell('ACTIONS', flex: 16, align: TextAlign.right),
-                ],
-              ),
-            ),
-
-            // ── Rows ─────────────────────────────────────
-            Expanded(
-              child: widget.staff.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No staff members found.',
-                        style: TextStyle(color: colorScheme.onSurfaceVariant),
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: widget.staff.length,
-                      itemBuilder: (context, index) {
-                        final member = widget.staff[index];
-                        final isSelected =
-                            widget.selectedStaff?.id == member.id;
-                        final isInactive =
-                            member.status == StaffStatus.inactive;
-                        return _StaffRow(
-                          member: member,
-                          isSelected: isSelected,
-                          isInactive: isInactive,
-                          onTap: () => widget.onSelect(member),
-                          onEdit: () => widget.onEdit(member),
-                          onDelete: () => widget.onDelete(member),
-                        );
-                      },
-                    ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+        const SizedBox(height: 8),
+
+        // ── Rows ─────────────────────────────────────────
+        Expanded(
+          child: users.isEmpty
+              ? Center(
+                  child: Text(
+                    'No users found.',
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
+                )
+              : ListView.separated(
+                  itemCount: users.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final user = users[index];
+                    final isSelected = selectedUser?.id == user.id;
+                    return _UserRow(
+                      user: user,
+                      isSelected: isSelected,
+                      onTap: () => onSelect(user),
+                      onEdit: () => onEdit(user),
+                      onDelete: () => onDelete(user),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 
-  Widget _headerCell(
-    String label, {
-    int flex = 1,
-    TextAlign align = TextAlign.left,
-  }) {
-    return Expanded(
-      flex: flex,
-      child: Text(
-        label,
-        textAlign: align,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1.4,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+  Widget _headerText(String text, {TextAlign textAlign = TextAlign.left}) {
+    return Text(
+      text.toUpperCase(),
+      textAlign: textAlign,
+      style: const TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.5,
+        color: Colors.grey,
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────
-// Single staff row
+// Single user row – payments-style card
 // ─────────────────────────────────────────────
-class _StaffRow extends StatefulWidget {
-  final StaffMember member;
+class _UserRow extends StatefulWidget {
+  final UserModel user;
   final bool isSelected;
-  final bool isInactive;
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  const _StaffRow({
-    required this.member,
+  const _UserRow({
+    required this.user,
     required this.isSelected,
-    required this.isInactive,
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
   });
 
   @override
-  State<_StaffRow> createState() => _StaffRowState();
+  State<_UserRow> createState() => _UserRowState();
 }
 
-class _StaffRowState extends State<_StaffRow> {
+class _UserRowState extends State<_UserRow> {
   bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isInactive = widget.isInactive;
-
-    Color rowBg = Colors.transparent;
-    if (widget.isSelected) {
-      rowBg = colorScheme.primary.withValues(alpha: 0.08);
-    } else if (_hovered) {
-      rowBg = Colors.white.withValues(alpha: 0.04);
-    }
+    final isInactive = widget.user.status == UserStatus.inactive;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          color: rowBg,
-          child: Column(
+      cursor: SystemMouseCursors.basic,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        decoration: BoxDecoration(
+          color: widget.isSelected
+              ? colorScheme.primary.withValues(alpha: 0.08)
+              : _hovered
+                  ? colorScheme.surfaceContainerLow
+                  : colorScheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: widget.isSelected
+                ? colorScheme.primary.withValues(alpha: 0.4)
+                : colorScheme.outlineVariant,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: _hovered ? 0.12 : 0.06),
+              blurRadius: _hovered ? 16 : 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Opacity(
+          opacity: isInactive ? 0.6 : 1.0,
+          child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
-                ),
-                child: Opacity(
-                  opacity: isInactive ? 0.55 : 1.0,
-                  child: Row(
-                    children: [
-                      // Name + avatar
-                      Expanded(
-                        flex: 22,
-                        child: Row(
-                          children: [
-                            _Avatar(member: widget.member),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.member.name,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                      color: colorScheme.onSurface,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  Text(
-                                    widget.member.address,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
+              // ── Name + avatar ───────────────────────────
+              Expanded(
+                flex: 18,
+                child: Row(
+                  children: [
+                    _Avatar(user: widget.user),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.user.name,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface,
                             ),
-                          ],
-                        ),
-                      ),
-
-                      // ID
-                      Expanded(
-                        flex: 12,
-                        child: Text(
-                          widget.member.id,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'monospace',
-                            color: colorScheme.onSurfaceVariant,
-                            letterSpacing: 0.5,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ),
-
-                      // Email
-                      Expanded(
-                        flex: 22,
-                        child: Text(
-                          widget.member.email,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: colorScheme.onSurface,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-
-                      // Phone
-                      Expanded(
-                        flex: 16,
-                        child: Text(
-                          widget.member.phone,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-
-                      // Status
-                      Expanded(
-                        flex: 13,
-                        child: _StatusBadge(status: widget.member.status),
-                      ),
-
-                      // Role
-                      Expanded(
-                        flex: 13,
-                        child: _RoleBadge(role: widget.member.role),
-                      ),
-
-                      // Actions
-                      Expanded(
-                        flex: 16,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            _ActionBtn(
-                              icon: Icons.edit_outlined,
-                              onTap: widget.onEdit,
-                              color: colorScheme.primary,
-                              hoverColor: colorScheme.onPrimary,
-                              bg: colorScheme.primary.withValues(alpha: 0.18),
-                              hoverBg: colorScheme.primary,
-                            ),
-                            const SizedBox(width: 6),
-                            _ActionBtn(
-                              icon: Icons.delete_outline,
-                              onTap: widget.onDelete,
+                          Text(
+                            widget.user.address,
+                            style: TextStyle(
+                              fontSize: 11,
                               color: colorScheme.onSurfaceVariant,
-                              hoverColor: Colors.red.shade400,
-                              bg: colorScheme.surfaceContainerLow,
                             ),
-                          ],
-                        ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── ID ──────────────────────────────────────
+              Expanded(
+                flex: 10,
+                child: Text(
+                  widget.user.id.length > 6
+                      ? '#${widget.user.id.substring(0, 6).toUpperCase()}'
+                      : '#${widget.user.id.toUpperCase()}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    color: colorScheme.onSurfaceVariant,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: colorScheme.outlineVariant.withValues(alpha: 0.25),
+
+              // ── Email ────────────────────────────────────
+              Expanded(
+                flex: 18,
+                child: Text(
+                  widget.user.email,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurface,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              // ── Phone ────────────────────────────────────
+              Expanded(
+                flex: 13,
+                child: Text(
+                  widget.user.phoneNumber,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+
+              // ── Status ───────────────────────────────────
+              Expanded(
+                flex: 10,
+                child: _StatusBadge(status: widget.user.status),
+              ),
+
+              // ── Role ─────────────────────────────────────
+              Expanded(
+                flex: 10,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: colorScheme.outline.withValues(alpha: 0.15),
+                      ),
+                    ),
+                    child: Text(
+                      widget.user.role.name.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // ── Actions ──────────────────────────────────
+              Expanded(
+                flex: 10,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      color: colorScheme.primary,
+                      tooltip: 'Edit User',
+                      onPressed: widget.onEdit,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      color: colorScheme.error,
+                      tooltip: 'Delete User',
+                      onPressed: widget.onDelete,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -715,12 +776,17 @@ class _StaffRowState extends State<_StaffRow> {
 // Avatar
 // ─────────────────────────────────────────────
 class _Avatar extends StatelessWidget {
-  final StaffMember member;
-  const _Avatar({required this.member});
+  final UserModel user;
+  const _Avatar({required this.user});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final initials = user.name.isNotEmpty
+        ? user.name.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
+        : '??';
+    final hasUrl = user.photoUrl.isNotEmpty && user.photoUrl != 'invalid';
+
     return Container(
       width: 38,
       height: 38,
@@ -729,16 +795,42 @@ class _Avatar extends StatelessWidget {
         color: colorScheme.surfaceContainerHigh,
         border: Border.all(color: colorScheme.outline.withValues(alpha: 0.5)),
       ),
-      child: Center(
-        child: Text(
-          member.avatarInitials ?? member.name.substring(0, 2).toUpperCase(),
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: colorScheme.onSurface,
-          ),
-        ),
-      ),
+      clipBehavior: Clip.antiAlias,
+      child: hasUrl
+          ? CachedNetworkImage(
+              imageUrl: user.photoUrl,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Center(
+                child: Text(
+                  initials,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              errorWidget: (_, __, ___) => Center(
+                child: Text(
+                  initials,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            )
+          : Center(
+              child: Text(
+                initials,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ),
     );
   }
 }
@@ -747,12 +839,12 @@ class _Avatar extends StatelessWidget {
 // Status badge
 // ─────────────────────────────────────────────
 class _StatusBadge extends StatelessWidget {
-  final StaffStatus status;
+  final UserStatus status;
   const _StatusBadge({required this.status});
 
   @override
   Widget build(BuildContext context) {
-    final isActive = status == StaffStatus.active;
+    final isActive = status == UserStatus.active;
     final dotColor = isActive
         ? const Color(0xFF4ade80)
         : Theme.of(context).colorScheme.onSurfaceVariant;
@@ -792,113 +884,32 @@ class _StatusBadge extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// Role badge
-// ─────────────────────────────────────────────
-class _RoleBadge extends StatelessWidget {
-  final StaffRole role;
-  const _RoleBadge({required this.role});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.15)),
-      ),
-      child: Text(
-        role.name.toUpperCase(),
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1.2,
-          color: colorScheme.onSurface,
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// Action icon button
-// ─────────────────────────────────────────────
-class _ActionBtn extends StatefulWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final Color color;
-  final Color hoverColor;
-  final Color bg;
-  final Color? hoverBg;
-
-  const _ActionBtn({
-    required this.icon,
-    required this.onTap,
-    required this.color,
-    required this.hoverColor,
-    required this.bg,
-    this.hoverBg,
-  });
-
-  @override
-  State<_ActionBtn> createState() => _ActionBtnState();
-}
-
-class _ActionBtnState extends State<_ActionBtn> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = _hovered ? (widget.hoverBg ?? widget.bg) : widget.bg;
-    final color = _hovered ? widget.hoverColor : widget.color;
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-          child: Icon(widget.icon, size: 16, color: color),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
 // Edit / detail panel (right side)
 // ─────────────────────────────────────────────
 class _EditPanel extends StatefulWidget {
-  final StaffMember staff;
+  final UserModel user;
   final TextEditingController nameCtrl;
   final TextEditingController emailCtrl;
   final TextEditingController addressCtrl;
-  final StaffRole role;
-  final StaffStatus status;
-  final bool accountEnabled;
-  final ValueChanged<StaffRole> onRoleChanged;
-  final ValueChanged<StaffStatus> onStatusChanged;
-  final ValueChanged<bool> onToggleEnabled;
+  final TextEditingController phoneCtrl;
+  final UserRoles role;
+  final UserStatus status;
+  final ValueChanged<UserRoles> onRoleChanged;
+  final ValueChanged<UserStatus> onStatusChanged;
   final VoidCallback onCancel;
   final VoidCallback onSave;
   final VoidCallback onDelete;
 
   const _EditPanel({
-    required this.staff,
+    required this.user,
     required this.nameCtrl,
     required this.emailCtrl,
     required this.addressCtrl,
+    required this.phoneCtrl,
     required this.role,
     required this.status,
-    required this.accountEnabled,
     required this.onRoleChanged,
     required this.onStatusChanged,
-    required this.onToggleEnabled,
     required this.onCancel,
     required this.onSave,
     required this.onDelete,
@@ -922,6 +933,9 @@ class _EditPanelState extends State<_EditPanel> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final initials = widget.user.name.isNotEmpty
+        ? widget.user.name.trim().split(' ').map((w) => w[0]).take(2).join().toUpperCase()
+        : '??';
 
     return Container(
       width: 360,
@@ -978,7 +992,7 @@ class _EditPanelState extends State<_EditPanel> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Edit Staff: ${widget.staff.name.split(' ').first}',
+                    'Edit: ${widget.user.name.split(' ').first}',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
@@ -1010,12 +1024,10 @@ class _EditPanelState extends State<_EditPanel> {
                               width: 2,
                             ),
                           ),
+                          clipBehavior: Clip.antiAlias,
                           child: Center(
                             child: Text(
-                              widget.staff.avatarInitials ??
-                                  widget.staff.name
-                                      .substring(0, 2)
-                                      .toUpperCase(),
+                              initials,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
@@ -1055,6 +1067,14 @@ class _EditPanelState extends State<_EditPanel> {
                     ),
                     const SizedBox(height: 12),
 
+                    // Phone
+                    _FormField(
+                      label: 'PHONE',
+                      controller: widget.phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 12),
+
                     // Address
                     _FormField(
                       label: 'ADDRESS',
@@ -1063,10 +1083,10 @@ class _EditPanelState extends State<_EditPanel> {
                     const SizedBox(height: 12),
 
                     // Role dropdown
-                    _DropdownField<StaffRole>(
+                    _DropdownField<UserRoles>(
                       label: 'ROLE',
                       value: widget.role,
-                      items: StaffRole.values,
+                      items: UserRoles.values,
                       itemLabel: (r) => r.name.toUpperCase(),
                       onChanged: widget.onRoleChanged,
                     ),
@@ -1090,9 +1110,7 @@ class _EditPanelState extends State<_EditPanel> {
                           decoration: BoxDecoration(
                             color: colorScheme.surfaceContainerLowest,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: colorScheme.outlineVariant,
-                            ),
+                            border: Border.all(color: colorScheme.outlineVariant),
                           ),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 4,
@@ -1103,56 +1121,24 @@ class _EditPanelState extends State<_EditPanel> {
                               _StatusToggleOption(
                                 label: 'Active',
                                 icon: Icons.check_circle_outline,
-                                isSelected: widget.status == StaffStatus.active,
+                                isSelected:
+                                    widget.status == UserStatus.active,
                                 selectedColor: const Color(0xFF4ade80),
                                 onTap: () =>
-                                    widget.onStatusChanged(StaffStatus.active),
+                                    widget.onStatusChanged(UserStatus.active),
                               ),
                               _StatusToggleOption(
                                 label: 'Inactive',
                                 icon: Icons.cancel_outlined,
                                 isSelected:
-                                    widget.status == StaffStatus.inactive,
+                                    widget.status == UserStatus.inactive,
                                 selectedColor: colorScheme.error,
                                 onTap: () => widget.onStatusChanged(
-                                  StaffStatus.inactive,
+                                  UserStatus.inactive,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Password field
-                    const _PasswordField(),
-                    const SizedBox(height: 16),
-
-                    // Footer info row
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: 15,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            'Profile Created on: 2021',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                        Switch(
-                          value: widget.accountEnabled,
-                          onChanged: widget.onToggleEnabled,
-                          activeThumbColor: colorScheme.primary,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
                         ),
                       ],
                     ),
@@ -1258,7 +1244,7 @@ class _EditPanelState extends State<_EditPanel> {
 }
 
 // ─────────────────────────────────────────────
-// Form field (label + text input inside a pill)
+// Form field (label + text input)
 // ─────────────────────────────────────────────
 class _FormField extends StatelessWidget {
   final String label;
@@ -1325,7 +1311,6 @@ class _DropdownField<T> extends StatelessWidget {
   final List<T> items;
   final String Function(T) itemLabel;
   final ValueChanged<T> onChanged;
-  final Color? valueColor;
 
   const _DropdownField({
     required this.label,
@@ -1333,7 +1318,6 @@ class _DropdownField<T> extends StatelessWidget {
     required this.items,
     required this.itemLabel,
     required this.onChanged,
-    this.valueColor,
   });
 
   @override
@@ -1370,7 +1354,7 @@ class _DropdownField<T> extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: valueColor ?? colorScheme.onSurface,
+                color: colorScheme.onSurface,
               ),
               icon: Icon(
                 Icons.expand_more,
@@ -1402,88 +1386,6 @@ class _DropdownField<T> extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// Password field (mock – shows dots, edit icon)
-// ─────────────────────────────────────────────
-class _PasswordField extends StatefulWidget {
-  const _PasswordField();
-
-  @override
-  State<_PasswordField> createState() => _PasswordFieldState();
-}
-
-class _PasswordFieldState extends State<_PasswordField> {
-  bool _obscure = true;
-  final _ctrl = TextEditingController(text: 'password123');
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'PASSWORD',
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.4,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _ctrl,
-                  obscureText: _obscure,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                    letterSpacing: _obscure ? 4 : 0,
-                  ),
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => setState(() => _obscure = !_obscure),
-                child: Icon(
-                  _obscure
-                      ? Icons.edit_outlined
-                      : Icons.visibility_off_outlined,
-                  size: 16,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
 // Add New User dialog
 // ─────────────────────────────────────────────
 class _AddUserDialog extends StatefulWidget {
@@ -1500,8 +1402,9 @@ class _AddUserDialogState extends State<_AddUserDialog> {
   final _addressCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscurePassword = true;
-  StaffRole _role = StaffRole.manager;
-  StaffStatus _status = StaffStatus.active;
+  UserRoles _role = UserRoles.waiter;
+  UserStatus _status = UserStatus.active;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -1550,9 +1453,8 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(24),
-                  ),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(24)),
                   border: Border(
                     bottom: BorderSide(
                       color: colorScheme.outlineVariant.withValues(alpha: 0.5),
@@ -1582,7 +1484,7 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'New User',
+                          'New Staff Member',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
@@ -1591,7 +1493,7 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                           ),
                         ),
                         Text(
-                          'Fill in the details to create a new staff account.',
+                          'Fill in the details to create a new account.',
                           style: TextStyle(
                             fontSize: 12,
                             color: colorScheme.onSurfaceVariant,
@@ -1670,10 +1572,10 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                     Row(
                       children: [
                         Expanded(
-                          child: _DialogDropdown<StaffRole>(
+                          child: _DialogDropdown<UserRoles>(
                             label: 'Role',
                             value: _role,
-                            items: StaffRole.values,
+                            items: UserRoles.values,
                             itemLabel: (r) =>
                                 r.name[0].toUpperCase() + r.name.substring(1),
                             onChanged: (r) => setState(() => _role = r!),
@@ -1681,12 +1583,12 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: _DialogDropdown<StaffStatus>(
+                          child: _DialogDropdown<UserStatus>(
                             label: 'Status',
                             value: _status,
-                            items: StaffStatus.values,
+                            items: UserStatus.values,
                             itemLabel: (s) =>
-                                s == StaffStatus.active ? 'Active' : 'Inactive',
+                                s == UserStatus.active ? 'Active' : 'Inactive',
                             onChanged: (s) => setState(() => _status = s!),
                           ),
                         ),
@@ -1748,19 +1650,52 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                     ),
                     const SizedBox(width: 12),
                     FilledButton.icon(
-                      onPressed: () {
-                        // mock — just close
-                        Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'User "${_nameCtrl.text}" created (mock)',
-                            ),
-                            backgroundColor: colorScheme.primary,
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
+                      onPressed: _isLoading
+                          ? null
+                          : () async {
+                              if (_nameCtrl.text.trim().isEmpty ||
+                                  _emailCtrl.text.trim().isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Name and Email are required.',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+                              setState(() => _isLoading = true);
+                              final userData = {
+                                'name': _nameCtrl.text.trim(),
+                                'email': _emailCtrl.text.trim(),
+                                'phoneNumber': _phoneCtrl.text.trim(),
+                                'address': _addressCtrl.text.trim(),
+                                'role': _role.name,
+                                'status': _status.name,
+                                'photoUrl': '',
+                                'deviceToken': '',
+                                'createdDate': Timestamp.now(),
+                                'lastLoginDate': Timestamp.now(),
+                              };
+                              if (context.mounted) {
+                                context.read<AdminUsersBloc>().add(
+                                  AddUser(
+                                    userData: userData,
+                                    password: _passwordCtrl.text,
+                                  ),
+                                );
+                                Navigator.of(context).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'User "${_nameCtrl.text.trim()}" created successfully',
+                                    ),
+                                    backgroundColor: colorScheme.primary,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            },
                       style: FilledButton.styleFrom(
                         backgroundColor: colorScheme.primary,
                         foregroundColor: colorScheme.onPrimary,
@@ -1772,7 +1707,16 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                           borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                      icon: const Icon(Icons.check, size: 18),
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.check, size: 18),
                       label: const Text(
                         'CREATE USER',
                         style: TextStyle(
@@ -1837,11 +1781,7 @@ class _DialogField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-            prefixIcon: Icon(
-              icon,
-              size: 18,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            prefixIcon: Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
             suffixIcon: suffix,
             filled: true,
             fillColor: colorScheme.surfaceContainerLow,
@@ -1958,43 +1898,46 @@ class _StatusToggleOption extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? selectedColor.withValues(alpha: 0.15)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(9),
-            border: isSelected
-                ? Border.all(color: selectedColor.withValues(alpha: 0.5))
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 15,
-                color: isSelected
-                    ? selectedColor
-                    : colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? selectedColor.withValues(alpha: 0.15)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(9),
+              border: isSelected
+                  ? Border.all(color: selectedColor.withValues(alpha: 0.5))
+                  : null,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 15,
                   color: isSelected
                       ? selectedColor
                       : colorScheme.onSurfaceVariant,
                 ),
-              ),
-            ],
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected
+                        ? selectedColor
+                        : colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -2045,7 +1988,6 @@ class _ConfirmDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon + title
               Row(
                 children: [
                   Container(
@@ -2114,9 +2056,8 @@ class _ConfirmDialog extends StatelessWidget {
                     onPressed: () => Navigator.of(context).pop(true),
                     style: FilledButton.styleFrom(
                       backgroundColor: confirmColor,
-                      foregroundColor: isDanger
-                          ? colorScheme.onError
-                          : colorScheme.onPrimary,
+                      foregroundColor:
+                          isDanger ? colorScheme.onError : colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 12,

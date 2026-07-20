@@ -448,8 +448,10 @@ class _OrdersState extends State<Orders> {
     required int numberOf,
     required String filterName,
   }) {
-    return GestureDetector(
-      onTap: () {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () {
         if (_selectedStatuses.contains(filterName)) {
           setState(() {
             _selectedStatuses.remove(filterName);
@@ -517,6 +519,7 @@ class _OrdersState extends State<Orders> {
           ],
         ),
       ),
+    ),
     );
   }
 }

@@ -63,4 +63,25 @@ class UserRepository {
       'role': newRole,
     });
   }
+
+  Future<void> updateUser(UserModel user) async {
+    await _firestore.collection('users').doc(user.id).update({
+      'name': user.name,
+      'email': user.email,
+      'phoneNumber': user.phoneNumber,
+      'address': user.address,
+      'role': user.role.name,
+      'status': user.status.name,
+    });
+  }
+
+  Future<void> deleteUser(String userId) async {
+    await _firestore.collection('users').doc(userId).delete();
+  }
+
+  /// Creates a new user document in Firestore (auth account creation must be
+  /// handled separately via Firebase Auth – this only writes the profile doc).
+  Future<void> addUser(Map<String, dynamic> userData) async {
+    await _firestore.collection('users').add(userData);
+  }
 }

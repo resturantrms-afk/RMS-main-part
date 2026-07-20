@@ -502,10 +502,12 @@ class OrderDetails extends StatelessWidget {
                                                 ),
                                                 actions: [
                                                   TextButton(
+                                                    style: ButtonStyle(mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click)),
                                                     onPressed: () => Navigator.pop(context, false),
                                                     child: const Text('No'),
                                                   ),
                                                   TextButton(
+                                                    style: ButtonStyle(mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click)),
                                                     onPressed: () => Navigator.pop(context, true),
                                                     child: Text(
                                                       'Yes, Cancel',
@@ -812,6 +814,7 @@ class OrderDetails extends StatelessWidget {
           ),
           actions: [
             TextButton(
+              style: ButtonStyle(mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click)),
               onPressed: () => Navigator.pop(dialogContext),
               child: Text(
                 "CANCEL",

@@ -319,6 +319,7 @@ class _PaymentsState extends State<Payments> {
         });
       },
       borderRadius: BorderRadius.circular(999),
+      mouseCursor: SystemMouseCursors.click,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
@@ -722,10 +723,16 @@ class _PaymentsState extends State<Payments> {
                         ),
                         actions: [
                           TextButton(
+                            style: ButtonStyle(
+                              mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+                            ),
                             onPressed: () => Navigator.pop(context, false),
                             child: const Text('Cancel'),
                           ),
                           TextButton(
+                            style: ButtonStyle(
+                              mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+                            ),
                             onPressed: () => Navigator.pop(context, true),
                             child: Text(
                               'Void',

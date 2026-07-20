@@ -88,6 +88,7 @@ class LiveTableGrid extends StatelessWidget {
 
       child: InkWell(
         borderRadius: BorderRadius.circular(30),
+        mouseCursor: SystemMouseCursors.click,
         onTap: () {
           if (table.status == TableStatus.occupied) {
             final orderState = context.read<OrderBloc>().state;

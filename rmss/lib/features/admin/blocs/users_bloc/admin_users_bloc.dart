@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rmss/core/repositories/user_repository.dart';
 import 'package:rmss/core/models/user_model.dart';
@@ -30,6 +31,34 @@ class AdminUsersBloc extends Bloc<AdminUsersEvent, AdminUsersState> {
     on<UpdateUserRole>((event, emit) async {
       try {
         await userRepository.updateUserRole(event.userId, event.newRole.name);
+      } catch (e) {
+        emit(AdminUsersError(message: e.toString()));
+      }
+    });
+
+    on<UpdateUser>((event, emit) async {
+      try {
+        await userRepository.updateUser(event.user);
+      } catch (e) {
+        emit(AdminUsersError(message: e.toString()));
+      }
+    });
+
+    on<DeleteUser>((event, emit) async {
+      try {
+        await userRepository.deleteUser(event.userId);
+      } catch (e) {
+        emit(AdminUsersError(message: e.toString()));
+      }
+    });
+
+    on<AddUser>((event, emit) async {
+      try {
+        final data = Map<String, dynamic>.from(event.userData);
+        data['createdDate'] = Timestamp.now();
+        data['lastLoginDate'] = Timestamp.now();
+        data['deviceToken'] = '';
+        await userRepository.addUser(data);
       } catch (e) {
         emit(AdminUsersError(message: e.toString()));
       }

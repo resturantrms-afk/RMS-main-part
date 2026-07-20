@@ -20,7 +20,7 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
-  final _categoryController = TextEditingController(); 
+  final _categoryController = TextEditingController();
 
   String _imageUrl = '';
   List<String> _categories = [];
@@ -105,7 +105,10 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add Menu Item', style: TextStyle(fontWeight: FontWeight.bold)),
+      title: const Text(
+        'Add Menu Item',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       content: SizedBox(
         width: 500,
@@ -115,42 +118,67 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Image Picker
-              GestureDetector(
-                onTap: _isUploading ? null : _pickImage,
-                child: Container(
-                  height: 180,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-                    image: _imageUrl.isNotEmpty
-                        ? DecorationImage(
-                            image: CachedNetworkImageProvider(_imageUrl),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
-                  ),
-                  child: _isUploading
-                      ? const Center(child: CircularProgressIndicator())
-                      : _imageUrl.isEmpty
-                          ? Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.add_photo_alternate, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                                const SizedBox(height: 8),
-                                Text('Upload Image', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold)),
-                              ],
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: _isUploading ? null : _pickImage,
+                  child: Container(
+                    height: 180,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                      image: _imageUrl.isNotEmpty
+                          ? DecorationImage(
+                              image: CachedNetworkImageProvider(_imageUrl),
+                              fit: BoxFit.cover,
                             )
-                          : Container(
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.4),
-                                borderRadius: BorderRadius.circular(16),
+                          : null,
+                    ),
+                    child: _isUploading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _imageUrl.isEmpty
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_photo_alternate,
+                                size: 48,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
-                              child: const Center(
-                                child: Icon(Icons.camera_alt, color: Colors.white, size: 40),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Upload Image',
+                                style: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 40,
                               ),
                             ),
+                          ),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -160,7 +188,9 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
                 controller: _nameController,
                 decoration: InputDecoration(
                   labelText: 'Name',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   prefixIcon: const Icon(Icons.restaurant_menu),
                 ),
               ),
@@ -172,7 +202,9 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
                 maxLines: 3,
                 decoration: InputDecoration(
                   labelText: 'Description',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   alignLabelWithHint: true,
                 ),
               ),
@@ -184,16 +216,20 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
                   Expanded(
                     child: TextField(
                       controller: _priceController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Price',
                         prefixText: '\$ ',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 16),
-                  
+
                   // Status Toggle
                   Container(
                     padding: const EdgeInsets.all(4),
@@ -205,36 +241,60 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         InkWell(
-                          onTap: () => setState(() => _status = MenuItemStatus.available),
+                          onTap: () => setState(
+                            () => _status = MenuItemStatus.available,
+                          ),
                           borderRadius: BorderRadius.circular(50),
+                          mouseCursor: SystemMouseCursors.click,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                             decoration: BoxDecoration(
-                              color: _status == MenuItemStatus.available ? Colors.green.withValues(alpha: 0.2) : Colors.transparent,
+                              color: _status == MenuItemStatus.available
+                                  ? Colors.green.withValues(alpha: 0.2)
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(50),
                             ),
                             child: Text(
                               'Available',
                               style: TextStyle(
-                                color: _status == MenuItemStatus.available ? Colors.green : Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: _status == MenuItemStatus.available
+                                    ? Colors.green
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                         ),
                         InkWell(
-                          onTap: () => setState(() => _status = MenuItemStatus.unavailable),
+                          onTap: () => setState(
+                            () => _status = MenuItemStatus.unavailable,
+                          ),
                           borderRadius: BorderRadius.circular(50),
+                          mouseCursor: SystemMouseCursors.click,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                             decoration: BoxDecoration(
-                              color: _status == MenuItemStatus.unavailable ? Colors.red.withValues(alpha: 0.2) : Colors.transparent,
+                              color: _status == MenuItemStatus.unavailable
+                                  ? Colors.red.withValues(alpha: 0.2)
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(50),
                             ),
                             child: Text(
                               'Unavailable',
                               style: TextStyle(
-                                color: _status == MenuItemStatus.unavailable ? Colors.red : Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: _status == MenuItemStatus.unavailable
+                                    ? Colors.red
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -248,7 +308,10 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
               const SizedBox(height: 24),
 
               // Categories
-              const Text('Categories', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text(
+                'Categories',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -256,9 +319,14 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
                 children: [
                   ..._categories.map((cat) {
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHigh,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -266,20 +334,32 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
                         children: [
                           Text(
                             cat.toUpperCase(),
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () {
-                              setState(() => _categories.remove(cat));
-                            },
-                            child: Icon(Icons.close, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() => _categories.remove(cat));
+                              },
+                              child: Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     );
                   }),
-                  
+
                   // MenuAnchor for adding categories
                   BlocBuilder<MenuBloc, MenuState>(
                     builder: (context, menuState) {
@@ -290,7 +370,11 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
                             .map((c) => c.toLowerCase())
                             .toSet()
                             .toList();
-                        allCategories.removeWhere((cat) => _categories.any((c) => c.toLowerCase() == cat.toLowerCase()));
+                        allCategories.removeWhere(
+                          (cat) => _categories.any(
+                            (c) => c.toLowerCase() == cat.toLowerCase(),
+                          ),
+                        );
                       }
 
                       final query = _categoryController.text.toLowerCase();
@@ -316,18 +400,30 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
                             width: 140,
                             height: 36,
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainer,
-                              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainer,
+                              border: Border.all(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.outlineVariant,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: TextField(
                               controller: _categoryController,
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                               decoration: const InputDecoration(
                                 hintText: '+ ADD',
                                 border: InputBorder.none,
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
                               ),
                               onTap: () {
                                 if (!controller.isOpen) controller.open();
@@ -337,7 +433,10 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
                                 if (!controller.isOpen) controller.open();
                               },
                               onSubmitted: (value) {
-                                if (value.isNotEmpty && !_categories.contains(value.toLowerCase())) {
+                                if (value.isNotEmpty &&
+                                    !_categories.contains(
+                                      value.toLowerCase(),
+                                    )) {
                                   setState(() {
                                     _categories.add(value.toLowerCase());
                                   });
@@ -359,12 +458,18 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
       ),
       actions: [
         TextButton(
+          style: ButtonStyle(
+            mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+          ),
           onPressed: () => Navigator.pop(context),
           child: const Text('CANCEL'),
         ),
         FilledButton(
           onPressed: _isFormValid ? _submit : null,
-          child: const Text('ADD ITEM', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: const Text(
+            'ADD ITEM',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
       ],
     );
