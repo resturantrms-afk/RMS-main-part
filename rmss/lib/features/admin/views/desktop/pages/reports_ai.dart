@@ -5,8 +5,7 @@ import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/menu_analys
 import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/revenue_split_tab.dart';
 import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/staff_payments_tab.dart';
 import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/ai_data_mining_tab.dart';
-
-
+import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/pdf_export_service.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Sub-tabs
@@ -31,6 +30,27 @@ class ReportsAiPage extends StatefulWidget {
 
 class _ReportsAiPageState extends State<ReportsAiPage> {
   int _selectedTab = 0;
+  final List<GlobalKey> _exportKeys = List.generate(5, (_) => GlobalKey());
+  bool _isExporting = false;
+
+  Future<void> _handleExport() async {
+    if (_isExporting) return;
+    setState(() => _isExporting = true);
+    try {
+      final fileName = _tabs[_selectedTab].replaceAll(' ', '_');
+      await PdfExportService.exportWidgetToPdf(_exportKeys[_selectedTab], fileName);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export not supported for this tab yet or failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,30 +69,25 @@ class _ReportsAiPageState extends State<ReportsAiPage> {
             _PageHeader(
               selectedTab: _selectedTab,
               onTabSelected: (i) => setState(() => _selectedTab = i),
+              onExport: _handleExport,
+              isExporting: _isExporting,
             ),
             const SizedBox(height: 20),
 
             // ── Content — switches per tab ───────────────────────────────
             Expanded(
-              child: IndexedStack(
-                index: _selectedTab,
-                children: const [
-                  // Tab 0 — Menu Analysis
-                  MenuAnalysisTab(),
-
-                  // Tab 1 — Staff Payments
-                  StaffPaymentsTab(),
-
-                  // Tab 2 — Association Analysis
-                  AssociationAnalysisTab(),
-
-                  // Tab 3 — Revenue Split
-                  RevenueSplitTab(),
-
-                  // Tab 4 - AI Data Mining
-                  AiDataMiningTab(),
-                ],
-              ),
+              child: [
+                // Tab 0 — Menu Analysis
+                MenuAnalysisTab(exportKey: _exportKeys[0]),
+                // Tab 1 — Staff Payments
+                StaffPaymentsTab(exportKey: _exportKeys[1]),
+                // Tab 2 — Association Analysis
+                AssociationAnalysisTab(exportKey: _exportKeys[2]),
+                // Tab 3 — Revenue Split
+                RevenueSplitTab(exportKey: _exportKeys[3]),
+                // Tab 4 - AI Data Mining
+                AiDataMiningTab(exportKey: _exportKeys[4]),
+              ][_selectedTab],
             ),
           ],
         ),
@@ -89,8 +104,15 @@ class _ReportsAiPageState extends State<ReportsAiPage> {
 class _PageHeader extends StatelessWidget {
   final int selectedTab;
   final ValueChanged<int> onTabSelected;
+  final VoidCallback onExport;
+  final bool isExporting;
 
-  const _PageHeader({required this.selectedTab, required this.onTabSelected});
+  const _PageHeader({
+    required this.selectedTab,
+    required this.onTabSelected,
+    required this.onExport,
+    required this.isExporting,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +156,10 @@ class _PageHeader extends StatelessWidget {
         const SizedBox(width: 16),
 
         // Export to PDF button
-        const _ExportButton(),
+        _ExportButton(
+          onPressed: onExport,
+          isLoading: isExporting,
+        ),
       ],
     );
   }
@@ -198,7 +223,10 @@ class _SubTabState extends State<_SubTab> {
 // Export to PDF button
 // ─────────────────────────────────────────────────────────────
 class _ExportButton extends StatefulWidget {
-  const _ExportButton();
+  final VoidCallback onPressed;
+  final bool isLoading;
+
+  const _ExportButton({required this.onPressed, required this.isLoading});
 
   @override
   State<_ExportButton> createState() => _ExportButtonState();
@@ -212,10 +240,12 @@ class _ExportButtonState extends State<_ExportButton> {
     final cs = Theme.of(context).colorScheme;
 
     return MouseRegion(
-      cursor: SystemMouseCursors.click,
+      cursor: widget.isLoading ? SystemMouseCursors.forbidden : SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
+      child: GestureDetector(
+        onTap: widget.isLoading ? null : widget.onPressed,
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
@@ -233,7 +263,7 @@ class _ExportButtonState extends State<_ExportButton> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Export to PDF',
+              widget.isLoading ? 'EXPORTING...' : 'Export to PDF',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
@@ -242,8 +272,16 @@ class _ExportButtonState extends State<_ExportButton> {
               ),
             ),
             const SizedBox(width: 8),
-            Icon(Icons.download_outlined, size: 16, color: cs.primary),
+            if (widget.isLoading)
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2, color: cs.primary),
+              )
+            else
+              Icon(Icons.download_outlined, size: 16, color: cs.primary),
           ],
+        ),
         ),
       ),
     );

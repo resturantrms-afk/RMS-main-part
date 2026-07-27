@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
@@ -9,9 +10,11 @@ import 'package:rmss/features/cashier/views/desktop/pages/menu.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/orders.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/payments.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/settings.dart';
-import 'package:rmss/features/cashier/blocs/notification_bloc/cashier_notification_bloc.dart';
-import 'package:rmss/features/cashier/blocs/notification_bloc/cashier_notification_state.dart';
+import 'package:rmss/core/blocs/notification_bloc/app_notification_bloc.dart';
+import 'package:rmss/core/blocs/notification_bloc/app_notification_state.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:rmss/core/blocs/app_branding_cubit/app_branding_cubit.dart';
+import 'package:rmss/core/models/app_branding_model.dart';
 
 class CashierDashboard extends StatefulWidget {
   const CashierDashboard({super.key});
@@ -22,6 +25,7 @@ class CashierDashboard extends StatefulWidget {
 
 class _CashierDashboardState extends State<CashierDashboard> {
   bool isExpanded = true;
+  final Set<String> _shownNotifications = {};
 
   @override
   Widget build(BuildContext context) {
@@ -34,37 +38,39 @@ class _CashierDashboardState extends State<CashierDashboard> {
           const Payments(),
           const Settings(),
         ];
-        return BlocListener<CashierNotificationBloc, CashierNotificationState>(
+        return BlocListener<AppNotificationBloc, AppNotificationState>(
           listener: (context, state) {
-            if (state is CashierNotificationShow) {
-              if (state.notification.playSound) {
-                final player = AudioPlayer();
-                player.setVolume(state.notification.volume / 100.0);
-                player.play(
-                  UrlSource(
-                    'https://actions.google.com/sounds/v1/alarms/beep_short.ogg',
-                  ),
-                );
-              }
+            if (state is AppNotificationLoaded) {
+              for (var notification in state.notifications) {
+                if (!notification.isRead && !_shownNotifications.contains(notification.id)) {
+                  _shownNotifications.add(notification.id);
+                  
+                  if (notification.playSound) {
+                    final player = AudioPlayer();
+                    player.setVolume(notification.volume / 100.0);
+                    player.play(AssetSource('sounds/beep.mp3'));
+                  }
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        state.notification.title,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            notification.title,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(notification.message),
+                        ],
                       ),
-                      Text(state.notification.message),
-                    ],
-                  ),
-                  duration: const Duration(seconds: 4),
-                  behavior: SnackBarBehavior.floating,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                ),
-              );
+                      duration: const Duration(seconds: 4),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                    ),
+                  );
+                }
+              }
             }
           },
           child: Scaffold(
@@ -116,60 +122,62 @@ class _CashierDashboardState extends State<CashierDashboard> {
                         children: [
                           const SizedBox(height: 60),
                           isExpanded
-                              ? SizedBox(
-                                  width: 260,
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        margin: const EdgeInsets.only(left: 10),
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.surfaceContainer,
-                                          shape: BoxShape.circle,
-                                        ),
-
-                                        child: Icon(
-                                          Icons.restaurant,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              "Crown Restaurant",
-                                              style: TextStyle(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                                fontSize: 16,
-                                                letterSpacing: 1.2,
-                                                fontWeight: FontWeight.w800,
-                                              ),
+                              ? BlocBuilder<AppBrandingCubit, AppBrandingModel>(
+                                  builder: (context, branding) {
+                                    return SizedBox(
+                                      width: 260,
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            margin: const EdgeInsets.only(left: 10),
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context).colorScheme.surfaceContainer,
+                                              shape: BoxShape.circle,
+                                              image: branding.appLogoUrl.isNotEmpty
+                                                  ? DecorationImage(
+                                                      image: CachedNetworkImageProvider(branding.appLogoUrl),
+                                                      fit: BoxFit.cover,
+                                                    )
+                                                  : null,
                                             ),
-
-                                            Text(
-                                              "Cashier",
-                                              style: TextStyle(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurfaceVariant,
-                                                fontSize: 10,
-                                              ),
+                                            child: branding.appLogoUrl.isEmpty
+                                                ? Icon(
+                                                    Icons.restaurant,
+                                                    color: Theme.of(context).colorScheme.primary,
+                                                  )
+                                                : null,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  branding.appName.isNotEmpty ? branding.appName : 'Crown Restaurant',
+                                                  style: TextStyle(
+                                                    color: Theme.of(context).colorScheme.primary,
+                                                    fontSize: 16,
+                                                    letterSpacing: 1.2,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  "Cashier",
+                                                  style: TextStyle(
+                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                    fontSize: 10,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
+                                    );
+                                  },
                                 )
                               : const SizedBox.shrink(),
                           const SizedBox(height: 16),

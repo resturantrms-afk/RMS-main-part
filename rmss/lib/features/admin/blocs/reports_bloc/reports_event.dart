@@ -7,4 +7,12 @@ abstract class ReportsEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class LoadReports extends ReportsEvent {}
+class LoadReports extends ReportsEvent {
+  final DateTime? startDate;
+  final DateTime? endDate;
+
+  const LoadReports({this.startDate, this.endDate});
+
+  @override
+  List<Object?> get props => [startDate, endDate];
+}

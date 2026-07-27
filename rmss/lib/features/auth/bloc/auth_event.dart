@@ -69,9 +69,24 @@ class ForgotPasswordRequested extends AuthEvent {
 class UpdateProfileRequested extends AuthEvent {
   final String? name;
   final String? photoUrl;
+  final bool? pushNotificationsEnabled;
+  final bool? pushCleaningAlertsEnabled;
+  final String? paymentPin;
 
-  UpdateProfileRequested({this.name, this.photoUrl});
+  UpdateProfileRequested({
+    this.name, 
+    this.photoUrl, 
+    this.pushNotificationsEnabled,
+    this.pushCleaningAlertsEnabled,
+    this.paymentPin,
+  });
 
   @override
-  List<Object?> get props => [name, photoUrl];
+  List<Object?> get props => [
+    name, 
+    photoUrl, 
+    pushNotificationsEnabled, 
+    pushCleaningAlertsEnabled,
+    paymentPin,
+  ];
 }

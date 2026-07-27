@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rmss/features/admin/views/desktop/admin_dashboard.dart';
+import 'package:rmss/core/blocs/notification_bloc/app_notification_bloc.dart';
+import 'package:rmss/core/blocs/notification_bloc/app_notification_event.dart';
 
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_event.dart';
@@ -17,10 +19,21 @@ class RoleRouterScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, state) {
+        // Only fires when auth state actually changes — safe place for side effects
+        if (state is AuthSuccess) {
+          // Reset first to wipe any previous session's data, then start fresh
+          context.read<AppNotificationBloc>().add(const ResetNotifications());
+          context.read<AppNotificationBloc>().add(
+            StartListeningToNotifications(role: state.user.role),
+          );
+        } else if (state is AuthUnauthenticated) {
+          // Clear notifications the moment the user logs out
+          context.read<AppNotificationBloc>().add(const ResetNotifications());
+        }
+      },
       builder: (context, state) {
-        // We will hook this up to Firebase later, but let's mock it for now
-
         if (state is AuthSuccess) {
           final String userRole = state.user.role.name;
           switch (userRole) {

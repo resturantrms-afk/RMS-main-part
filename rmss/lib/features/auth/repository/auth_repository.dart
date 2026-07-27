@@ -17,14 +17,28 @@ class AuthRepository {
   }
 
   Future<void> logout() async {
+    // Clear the FCM token on the current user so push notifications
+    // stop being delivered to this device for the old account
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser != null) {
+      await _clearDeviceToken(currentUser.uid);
+    }
     await _firebaseAuth.signOut();
+  }
+
+  Future<void> _clearDeviceToken(String uid) async {
+    try {
+      await _firestore.collection('users').doc(uid).update({'deviceToken': ''});
+    } catch (_) {
+      // Ignore — non-critical
+    }
   }
 
   Future<UserModel?> updateUserData(UserModel user) async {
     final uid = user.id;
 
     await _firestore.collection('users').doc(uid).update(user.toJson());
-    return getUserData(uid);
+    return user;
   }
 
   Future<User?> signUp({

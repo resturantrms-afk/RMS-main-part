@@ -1,12 +1,76 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rmss/core/blocs/menu_bloc/menu_bloc.dart';
+import 'package:rmss/core/blocs/menu_bloc/menu_state.dart';
+
+import 'package:rmss/core/blocs/order_bloc/order_bloc.dart';
+import 'package:rmss/core/blocs/order_bloc/order_state.dart';
+import 'package:rmss/core/blocs/payment_bloc/payment_bloc.dart';
+import 'package:rmss/core/blocs/payment_bloc/payment_state.dart';
+import 'package:rmss/core/blocs/table_bloc/table_bloc.dart';
+import 'package:rmss/core/blocs/table_bloc/table_state.dart';
+import 'package:rmss/core/models/menu_item_model.dart';
+import 'package:rmss/core/models/order_model.dart';
+import 'package:rmss/core/models/payment_model.dart';
+import 'package:rmss/core/models/table_model.dart';
+import 'package:rmss/core/models/user_model.dart';
 import 'package:rmss/features/admin/blocs/ai_bloc/ai_bloc.dart';
 import 'package:rmss/features/admin/blocs/ai_bloc/ai_event.dart';
 import 'package:rmss/features/admin/blocs/ai_bloc/ai_state.dart';
-import 'dart:math';
+import 'package:rmss/features/admin/blocs/users_bloc/admin_users_bloc.dart';
+import 'package:rmss/features/admin/blocs/users_bloc/admin_users_state.dart';
+import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/ai_data_mining_components/editable_ai_chart_card.dart';
 
+// ─────────────────────────────────────────────────────────────
+// Time filter
+// ─────────────────────────────────────────────────────────────
+enum _TimeRange { today, thisWeek, thisMonth, allTime }
+
+extension _TimeRangeLabel on _TimeRange {
+  String get label {
+    switch (this) {
+      case _TimeRange.today:
+        return 'Today';
+      case _TimeRange.thisWeek:
+        return 'This Week';
+      case _TimeRange.thisMonth:
+        return 'This Month';
+      case _TimeRange.allTime:
+        return 'All Time';
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Computed stats for left panel
+// ─────────────────────────────────────────────────────────────
+class _DashStats {
+  final double totalRevenue;
+  final int totalOrders;
+  final String topItemName;
+  final int topItemUnits;
+  final String topItemCategory;
+  final List<double> dailyRevenue; // last N data points for sparkline
+
+  const _DashStats({
+    required this.totalRevenue,
+    required this.totalOrders,
+    required this.topItemName,
+    required this.topItemUnits,
+    required this.topItemCategory,
+    required this.dailyRevenue,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// Main Tab Widget
+// ─────────────────────────────────────────────────────────────
 class AiDataMiningTab extends StatefulWidget {
-  const AiDataMiningTab({super.key});
+  final GlobalKey? exportKey;
+
+  const AiDataMiningTab({super.key, this.exportKey});
 
   @override
   State<AiDataMiningTab> createState() => _AiDataMiningTabState();
@@ -16,324 +80,507 @@ class _AiDataMiningTabState extends State<AiDataMiningTab> {
   final TextEditingController _chatController = TextEditingController();
   double _aiWidth = 350.0;
   bool _isChatVisible = true;
+  _TimeRange _selected = _TimeRange.today;
+
+  @override
+  void dispose() {
+    _chatController.dispose();
+    super.dispose();
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────
+  bool _inRange(DateTime dt) {
+    final now = DateTime.now();
+    switch (_selected) {
+      case _TimeRange.today:
+        return dt.year == now.year &&
+            dt.month == now.month &&
+            dt.day == now.day;
+      case _TimeRange.thisWeek:
+        final weekStart = now.subtract(Duration(days: now.weekday - 1));
+        final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
+        return dt.isAfter(start) || dt.isAtSameMomentAs(start);
+      case _TimeRange.thisMonth:
+        return dt.year == now.year && dt.month == now.month;
+      case _TimeRange.allTime:
+        return true;
+    }
+  }
+
+  _DashStats _computeStats(
+    List<OrderModel> orders,
+    List<PaymentModel> payments,
+  ) {
+    final filteredOrders = orders
+        .where(
+          (o) => o.status == OrderStatus.paid && _inRange(o.updatedAt.toDate()),
+        )
+        .toList();
+
+    final filteredPayments = payments
+        .where(
+          (p) =>
+              p.status == PaymentStatus.completed &&
+              _inRange(p.createdAt.toDate()),
+        )
+        .toList();
+
+    // Revenue
+    final totalRevenue = filteredPayments.fold<double>(
+      0,
+      (s, p) => s + p.amountPaid,
+    );
+
+    // Item counts
+    final Map<String, int> itemUnits = {};
+    for (final o in filteredOrders) {
+      for (final item in o.items) {
+        itemUnits[item.name] = (itemUnits[item.name] ?? 0) + item.quantity;
+      }
+    }
+
+    String topItemName = 'N/A';
+    int topItemUnits = 0;
+    if (itemUnits.isNotEmpty) {
+      final top = itemUnits.entries.reduce((a, b) => a.value > b.value ? a : b);
+      topItemName = top.key;
+      topItemUnits = top.value;
+    }
+
+    // Daily revenue sparkline (last 7 data points)
+    final List<double> daily = [];
+    final now = DateTime.now();
+    for (int i = 6; i >= 0; i--) {
+      final day = now.subtract(Duration(days: i));
+      final dayRevenue = filteredPayments
+          .where((p) {
+            final dt = p.createdAt.toDate();
+            return dt.year == day.year &&
+                dt.month == day.month &&
+                dt.day == day.day;
+          })
+          .fold<double>(0, (s, p) => s + p.amountPaid);
+      daily.add(dayRevenue);
+    }
+
+    return _DashStats(
+      totalRevenue: totalRevenue,
+      totalOrders: filteredOrders.length,
+      topItemName: topItemName,
+      topItemUnits: topItemUnits,
+      topItemCategory: 'Live Data',
+      dailyRevenue: daily,
+    );
+  }
+
+  Map<String, dynamic> _computeStatsForRange(
+    _TimeRange range,
+    List<OrderModel> orders,
+    List<PaymentModel> payments,
+    List<UserModel> users,
+    List<TableModel> tables,
+    Map<String, String> itemToCategory,
+  ) {
+    bool inRange(DateTime dt) {
+      final now = DateTime.now();
+      switch (range) {
+        case _TimeRange.today:
+          return dt.year == now.year && dt.month == now.month && dt.day == now.day;
+        case _TimeRange.thisWeek:
+          final weekStart = now.subtract(Duration(days: now.weekday - 1));
+          final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
+          return dt.isAfter(start) || dt.isAtSameMomentAs(start);
+        case _TimeRange.thisMonth:
+          return dt.year == now.year && dt.month == now.month;
+        case _TimeRange.allTime:
+          return true;
+      }
+    }
+
+    final filteredOrders = orders.where((o) => o.status == OrderStatus.paid && inRange(o.updatedAt.toDate())).toList();
+    final filteredPayments = payments.where((p) => p.status == PaymentStatus.completed && inRange(p.createdAt.toDate())).toList();
+
+    final Map<String, int> itemCounts = {};
+    double totalRev = 0;
+    final Map<String, int> categoryCounts = {};
+    final Map<String, int> ordersByHour = {};
+    final Map<String, int> ordersBySource = {};
+    final Map<String, int> cancelledItems = {};
+    final Map<String, double> itemProfits = {};
+    double totalPrepMinutes = 0;
+    int preppedOrdersCount = 0;
+
+    final inRangeOrders = orders.where((o) => inRange(o.updatedAt.toDate())).toList();
+    for (var o in inRangeOrders) {
+      if (o.status == OrderStatus.cancelled) {
+        for (var item in o.items) {
+          cancelledItems[item.name] = (cancelledItems[item.name] ?? 0) + item.quantity;
+        }
+      } else if (o.status == OrderStatus.paid) {
+        final hour = o.createdAt.toDate().hour;
+        final hourLabel = "${hour.toString().padLeft(2, '0')}:00";
+        ordersByHour[hourLabel] = (ordersByHour[hourLabel] ?? 0) + 1;
+        ordersBySource[o.source.name] = (ordersBySource[o.source.name] ?? 0) + 1;
+
+        final diff = o.updatedAt.toDate().difference(o.createdAt.toDate()).inMinutes;
+        if (diff > 0 && diff < 300) {
+          totalPrepMinutes += diff;
+          preppedOrdersCount++;
+        }
+
+        for (var item in o.items) {
+          itemCounts[item.name] = (itemCounts[item.name] ?? 0) + item.quantity;
+          final cat = itemToCategory[item.name] ?? 'Uncategorized';
+          categoryCounts[cat] = (categoryCounts[cat] ?? 0) + item.quantity;
+          final revenue = item.price * item.quantity;
+          itemProfits[item.name] = (itemProfits[item.name] ?? 0) + (revenue * 0.70);
+        }
+      }
+    }
+    final avgPrepTime = preppedOrdersCount > 0 ? (totalPrepMinutes / preppedOrdersCount) : 0.0;
+
+    final Map<String, double> revenueByDate = {};
+    final Map<String, double> revenueByMethod = {};
+    final Map<String, double> staffPerformance = {};
+
+    for (var p in filteredPayments) {
+      totalRev += p.amountPaid;
+      final date = p.createdAt.toDate();
+      final dateStr = "${date.month}/${date.day}";
+      revenueByDate[dateStr] = (revenueByDate[dateStr] ?? 0) + p.amountPaid;
+      final method = p.paymentMethod.name;
+      revenueByMethod[method] = (revenueByMethod[method] ?? 0) + p.amountPaid;
+
+      String staffName = 'Unknown';
+      final staffId = p.processedBy['user'];
+      if (staffId != null) {
+        try {
+          final u = users.firstWhere((u) => u.id == staffId);
+          staffName = u.name;
+        } catch (_) {
+          staffName = p.processedBy['name'] ?? 'Unknown';
+        }
+      } else {
+        staffName = p.processedBy['name'] ?? 'Unknown';
+      }
+      staffPerformance[staffName] = (staffPerformance[staffName] ?? 0) + p.amountPaid;
+    }
+
+    final occupiedTables = tables.where((t) => t.status != TableStatus.available).length;
+    final activeStaff = users.where((u) => u.status == UserStatus.active).length;
+
+    final Map<String, int> roleCounts = {};
+    for (var u in users) {
+      final roleName = u.role.toString().split('.').last;
+      roleCounts[roleName] = (roleCounts[roleName] ?? 0) + 1;
+    }
+
+    final List<Map<String, dynamic>> detailedOrders = [];
+    for (var o in inRangeOrders) {
+      if (o.status == OrderStatus.paid) {
+        String cashierName = 'Unknown';
+        try {
+          final p = payments.firstWhere((p) => p.orderId == o.id);
+          final staffId = p.processedBy['user'];
+          if (staffId != null) {
+            cashierName = users.firstWhere((u) => u.id == staffId).name;
+          } else {
+            cashierName = p.processedBy['name'] ?? 'Unknown';
+          }
+        } catch (_) {
+          final creatorId = o.createdBy['user'];
+          if (creatorId != null) {
+            try {
+              cashierName = users.firstWhere((u) => u.id == creatorId).name;
+            } catch (_) {}
+          } else {
+            cashierName = o.createdBy['name'] ?? 'Unknown';
+          }
+        }
+
+        detailedOrders.add({
+          "orderId": o.id,
+          "totalPrice": o.totalPrice,
+          "cashierName": cashierName,
+          "items": o.items.map((i) => {
+            "name": i.name,
+            "quantity": i.quantity,
+            "price": i.price,
+          }).toList(),
+        });
+      }
+    }
+
+    return {
+      "timeRange": range.label,
+      "totalRevenue": totalRev,
+      "revenueByDate": revenueByDate,
+      "revenueByMethod": revenueByMethod,
+      "itemUnitsSold": itemCounts,
+      "categoryUnitsSold": categoryCounts,
+      "itemProfits": itemProfits,
+      "ordersByHour": ordersByHour,
+      "ordersBySource": ordersBySource,
+      "cancelledItems": cancelledItems,
+      "avgPrepTimeMinutes": avgPrepTime,
+      "staffPerformance": staffPerformance,
+      "tables": {"total": tables.length, "occupied": occupiedTables},
+      "users": {
+        "totalStaff": users.length,
+        "activeNow": activeStaff,
+        "roles": roleCounts,
+      },
+      "detailedOrders": detailedOrders,
+    };
+  }
+
+  String _buildContextData() {
+    final orderState = context.read<OrderBloc>().state;
+    final paymentState = context.read<PaymentBloc>().state;
+    final userState = context.read<AdminUsersBloc>().state;
+    final tableState = context.read<TableBloc>().state;
+    final menuState = context.read<MenuBloc>().state;
+
+    final menuItems = menuState is MenuLoaded ? menuState.items : <MenuItemModel>[];
+    final Map<String, String> itemToCategory = {};
+    for (var m in menuItems) {
+      itemToCategory[m.name] = (m.category.isNotEmpty) ? m.category.first : 'Uncategorized';
+    }
+
+    final orders = orderState is OrderLoaded ? orderState.items : <OrderModel>[];
+    final payments = paymentState is PaymentsLoaded ? paymentState.items : <PaymentModel>[];
+    final users = userState is AdminUsersLoaded ? userState.allUsers : <UserModel>[];
+    final tables = tableState is TablesLoaded ? tableState.items : <TableModel>[];
+
+    final detailedUsers = users.map((u) => {
+      "id": u.id,
+      "name": u.name,
+      "role": u.role.toString().split('.').last,
+      "status": u.status.toString().split('.').last,
+    }).toList();
+
+    final rawMenu = menuItems.map((m) => {
+      "name": m.name,
+      "category": m.category.isNotEmpty ? m.category.first : 'Uncategorized',
+      "price": m.price,
+    }).toList();
+
+    final map = {
+      "today": _computeStatsForRange(_TimeRange.today, orders, payments, users, tables, itemToCategory),
+      "thisWeek": _computeStatsForRange(_TimeRange.thisWeek, orders, payments, users, tables, itemToCategory),
+      "thisMonth": _computeStatsForRange(_TimeRange.thisMonth, orders, payments, users, tables, itemToCategory),
+      "allTime": _computeStatsForRange(_TimeRange.allTime, orders, payments, users, tables, itemToCategory),
+      "rawMenu": rawMenu,
+      "detailedUsers": detailedUsers,
+    };
+    return jsonEncode(map);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => AiBloc(),
-      child: Stack(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Left Panel: Dashboard
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.only(bottom: 24, right: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (!_isChatVisible) const SizedBox(height: 64),
-                      _buildLeftPanel(context),
+    return BlocBuilder<OrderBloc, OrderState>(
+      builder: (context, orderState) {
+        return BlocBuilder<PaymentBloc, PaymentState>(
+          builder: (context, paymentState) {
+            final stats = _computeStats(
+              orderState is OrderLoaded ? orderState.items : [],
+              paymentState is PaymentsLoaded ? paymentState.items : [],
+            );
+
+            return Stack(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left Panel: Dashboard
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: RepaintBoundary(
+                          key: widget.exportKey,
+                          child: Container(
+                            padding: const EdgeInsets.only(
+                              bottom: 24,
+                              right: 12,
+                              top: 24,
+                              left: 24,
+                            ),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainer,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (!_isChatVisible) const SizedBox(height: 64),
+                                _buildLeftPanel(context, stats),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (_isChatVisible) ...[
+                      // Resize handle
+                      MouseRegion(
+                        cursor: SystemMouseCursors.resizeLeftRight,
+                        child: GestureDetector(
+                          onPanUpdate: (details) {
+                            setState(() {
+                              _aiWidth = (_aiWidth - details.delta.dx).clamp(
+                                300.0,
+                                800.0,
+                              );
+                            });
+                          },
+                          child: Container(
+                            width: 24,
+                            color: Colors.transparent,
+                            alignment: Alignment.center,
+                            child: Container(
+                              height: 64,
+                              width: 6,
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Right Panel: AI Chat
+                      SizedBox(
+                        width: _aiWidth,
+                        child: _buildRightPanel(context),
+                      ),
                     ],
-                  ),
+                  ],
                 ),
-              ),
-              if (_isChatVisible) ...[
-                // Resizable Handle
-                MouseRegion(
-                  cursor: SystemMouseCursors.resizeLeftRight,
-                  child: GestureDetector(
-                    onPanUpdate: (details) {
-                      setState(() {
-                        _aiWidth = (_aiWidth - details.delta.dx).clamp(300.0, 800.0);
-                      });
-                    },
-                    child: Container(
-                      width: 24,
-                      color: Colors.transparent,
-                      alignment: Alignment.center,
-                      child: Container(
-                        height: 64,
-                        width: 6,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(4),
+                // "Show AI Chat" button when hidden
+                if (!_isChatVisible)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: ElevatedButton.icon(
+                      onPressed: () => setState(() => _isChatVisible = true),
+                      icon: const Icon(Icons.smart_toy),
+                      label: const Text('AI Chat'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                     ),
                   ),
-                ),
-                // Right Panel: AI Chat
-                SizedBox(
-                  width: _aiWidth,
-                  child: _buildRightPanel(context),
-                ),
               ],
-            ],
-          ),
-          if (!_isChatVisible)
-            Positioned(
-              right: 0,
-              top: 0,
-              child: ElevatedButton.icon(
-                onPressed: () => setState(() => _isChatVisible = true),
-                icon: const Icon(Icons.smart_toy),
-                label: const Text('AI Chat'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _buildLeftPanel(BuildContext context) {
+  // ─────────────────────────────────────────────────────────────
+  // Left Panel
+  // ─────────────────────────────────────────────────────────────
+  Widget _buildLeftPanel(BuildContext context, _DashStats stats) {
     final cs = Theme.of(context).colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // First Part: Main Chart Card
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerLowest,
-            border: Border.all(color: cs.outlineVariant),
-            borderRadius: BorderRadius.circular(32),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Predicted Revenue (Next 30 Days)',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'May 2 - June 1, 2026',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              // Mock Chart Area
-              SizedBox(
-                height: 250,
-                child: CustomPaint(
-                  size: const Size(double.infinity, 250),
-                  painter: _MockChartPainter(cs),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 48), // Increased space to separate the two parts
-        // Second Part: Recommendation Cards
-        Row(
+    return BlocBuilder<AiBloc, AiState>(
+      builder: (context, aiState) {
+        AiCanvasData? activeData;
+        if (aiState is AiReportReady) {
+          activeData = aiState.canvasData;
+        } else if (aiState is AiGenerating) {
+          activeData = aiState.fallbackData;
+        } else if (aiState is AiError) {
+          activeData = aiState.fallbackData;
+        }
+
+        final hasAiCharts = activeData != null && activeData.charts.isNotEmpty;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: _buildRecommendationCard(
-                context: context,
-                icon: Icons.local_dining,
-                title: 'Predicted Top-Selling Item',
-                mainValue: 'Truffle Mac & Cheese',
-                subValue: '450',
-                subValueLabel: 'units',
-                highlightColor: const Color(0xFF00E5FF),
-              ),
-            ),
-            const SizedBox(width: 24),
-            Expanded(
-              child: _buildStaffingCard(context),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRecommendationCard({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String mainValue,
-    required String subValue,
-    required String subValueLabel,
-    required Color highlightColor,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLowest,
-        border: Border.all(color: cs.outlineVariant),
-        borderRadius: BorderRadius.circular(32),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: highlightColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: highlightColor, size: 24),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              color: cs.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            mainValue,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: cs.onSurface,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                subValue,
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                  color: highlightColor,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  subValueLabel.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: cs.onSurfaceVariant,
-                  ),
+            if (hasAiCharts)
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  return Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: activeData!.charts.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final chart = entry.value;
+                      return EditableAiChartCard(
+                        key: ObjectKey(chart),
+                        index: index,
+                        initialChart: chart,
+                        onRemove: () {
+                          context.read<AiBloc>().add(RemoveChart(index: index));
+                        },
+                      );
+                    }).toList(),
+                  );
+                },
+              )
+            else ...[
+              const SizedBox(height: 100),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: cs.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.auto_graph_rounded,
+                        size: 64,
+                        color: cs.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Text(
+                      'AI Data Mining Engine',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Generate dynamic charts and uncover hidden trends.\nAsk a question in the chat to get started.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: cs.onSurfaceVariant,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-          ),
-        ],
-      ),
+          ], // Closes else ...[
+        );
+      },
     );
   }
 
-  Widget _buildStaffingCard(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLowest,
-        border: Border.all(color: cs.outlineVariant),
-        borderRadius: BorderRadius.circular(32),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: cs.primary.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.groups, color: cs.primary, size: 24),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Staffing Recommendation',
-            style: TextStyle(
-              fontSize: 14,
-              color: cs.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Increase FOH staff by 2 on Fri/Sat Dinner',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: cs.onSurface,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _buildStaffingDayBadge(context, 'FRI', '+2', cs.primary),
-              const SizedBox(width: 8),
-              _buildStaffingDayBadge(context, 'SAT', '+2', cs.primary),
-              const SizedBox(width: 8),
-              _buildStaffingDayBadge(context, 'SUN', 'Normal', cs.onSurface),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStaffingDayBadge(BuildContext context, String day, String value, Color valueColor) {
-    final cs = Theme.of(context).colorScheme;
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Text(
-              day,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: cs.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: valueColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
+  // ─────────────────────────────────────────────────────────────
+  // Right Panel: AI Chat
+  // ─────────────────────────────────────────────────────────────
   Widget _buildRightPanel(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
@@ -364,27 +611,39 @@ class _AiDataMiningTabState extends State<AiDataMiningTab> {
                 ),
                 IconButton(
                   icon: Icon(Icons.close, color: cs.onSurfaceVariant),
-                  onPressed: () {
-                    setState(() {
-                      _isChatVisible = false;
-                    });
-                  },
+                  onPressed: () => setState(() => _isChatVisible = false),
                   tooltip: 'Hide Chat',
                 ),
               ],
             ),
           ),
+
           // Chat History
           Expanded(
             child: BlocBuilder<AiBloc, AiState>(
               builder: (context, state) {
                 if (state is AiGenerating) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          color: cs.primary,
+                          strokeWidth: 3,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Analysing data...',
+                          style: TextStyle(color: cs.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  );
                 } else if (state is AiReportReady) {
                   return ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     children: [
-                      // Mock user message
+                      // User message bubble
                       Align(
                         alignment: Alignment.centerRight,
                         child: Container(
@@ -404,7 +663,7 @@ class _AiDataMiningTabState extends State<AiDataMiningTab> {
                           ),
                         ),
                       ),
-                      // AI response
+                      // AI response bubble
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Container(
@@ -417,65 +676,12 @@ class _AiDataMiningTabState extends State<AiDataMiningTab> {
                               topRight: Radius.circular(16),
                               bottomRight: Radius.circular(16),
                             ),
+                            border: Border.all(color: cs.outlineVariant),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                state.canvasData.textReport ?? "Here is the analysis based on your data.",
-                                style: TextStyle(color: cs.onSurface, height: 1.5),
-                              ),
-                              if (state.canvasData.textReport == null || state.canvasData.textReport!.isEmpty) ...[
-                                const SizedBox(height: 12),
-                                Text(
-                                  "• Traffic peaks at 8 PM.",
-                                  style: TextStyle(color: cs.onSurfaceVariant),
-                                ),
-                                Text(
-                                  "• Top items: Truffle Mac & Cheese, Dry-Aged Ribeye.",
-                                  style: TextStyle(color: cs.onSurfaceVariant),
-                                ),
-                                Text(
-                                  "• Sales for Cocktails are up 15%.",
-                                  style: TextStyle(color: cs.onSurfaceVariant),
-                                ),
-                                const SizedBox(height: 16),
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF00E5FF).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.lightbulb, size: 16, color: Color(0xFF00E5FF)),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'RECOMMENDATION',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                              color: const Color(0xFF00E5FF),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Consider increasing FOH staff by 2 during the 7 PM - 9 PM rush.',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: cs.onSurface,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              ]
-                            ],
+                          child: Text(
+                            state.canvasData.textReport ??
+                                'Here is the analysis based on your data.',
+                            style: TextStyle(color: cs.onSurface, height: 1.5),
                           ),
                         ),
                       ),
@@ -483,32 +689,90 @@ class _AiDataMiningTabState extends State<AiDataMiningTab> {
                   );
                 } else if (state is AiError) {
                   return Center(
-                    child: Text('Error: ${state.message}', style: TextStyle(color: cs.error)),
-                  );
-                } else {
-                  return Center(
-                    child: Text(
-                      'Ask a question to start data mining',
-                      style: TextStyle(color: cs.onSurfaceVariant),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.warning_rounded,
+                            size: 40,
+                            color: cs.error,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Error: ${state.message}',
+                            style: TextStyle(color: cs.error),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
+                // Initial state — empty prompt
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.smart_toy_outlined,
+                        size: 56,
+                        color: cs.outlineVariant,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Ask a question to start\ndata mining',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
               },
             ),
           ),
+
           // Input Area
           Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildQuickPrompt(context, 'Analyze Friday night trends'),
-                    _buildQuickPrompt(context, 'Predict next weekend volume'),
-                    _buildQuickPrompt(context, 'Compare this month vs last'),
+                    Expanded(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _buildQuickPrompt(
+                            context,
+                            'Generate card of top item',
+                          ),
+                          _buildQuickPrompt(
+                            context,
+                            'Generate pie chart of roles',
+                          ),
+                          _buildQuickPrompt(
+                            context,
+                            'Generate bar chart of items sold',
+                          ),
+                          _buildQuickPrompt(
+                            context,
+                            'Generate table of staff performance',
+                          ),
+                          _buildQuickPrompt(
+                            context,
+                            'Generate textual report of main course foods',
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -520,21 +784,27 @@ class _AiDataMiningTabState extends State<AiDataMiningTab> {
                           child: TextField(
                             controller: _chatController,
                             decoration: InputDecoration(
-                              hintText: "Ask me to mine your data...",
+                              hintText: 'Ask me to mine your data...',
                               filled: true,
                               fillColor: cs.surfaceContainerHighest,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
                                 borderSide: BorderSide.none,
                               ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 16,
+                              ),
                             ),
                             onSubmitted: (value) {
                               if (value.isNotEmpty) {
-                                blocContext.read<AiBloc>().add(GenerateAiReport(
-                                  query: value,
-                                  preferredLevel: AiLevel.basic,
-                                ));
+                                blocContext.read<AiBloc>().add(
+                                  GenerateAiReport(
+                                    query: value,
+                                    contextData: _buildContextData(),
+                                    preferredLevel: AiLevel.basic,
+                                  ),
+                                );
                                 _chatController.clear();
                               }
                             },
@@ -550,10 +820,13 @@ class _AiDataMiningTabState extends State<AiDataMiningTab> {
                             icon: const Icon(Icons.send, color: Colors.white),
                             onPressed: () {
                               if (_chatController.text.isNotEmpty) {
-                                blocContext.read<AiBloc>().add(GenerateAiReport(
-                                  query: _chatController.text,
-                                  preferredLevel: AiLevel.basic,
-                                ));
+                                blocContext.read<AiBloc>().add(
+                                  GenerateAiReport(
+                                    query: _chatController.text,
+                                    contextData: _buildContextData(),
+                                    preferredLevel: AiLevel.basic,
+                                  ),
+                                );
                                 _chatController.clear();
                               }
                             },
@@ -561,7 +834,7 @@ class _AiDataMiningTabState extends State<AiDataMiningTab> {
                         ),
                       ],
                     );
-                  }
+                  },
                 ),
               ],
             ),
@@ -574,9 +847,7 @@ class _AiDataMiningTabState extends State<AiDataMiningTab> {
   Widget _buildQuickPrompt(BuildContext context, String text) {
     final cs = Theme.of(context).colorScheme;
     return InkWell(
-      onTap: () {
-        _chatController.text = text;
-      },
+      onTap: () => _chatController.text = text,
       borderRadius: BorderRadius.circular(24),
       mouseCursor: SystemMouseCursors.click,
       child: Container(
@@ -596,93 +867,4 @@ class _AiDataMiningTabState extends State<AiDataMiningTab> {
       ),
     );
   }
-}
-
-class _MockChartPainter extends CustomPainter {
-  final ColorScheme cs;
-
-  _MockChartPainter(this.cs);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    
-    final paintGrid = Paint()
-      ..color = cs.outline.withOpacity(0.1)
-      ..strokeWidth = 1;
-      
-    // Draw horizontal grid lines
-    for (int i = 0; i <= 3; i++) {
-      final y = h * (i / 3);
-      canvas.drawLine(Offset(0, y), Offset(w, y), paintGrid);
-    }
-    
-    // Gradient line setup
-    final List<Offset> points = [
-      Offset(0, h * 0.8),
-      Offset(w * 0.3, h * 0.6),
-      Offset(w * 0.7, h * 0.4),
-      Offset(w, h * 0.2),
-    ];
-    
-    final path = Path();
-    path.moveTo(points[0].dx, points[0].dy);
-    for (int i = 1; i < points.length; i++) {
-      // Simple cubic bezier curve approximation for smoothness
-      final prev = points[i - 1];
-      final curr = points[i];
-      final controlX = (prev.dx + curr.dx) / 2;
-      path.cubicTo(controlX, prev.dy, controlX, curr.dy, curr.dx, curr.dy);
-    }
-    
-    // Create gradient
-    final gradient = LinearGradient(
-      colors: [cs.primary, const Color(0xFF00E5FF)],
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
-    );
-    
-    // Draw area under curve
-    final areaPath = Path.from(path);
-    areaPath.lineTo(w, h);
-    areaPath.lineTo(0, h);
-    areaPath.close();
-    
-    final areaPaint = Paint()
-      ..shader = LinearGradient(
-        colors: [
-          const Color(0xFF00E5FF).withOpacity(0.2),
-          const Color(0xFF00E5FF).withOpacity(0.0),
-        ],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromLTWH(0, 0, w, h));
-      
-    canvas.drawPath(areaPath, areaPaint);
-
-    // Draw line
-    final paintLine = Paint()
-      ..shader = gradient.createShader(Rect.fromLTWH(0, 0, w, h))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-      
-    canvas.drawPath(path, paintLine);
-    
-    // Draw dots
-    final paintDotOuter = Paint()..style = PaintingStyle.fill;
-    final paintDotInner = Paint()
-      ..color = cs.surfaceContainerLowest
-      ..style = PaintingStyle.fill;
-
-    for (int i = 0; i < points.length; i++) {
-      paintDotOuter.color = i < points.length / 2 ? cs.primary : const Color(0xFF00E5FF);
-      canvas.drawCircle(points[i], 6, paintDotOuter);
-      canvas.drawCircle(points[i], 3, paintDotInner);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

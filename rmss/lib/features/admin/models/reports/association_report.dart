@@ -1,17 +1,15 @@
-class ItemPair {
-  final String item1Name;
-  final String item2Name;
+class ItemSet {
+  final List<String> items;
   final int frequency; // How many times they were bought together
 
-  ItemPair({
-    required this.item1Name,
-    required this.item2Name,
+  ItemSet({
+    required this.items,
     required this.frequency,
   });
 }
 
 class AssociationAlgorithmReport {
-  final List<ItemPair> frequentlyBoughtTogether;
+  final List<ItemSet> frequentlyBoughtTogether;
 
   AssociationAlgorithmReport({
     required this.frequentlyBoughtTogether,

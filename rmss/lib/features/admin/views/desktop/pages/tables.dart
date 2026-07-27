@@ -346,14 +346,13 @@ class _DownloadAllQrCodesButtonState extends State<_DownloadAllQrCodesButton> {
     }
 
     final zipBytes = ZipEncoder().encode(archive);
-    if (zipBytes != null) {
-      await FileSaver.instance.saveFile(
-        name: 'Table_QR_Codes',
-        bytes: Uint8List.fromList(zipBytes),
-        fileExtension: 'zip',
-        mimeType: MimeType.zip,
-      );
-    }
+
+    await FileSaver.instance.saveFile(
+      name: 'Table_QR_Codes',
+      bytes: Uint8List.fromList(zipBytes),
+      fileExtension: 'zip',
+      mimeType: MimeType.zip,
+    );
 
     if (mounted) {
       setState(() => _isDownloading = false);
@@ -961,41 +960,59 @@ class _TableCardState extends State<_TableCard>
   }
 
   // ── Status helpers ───────────────────────────────────────────────────────
-  Color _statusBg(ColorScheme cs) => switch (widget.table.status) {
-    TableStatus.available => const Color(0xFF4CAF50).withValues(alpha: 0.12),
-    TableStatus.occupied => cs.primary.withValues(alpha: 0.12),
-    TableStatus.needsCleaning => cs.primary.withValues(alpha: 0.12),
-  };
+  Color _statusBg(ColorScheme cs) {
+    if (widget.table.needsHelp) return const Color(0xFFF44336).withValues(alpha: 0.12);
+    return switch (widget.table.status) {
+      TableStatus.available => const Color(0xFF4CAF50).withValues(alpha: 0.12),
+      TableStatus.occupied => cs.primary.withValues(alpha: 0.12),
+      TableStatus.needsCleaning => cs.primary.withValues(alpha: 0.12),
+    };
+  }
 
-  Color _statusFg(ColorScheme cs) => switch (widget.table.status) {
-    TableStatus.available => const Color(0xFF4CAF50),
-    TableStatus.occupied => cs.primary,
-    TableStatus.needsCleaning => cs.primary,
-  };
+  Color _statusFg(ColorScheme cs) {
+    if (widget.table.needsHelp) return const Color(0xFFF44336);
+    return switch (widget.table.status) {
+      TableStatus.available => const Color(0xFF4CAF50),
+      TableStatus.occupied => cs.primary,
+      TableStatus.needsCleaning => cs.primary,
+    };
+  }
 
-  String _statusText() => switch (widget.table.status) {
-    TableStatus.available => 'Available',
-    TableStatus.occupied => 'Occupied',
-    TableStatus.needsCleaning => 'Needs Cleaning',
-  };
+  String _statusText() {
+    if (widget.table.needsHelp) return 'Needs Help';
+    return switch (widget.table.status) {
+      TableStatus.available => 'Available',
+      TableStatus.occupied => 'Occupied',
+      TableStatus.needsCleaning => 'Needs Cleaning',
+    };
+  }
 
-  Color _iconColor(ColorScheme cs) => switch (widget.table.status) {
-    TableStatus.available => cs.onSurfaceVariant.withValues(alpha: 0.35),
-    TableStatus.occupied => cs.primary.withValues(alpha: 0.65),
-    TableStatus.needsCleaning => cs.primary.withValues(alpha: 0.65),
-  };
+  Color _iconColor(ColorScheme cs) {
+    if (widget.table.needsHelp) return const Color(0xFFF44336).withValues(alpha: 0.65);
+    return switch (widget.table.status) {
+      TableStatus.available => cs.onSurfaceVariant.withValues(alpha: 0.35),
+      TableStatus.occupied => cs.primary.withValues(alpha: 0.65),
+      TableStatus.needsCleaning => cs.primary.withValues(alpha: 0.65),
+    };
+  }
 
-  String _statusLabel() => switch (widget.table.status) {
-    TableStatus.available => 'AVAILABLE',
-    TableStatus.occupied => 'OCCUPIED',
-    TableStatus.needsCleaning => 'PENDING',
-  };
+  String _statusLabel() {
+    if (widget.table.needsHelp) return 'HELP';
+    return switch (widget.table.status) {
+      TableStatus.available => 'AVAILABLE',
+      TableStatus.occupied => 'OCCUPIED',
+      TableStatus.needsCleaning => 'PENDING',
+    };
+  }
 
-  IconData _centerIcon() => switch (widget.table.status) {
-    TableStatus.available => Icons.table_restaurant,
-    TableStatus.occupied => Icons.person,
-    TableStatus.needsCleaning => Icons.cleaning_services,
-  };
+  IconData _centerIcon() {
+    if (widget.table.needsHelp) return Icons.help_outline;
+    return switch (widget.table.status) {
+      TableStatus.available => Icons.table_restaurant,
+      TableStatus.occupied => Icons.person,
+      TableStatus.needsCleaning => Icons.cleaning_services,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1757,7 +1774,7 @@ class _QrButtonState extends State<_QrButton> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Generate QR',
+                'Generate QR Code',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,

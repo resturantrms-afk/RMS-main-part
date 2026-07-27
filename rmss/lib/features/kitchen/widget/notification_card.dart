@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:rmss/features/kitchen/model/notification_model.dart';
+import 'package:rmss/core/models/app_notification_model.dart';
 
 class NotificationCard extends StatelessWidget {
-  final NotificationModel notification;
+  final AppNotificationModel notification;
   final VoidCallback onTap;
+  final Widget? actionButton;
 
   const NotificationCard({
     super.key,
     required this.notification,
     required this.onTap,
+    this.actionButton,
   });
 
   @override
@@ -35,15 +37,25 @@ class NotificationCard extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        subtitle: Text(
-          notification.description,
-          style: TextStyle(color: colorScheme.onSurfaceVariant),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              notification.message,
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
+            if (actionButton != null) ...[
+              const SizedBox(height: 8),
+              actionButton!,
+            ],
+          ],
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              notification.time,
+              notification.timeAgo(),
               style: TextStyle(
                 color: colorScheme.onSurfaceVariant,
                 fontSize: 11,

@@ -17,6 +17,9 @@ class UserModel extends Equatable {
   final Timestamp createdDate;
   final Timestamp lastLoginDate;
   final String deviceToken;
+  final bool pushNotificationsEnabled;
+  final bool pushCleaningAlertsEnabled;
+  final String? paymentPin;
 
   const UserModel({
     required this.id,
@@ -30,6 +33,9 @@ class UserModel extends Equatable {
     required this.createdDate,
     required this.lastLoginDate,
     required this.deviceToken,
+    this.pushNotificationsEnabled = true,
+    this.pushCleaningAlertsEnabled = true,
+    this.paymentPin,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json, String documentId) {
@@ -51,6 +57,9 @@ class UserModel extends Equatable {
       createdDate: json['createdDate'] ?? Timestamp.now(),
       lastLoginDate: json['lastLoginDate'] ?? Timestamp.now(),
       deviceToken: json['deviceToken'] ?? 'invalid',
+      pushNotificationsEnabled: json['pushNotificationsEnabled'] ?? true,
+      pushCleaningAlertsEnabled: json['pushCleaningAlertsEnabled'] ?? true,
+      paymentPin: json['paymentPin'],
     );
   }
 
@@ -67,6 +76,9 @@ class UserModel extends Equatable {
       'createdDate': createdDate,
       'lastLoginDate': lastLoginDate,
       'deviceToken': deviceToken,
+      'pushNotificationsEnabled': pushNotificationsEnabled,
+      'pushCleaningAlertsEnabled': pushCleaningAlertsEnabled,
+      'paymentPin': paymentPin,
     };
   }
 
@@ -82,6 +94,9 @@ class UserModel extends Equatable {
     Timestamp? createdDate,
     Timestamp? lastLoginDate,
     String? deviceToken,
+    bool? pushNotificationsEnabled,
+    bool? pushCleaningAlertsEnabled,
+    String? paymentPin,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -95,6 +110,9 @@ class UserModel extends Equatable {
       createdDate: createdDate ?? this.createdDate,
       lastLoginDate: lastLoginDate ?? this.lastLoginDate,
       deviceToken: deviceToken ?? this.deviceToken,
+      pushNotificationsEnabled: pushNotificationsEnabled ?? this.pushNotificationsEnabled,
+      pushCleaningAlertsEnabled: pushCleaningAlertsEnabled ?? this.pushCleaningAlertsEnabled,
+      paymentPin: paymentPin ?? this.paymentPin,
     );
   }
 
@@ -111,5 +129,8 @@ class UserModel extends Equatable {
     createdDate,
     lastLoginDate,
     deviceToken,
+    pushNotificationsEnabled,
+    pushCleaningAlertsEnabled,
+    paymentPin,
   ];
 }

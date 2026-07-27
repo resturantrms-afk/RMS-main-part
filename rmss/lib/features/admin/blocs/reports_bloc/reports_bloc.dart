@@ -10,7 +10,10 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     on<LoadReports>((event, emit) async {
       emit(ReportsLoading());
       try {
-        final data = await reportsRepository.generateAllReports();
+        final data = await reportsRepository.generateAllReports(
+          startDate: event.startDate,
+          endDate: event.endDate,
+        );
 
         emit(
           ReportsLoaded(

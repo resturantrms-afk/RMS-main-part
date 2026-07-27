@@ -12,11 +12,12 @@ class AiInitial extends AiState {}
 
 class AiGenerating extends AiState {
   final AiLevel activeLevel;
+  final AiCanvasData? fallbackData;
 
-  const AiGenerating({required this.activeLevel});
+  const AiGenerating({required this.activeLevel, this.fallbackData});
 
   @override
-  List<Object?> get props => [activeLevel];
+  List<Object?> get props => [activeLevel, fallbackData];
 }
 
 class AiReportReady extends AiState {

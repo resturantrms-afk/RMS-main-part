@@ -9,6 +9,7 @@ import 'package:rmss/features/auth/bloc/auth_event.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/cashier_top_bar.dart';
 import 'package:rmss/core/theme/theme_cubit.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Settings extends StatefulWidget {
@@ -606,6 +607,64 @@ class _SettingsState extends State<Settings> {
                             ),
                           ),
 
+                          const SizedBox(height: 40),
+                          
+                          // Payment Security PIN
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerLowest,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: colorScheme.outlineVariant,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 2),
+                                  spreadRadius: -2,
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Payment Security PIN",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurface,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "Require a 4-digit PIN to complete orders.",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    _showSetPinDialog(context);
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: colorScheme.primary,
+                                    foregroundColor: colorScheme.onPrimary,
+                                  ),
+                                  child: const Text("SET PIN"),
+                                ),
+                              ],
+                            ),
+                          ),
+
                           const SizedBox(height: 32),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
@@ -617,6 +676,10 @@ class _SettingsState extends State<Settings> {
                                   await prefs.setDouble('cashierAlertVolume', _alertVolume);
                                   
                                   if (context.mounted) {
+                                    context.read<AuthBloc>().add(
+                                      UpdateProfileRequested(pushNotificationsEnabled: _soundAlerts),
+                                    );
+                                  
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text("Preferences Saved"),
@@ -660,6 +723,137 @@ class _SettingsState extends State<Settings> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showSetPinDialog(BuildContext context) {
+    final passwordController = TextEditingController();
+    final pinController = TextEditingController();
+    bool isLoading = false;
+    String? errorText;
+    bool obscurePassword = true;
+    bool obscurePin = true;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text("Set Payment PIN"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (errorText != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        errorText!,
+                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      ),
+                    ),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: obscurePassword,
+                    decoration: InputDecoration(
+                      labelText: "Current Password",
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setDialogState(() {
+                            obscurePassword = !obscurePassword;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: pinController,
+                    obscureText: obscurePin,
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    decoration: InputDecoration(
+                      labelText: "New 4-digit PIN",
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscurePin ? Icons.visibility : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setDialogState(() {
+                            obscurePin = !obscurePin;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("CANCEL"),
+                ),
+                ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          final password = passwordController.text;
+                          final pin = pinController.text;
+
+                          if (password.isEmpty || pin.length != 4) {
+                            setDialogState(() {
+                              errorText = "Please enter password and a 4-digit PIN.";
+                            });
+                            return;
+                          }
+
+                          setDialogState(() {
+                            isLoading = true;
+                            errorText = null;
+                          });
+
+                          try {
+                            final user = FirebaseAuth.instance.currentUser;
+                            if (user != null && user.email != null) {
+                              await FirebaseAuth.instance.signInWithEmailAndPassword(
+                                email: user.email!,
+                                password: password,
+                              );
+
+                              if (context.mounted) {
+                                context.read<AuthBloc>().add(
+                                  UpdateProfileRequested(paymentPin: pin),
+                                );
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("Payment PIN updated successfully!")),
+                                );
+                              }
+                            } else {
+                              setDialogState(() {
+                                errorText = "No user email found. Cannot verify password.";
+                                isLoading = false;
+                              });
+                            }
+                          } catch (e) {
+                            setDialogState(() {
+                              errorText = "Authentication failed. Incorrect password.";
+                              isLoading = false;
+                            });
+                          }
+                        },
+                  child: isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("SAVE"),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

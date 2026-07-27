@@ -31,11 +31,31 @@ class ReportsRepository {
     return snapshot.docs.map((doc) => UserModel.fromJson(doc.data(), doc.id)).toList();
   }
 
-  Future<Map<String, dynamic>> generateAllReports() async {
-    final orders = await _fetchAllOrders();
-    final payments = await _fetchAllPayments();
+  Future<Map<String, dynamic>> generateAllReports({DateTime? startDate, DateTime? endDate}) async {
+    final allOrders = await _fetchAllOrders();
+    final allPayments = await _fetchAllPayments();
     final menuItems = await _fetchAllMenuItems();
     final users = await _fetchAllUsers();
+
+    // Filter orders by date range
+    var orders = allOrders;
+    if (startDate != null && endDate != null) {
+      orders = orders.where((o) {
+        final dt = o.updatedAt.toDate();
+        return dt.isAfter(startDate.subtract(const Duration(seconds: 1))) &&
+               dt.isBefore(endDate.add(const Duration(seconds: 1)));
+      }).toList();
+    }
+
+    // Filter payments by date range
+    var payments = allPayments;
+    if (startDate != null && endDate != null) {
+      payments = payments.where((p) {
+        final dt = p.createdAt.toDate();
+        return dt.isAfter(startDate.subtract(const Duration(seconds: 1))) &&
+               dt.isBefore(endDate.add(const Duration(seconds: 1)));
+      }).toList();
+    }
 
     final paidOrders = orders.where((o) => o.status == OrderStatus.paid).toList();
 
@@ -107,25 +127,70 @@ class ReportsRepository {
       );
     }
 
-    // 3. Association Algorithm Report
-    Map<String, int> pairFreq = {};
+    // 3. Association Algorithm Report (Apriori - 20% support)
+    final int minSupportThreshold = (paidOrders.length * 0.20).ceil();
+    
+    // Pass 1: Find frequent 1-itemsets
+    Map<String, int> itemFreq = {};
     for (var order in paidOrders) {
-      final names = order.items.map((e) => e.name).toSet().toList();
-      for (int i = 0; i < names.length; i++) {
-        for (int j = i + 1; j < names.length; j++) {
-          final p1 = names[i];
-          final p2 = names[j];
-          final key = p1.compareTo(p2) < 0 ? "$p1|$p2" : "$p2|$p1";
-          pairFreq[key] = (pairFreq[key] ?? 0) + 1;
-        }
+      final names = order.items.map((e) => e.name).toSet();
+      for (var name in names) {
+        itemFreq[name] = (itemFreq[name] ?? 0) + 1;
       }
     }
     
-    List<ItemPair> pairs = pairFreq.entries.map((e) {
-      final parts = e.key.split('|');
-      return ItemPair(item1Name: parts[0], item2Name: parts[1], frequency: e.value);
+    final Set<String> frequentItems = itemFreq.entries
+        .where((e) => e.value >= minSupportThreshold)
+        .map((e) => e.key)
+        .toSet();
+
+    // Pass 2: Find frequent itemsets using only frequent items
+    List<List<String>> getSubsets(List<String> list) {
+      List<List<String>> result = [];
+      int n = list.length;
+      for (int i = 1; i < (1 << n); i++) {
+        List<String> subset = [];
+        for (int j = 0; j < n; j++) {
+          if ((i & (1 << j)) != 0) {
+            subset.add(list[j]);
+          }
+        }
+        if (subset.length >= 2) {
+          result.add(subset);
+        }
+      }
+      return result;
+    }
+
+    Map<String, int> subsetFreq = {};
+    for (var order in paidOrders) {
+      final names = order.items
+          .map((e) => e.name)
+          .where((name) => frequentItems.contains(name))
+          .toSet()
+          .toList();
+      names.sort(); // Ensure consistent keys
+          
+      final subsets = getSubsets(names);
+      for (var subset in subsets) {
+        final key = subset.join('|');
+        subsetFreq[key] = (subsetFreq[key] ?? 0) + 1;
+      }
+    }
+    
+    List<ItemSet> itemSets = subsetFreq.entries
+        .where((e) => e.value >= minSupportThreshold)
+        .map((e) {
+      return ItemSet(items: e.key.split('|'), frequency: e.value);
     }).toList();
-    pairs.sort((a, b) => b.frequency.compareTo(a.frequency));
+    
+    // Sort by frequency descending, then by itemset size descending
+    itemSets.sort((a, b) {
+      if (b.frequency != a.frequency) {
+        return b.frequency.compareTo(a.frequency);
+      }
+      return b.items.length.compareTo(a.items.length);
+    });
 
     // 4. Payment Processing Ledger
     Map<String, PaymentProcessingLedger> ledgerMap = {};
@@ -156,7 +221,7 @@ class ReportsRepository {
     return {
       'itemImportanceReports': itemMap.values.toList(),
       'categoryPerformance': catMap.values.toList(),
-      'associationReport': AssociationAlgorithmReport(frequentlyBoughtTogether: pairs.take(10).toList()),
+      'associationReport': AssociationAlgorithmReport(frequentlyBoughtTogether: itemSets.take(10).toList()),
       'paymentLedgers': ledgerMap.values.toList(),
     };
   }

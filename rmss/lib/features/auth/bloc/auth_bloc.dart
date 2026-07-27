@@ -138,14 +138,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (state is AuthSuccess) {
         try {
           final currentUser = (state as AuthSuccess).user;
-          await authRepository.updateUserData(currentUser);
-
-          UserModel? updatedUser = await authRepository.getUserData(
-            currentUser.id,
+          final updatedUserModel = currentUser.copyWith(
+            name: event.name,
+            photoUrl: event.photoUrl,
+            pushNotificationsEnabled: event.pushNotificationsEnabled,
+            pushCleaningAlertsEnabled: event.pushCleaningAlertsEnabled,
+            paymentPin: event.paymentPin,
           );
-          if (updatedUser != null) {
-            emit(AuthSuccess(user: updatedUser));
-          }
+          await authRepository.updateUserData(updatedUserModel);
+          emit(AuthSuccess(user: updatedUserModel));
         } catch (e) {
           // Ignore error for now, maybe print or handle later
         }

@@ -4,6 +4,7 @@ import 'package:rmss/core/blocs/order_bloc/order_bloc.dart';
 import 'package:rmss/core/blocs/order_bloc/order_state.dart';
 import 'package:rmss/core/blocs/table_bloc/table_bloc.dart';
 import 'package:rmss/core/blocs/table_bloc/table_state.dart';
+import 'package:rmss/core/blocs/table_bloc/table_event.dart';
 import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/core/models/table_model.dart';
 import 'package:rmss/features/waiter/views/mobile/pages/waiter_menu_page.dart';
@@ -42,8 +43,12 @@ class WaiterTablesGridPage extends StatelessWidget {
                             mainAxisSpacing: 16,
                           ),
                       itemCount: tables.length,
-                      itemBuilder: (context, index) {
-                        return _buildTableTile(context, tables[index]);
+                      itemBuilder: (itemContext, index) {
+                        return _buildTableTile(
+                          context,
+                          itemContext,
+                          tables[index],
+                        );
                       },
                     );
                   }
@@ -57,28 +62,39 @@ class WaiterTablesGridPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTableTile(BuildContext context, TableModel table) {
+  Widget _buildTableTile(
+    BuildContext parentContext,
+    BuildContext itemContext,
+    TableModel table,
+  ) {
     Color borderColor = Colors.transparent;
     Color bgColor = Colors.transparent;
-    Color statusTextColor = Theme.of(context).colorScheme.onSurface;
+    Color statusTextColor = Theme.of(itemContext).colorScheme.onSurface;
     String statusText = "";
 
-    if (table.status == TableStatus.occupied) {
-      borderColor = Theme.of(context).colorScheme.primary;
-      bgColor = Theme.of(context).colorScheme.primary.withValues(alpha: 0.15);
-      statusTextColor = Theme.of(context).colorScheme.primary;
+    if (table.needsHelp) {
+      borderColor = Colors.red;
+      bgColor = Colors.red.withValues(alpha: 0.15);
+      statusTextColor = Colors.red;
+      statusText = "NEEDS HELP";
+    } else if (table.status == TableStatus.occupied) {
+      borderColor = Theme.of(itemContext).colorScheme.primary;
+      bgColor = Theme.of(
+        itemContext,
+      ).colorScheme.primary.withValues(alpha: 0.15);
+      statusTextColor = Theme.of(itemContext).colorScheme.primary;
       statusText = "OCCUPIED";
     } else if (table.status == TableStatus.needsCleaning) {
-      borderColor = Theme.of(context).colorScheme.primaryContainer;
+      borderColor = Theme.of(itemContext).colorScheme.primaryContainer;
       bgColor = Theme.of(
-        context,
+        itemContext,
       ).colorScheme.primaryContainer.withValues(alpha: 0.3);
-      statusTextColor = Theme.of(context).colorScheme.onPrimaryContainer;
+      statusTextColor = Theme.of(itemContext).colorScheme.onPrimaryContainer;
       statusText = "CLEANING";
     } else {
-      borderColor = Theme.of(context).colorScheme.outlineVariant;
-      bgColor = Theme.of(context).colorScheme.surface;
-      statusTextColor = Theme.of(context).colorScheme.onSurfaceVariant;
+      borderColor = Theme.of(itemContext).colorScheme.outlineVariant;
+      bgColor = Theme.of(itemContext).colorScheme.surface;
+      statusTextColor = Theme.of(itemContext).colorScheme.onSurfaceVariant;
       statusText = "AVAILABLE";
     }
 
@@ -91,8 +107,14 @@ class WaiterTablesGridPage extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
         onTap: () {
+          if (table.needsHelp) {
+            parentContext.read<TableBloc>().add(
+              UpdateTable(item: table.copyWith(needsHelp: false)),
+            );
+          }
+
           if (table.status == TableStatus.occupied) {
-            final orderState = context.read<OrderBloc>().state;
+            final orderState = parentContext.read<OrderBloc>().state;
             if (orderState is OrderLoaded) {
               try {
                 final order = orderState.items.firstWhere(
@@ -101,29 +123,30 @@ class WaiterTablesGridPage extends StatelessWidget {
                       o.status != OrderStatus.paid &&
                       o.status != OrderStatus.cancelled,
                 );
+
+                if (!parentContext.mounted) return;
                 Navigator.push(
-                  context,
+                  parentContext,
                   MaterialPageRoute(
-                    builder: (context) =>
+                    builder: (_) =>
                         WaiterHistoryPage(orderId: order.id, table: table),
                   ),
                 );
               } catch (_) {
-                // If occupied but no active order found, go to menu
+                if (!parentContext.mounted) return;
                 Navigator.push(
-                  context,
+                  parentContext,
                   MaterialPageRoute(
-                    builder: (context) => WaiterMenuPage(table: table),
+                    builder: (_) => WaiterMenuPage(table: table),
                   ),
                 );
               }
             }
           } else if (table.status == TableStatus.available) {
+            if (!parentContext.mounted) return;
             Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => WaiterMenuPage(table: table),
-              ),
+              parentContext,
+              MaterialPageRoute(builder: (_) => WaiterMenuPage(table: table)),
             );
           }
         },

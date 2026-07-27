@@ -615,6 +615,13 @@ class _WaiterSettingsPageState extends State<WaiterSettingsPage> {
                               await prefs.setDouble('alertVolume', _alertVolume);
                               
                               if (context.mounted) {
+                                context.read<AuthBloc>().add(
+                                  UpdateProfileRequested(
+                                    pushNotificationsEnabled: _soundAlerts,
+                                    pushCleaningAlertsEnabled: _cleaningAlerts,
+                                  ),
+                                );
+
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text("Preferences Saved"),

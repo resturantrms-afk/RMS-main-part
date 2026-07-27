@@ -1,116 +1,257 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rmss/features/admin/blocs/reports_bloc/reports_bloc.dart';
+import 'package:rmss/features/admin/blocs/reports_bloc/reports_event.dart';
+import 'package:rmss/features/admin/blocs/reports_bloc/reports_state.dart';
+import 'package:rmss/features/admin/models/reports/association_report.dart';
+import 'package:rmss/core/services/ai_services.dart';
+
+// ─────────────────────────────────────────────────────────────
+// Time filter
+// ─────────────────────────────────────────────────────────────
+enum _TimeRange { today, thisWeek, thisMonth, allTime }
+
+extension _TimeRangeLabel on _TimeRange {
+  String get label {
+    switch (this) {
+      case _TimeRange.today:
+        return 'Today';
+      case _TimeRange.thisWeek:
+        return 'This Week';
+      case _TimeRange.thisMonth:
+        return 'This Month';
+      case _TimeRange.allTime:
+        return 'All Time';
+    }
+  }
+}
 
 // ─────────────────────────────────────────────────────────────
 // Data models
 // ─────────────────────────────────────────────────────────────
-class ItemPairing {
-  final String label;
-  final int orders;
-  final double frequency; // 0.0 – 1.0
+class _ItemPairing {
+  final List<String> items;
+  final int coOccurrence;
+  final double frequency; // relative (0–1)
 
-  const ItemPairing({
-    required this.label,
-    required this.orders,
+  const _ItemPairing({
+    required this.items,
+    required this.coOccurrence,
     required this.frequency,
   });
+
+  String get label => items.join(' + ');
 }
-
-class AssociationRecord {
-  final String primaryItem;
-  final String associatedItem;
-  final int coOccurrence;
-  final int strengthPercent;
-
-  const AssociationRecord({
-    required this.primaryItem,
-    required this.associatedItem,
-    required this.coOccurrence,
-    required this.strengthPercent,
-  });
-}
-
-const _topPairings = [
-  ItemPairing(
-    label: 'Charcoal Ribeye + Smoked Old Fashioned',
-    orders: 142,
-    frequency: 0.85,
-  ),
-  ItemPairing(
-    label: 'Smoked Brisket + Craft Amber Ale',
-    orders: 118,
-    frequency: 0.72,
-  ),
-  ItemPairing(
-    label: 'Wood-Fired Pizza + Caesar Salad',
-    orders: 95,
-    frequency: 0.58,
-  ),
-  ItemPairing(
-    label: 'Burnt Ends + Sweet Cornbread',
-    orders: 88,
-    frequency: 0.52,
-  ),
-];
-
-const _associations = [
-  AssociationRecord(
-    primaryItem: 'Charcoal Ribeye',
-    associatedItem: 'Smoked Old Fashioned',
-    coOccurrence: 142,
-    strengthPercent: 85,
-  ),
-  AssociationRecord(
-    primaryItem: 'Smoked Brisket',
-    associatedItem: 'Craft Amber Ale',
-    coOccurrence: 118,
-    strengthPercent: 72,
-  ),
-  AssociationRecord(
-    primaryItem: 'Wood-Fired Pizza',
-    associatedItem: 'Caesar Salad',
-    coOccurrence: 95,
-    strengthPercent: 58,
-  ),
-  AssociationRecord(
-    primaryItem: 'Burnt Ends',
-    associatedItem: 'Sweet Cornbread',
-    coOccurrence: 88,
-    strengthPercent: 52,
-  ),
-  AssociationRecord(
-    primaryItem: 'Grilled Asparagus',
-    associatedItem: 'Lemon Butter Sauce',
-    coOccurrence: 74,
-    strengthPercent: 92,
-  ),
-];
 
 // ─────────────────────────────────────────────────────────────
 // Tab widget
 // ─────────────────────────────────────────────────────────────
-class AssociationAnalysisTab extends StatelessWidget {
-  const AssociationAnalysisTab({super.key});
+class AssociationAnalysisTab extends StatefulWidget {
+  final GlobalKey? exportKey;
+  
+  const AssociationAnalysisTab({super.key, this.exportKey});
+
+  @override
+  State<AssociationAnalysisTab> createState() => _AssociationAnalysisTabState();
+}
+
+class _AssociationAnalysisTabState extends State<AssociationAnalysisTab> {
+  _TimeRange _selected = _TimeRange.today;
+  String? _aiAdvice;
+  bool _isLoadingAi = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadDataFor(_selected);
+    });
+  }
+
+  void _loadDataFor(_TimeRange range) {
+    final now = DateTime.now();
+    DateTime? startDate;
+    DateTime? endDate;
+
+    switch (range) {
+      case _TimeRange.today:
+        startDate = DateTime(now.year, now.month, now.day);
+        endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        break;
+      case _TimeRange.thisWeek:
+        final weekStart = now.subtract(Duration(days: now.weekday - 1));
+        startDate = DateTime(weekStart.year, weekStart.month, weekStart.day);
+        endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        break;
+      case _TimeRange.thisMonth:
+        startDate = DateTime(now.year, now.month, 1);
+        endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        break;
+      case _TimeRange.allTime:
+        startDate = null;
+        endDate = null;
+        break;
+    }
+
+    context.read<ReportsBloc>().add(LoadReports(
+      startDate: startDate,
+      endDate: endDate,
+    ));
+  }
+
+  void _onTimeRangeSelected(_TimeRange r) {
+    setState(() {
+      _selected = r;
+      _aiAdvice = null;
+    });
+    _loadDataFor(r);
+  }
+
+  Future<void> _fetchAiAdvice(List<_ItemPairing> pairings) async {
+    if (pairings.isEmpty || _aiAdvice != null || _isLoadingAi) return;
+    
+    setState(() => _isLoadingAi = true);
+    final summary = pairings.take(3).map((e) => "${e.items.join(' & ')} (${e.coOccurrence})").join(", ");
+    final prompt = "You are an AI assistant for a restaurant. Context: top item groups bought together are $summary. Do not summarize or repeat this data. Provide only a single, creative, 1-sentence actionable business advice on how to improve bundling or upselling based on these item groups.";
+    final result = await AiServices.generateAdvice(prompt);
+    
+    if (mounted) {
+      setState(() {
+        _aiAdvice = result;
+        _isLoadingAi = false;
+      });
+    }
+  }
+
+  List<_ItemPairing> _computeFromReports(AssociationAlgorithmReport report) {
+    final pairs = report.frequentlyBoughtTogether;
+    if (pairs.isEmpty) return [];
+
+    final maxFreq = pairs.map((e) => e.frequency).reduce((a, b) => a > b ? a : b);
+    
+    return pairs.map((e) {
+      return _ItemPairing(
+        items: e.items,
+        coOccurrence: e.frequency,
+        frequency: maxFreq == 0 ? 0 : e.frequency / maxFreq,
+      );
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // AI insight card
-          const _AiAssociationInsightCard(),
-          const SizedBox(height: 24),
+    return BlocConsumer<ReportsBloc, ReportsState>(
+      listener: (context, state) {
+        if (state is ReportsLoaded) {
+          final pairings = _computeFromReports(state.associationReport);
+          _fetchAiAdvice(pairings);
+        }
+      },
+      builder: (context, state) {
+        final pairings = state is ReportsLoaded
+            ? _computeFromReports(state.associationReport)
+            : <_ItemPairing>[];
 
-          // Top pairings bar chart
-          _TopPairingsCard(pairings: _topPairings),
-          const SizedBox(height: 24),
+        final topPair = pairings.isNotEmpty ? pairings.first : null;
 
-          // Association table
-          _AssociationTable(records: _associations),
-          const SizedBox(height: 24),
-        ],
-      ),
+        return SingleChildScrollView(
+          child: RepaintBoundary(
+            key: widget.exportKey,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+              // ── Time Filter ───────────────────────────────────
+              _TimeFilterBar(
+                selected: _selected,
+                onSelected: _onTimeRangeSelected,
+              ),
+              const SizedBox(height: 24),
+
+              // ── AI Insight ────────────────────────────────────
+              _AiAssociationInsightCard(
+                topPair: topPair,
+                aiAdvice: _aiAdvice,
+                isLoadingAi: _isLoadingAi,
+              ),
+              const SizedBox(height: 24),
+
+              // ── Bar Chart ─────────────────────────────────────
+              if (state is ReportsLoading || state is ReportsInitial)
+                const _LoadingCard()
+              else if (state is ReportsError)
+                _ErrorCard(message: state.message)
+              else if (pairings.isEmpty)
+                const _EmptyCard(
+                  icon: Icons.link_outlined,
+                  message:
+                      'Not enough data yet. Pairings appear when multiple items are ordered together.',
+                )
+              else ...[
+                _TopPairingsCard(pairings: pairings),
+                const SizedBox(height: 24),
+                _AssociationTable(pairings: pairings),
+              ],
+
+              const SizedBox(height: 24),
+            ],
+          ),
+          ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Time filter bar
+// ─────────────────────────────────────────────────────────────
+class _TimeFilterBar extends StatelessWidget {
+  final _TimeRange selected;
+  final ValueChanged<_TimeRange> onSelected;
+
+  const _TimeFilterBar({required this.selected, required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: _TimeRange.values.map((r) {
+        final isActive = r == selected;
+        return Padding(
+          padding: const EdgeInsets.only(right: 10),
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => onSelected(r),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isActive ? cs.primary : cs.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(999),
+                  border: isActive
+                      ? null
+                      : Border.all(color: cs.outline.withValues(alpha: 0.1)),
+                ),
+                child: Text(
+                  r.label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                    color: isActive ? cs.onPrimary : cs.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -119,11 +260,22 @@ class AssociationAnalysisTab extends StatelessWidget {
 // AI Association Insight Card
 // ─────────────────────────────────────────────────────────────
 class _AiAssociationInsightCard extends StatelessWidget {
-  const _AiAssociationInsightCard();
+  final _ItemPairing? topPair;
+  final String? aiAdvice;
+  final bool isLoadingAi;
+
+  const _AiAssociationInsightCard({
+    this.topPair,
+    this.aiAdvice,
+    this.isLoadingAi = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final insight = topPair != null
+        ? "Customers frequently order these items together: ${topPair!.items.join(', ')} (${topPair!.coOccurrence} co-occurrences). Consider creating a bundle to boost ticket size."
+        : 'No pairing data available for this period yet.';
 
     return Container(
       width: double.infinity,
@@ -142,7 +294,6 @@ class _AiAssociationInsightCard extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Decorative glow
           Positioned(
             top: -60,
             right: -60,
@@ -155,11 +306,9 @@ class _AiAssociationInsightCard extends StatelessWidget {
               ),
             ),
           ),
-          // Content
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // auto_awesome icon circle
               Container(
                 width: 56,
                 height: 56,
@@ -167,25 +316,18 @@ class _AiAssociationInsightCard extends StatelessWidget {
                   color: cs.surfaceContainer,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: cs.outlineVariant.withValues(alpha: 0.5),
-                  ),
+                      color: cs.outlineVariant.withValues(alpha: 0.5)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4)),
                   ],
                 ),
-                child: Icon(
-                  Icons.auto_awesome_outlined,
-                  size: 26,
-                  color: cs.primary,
-                ),
+                child: Icon(Icons.auto_awesome_outlined,
+                    size: 26, color: cs.primary),
               ),
               const SizedBox(width: 20),
-
-              // Text
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,57 +342,53 @@ class _AiAssociationInsightCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    RichText(
-                      text: TextSpan(
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.65,
-                          color: cs.onSurfaceVariant,
+                    Text(
+                      insight,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.65,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: cs.surfaceContainerHigh.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border(
+                          left: BorderSide(color: cs.primary, width: 2.5),
                         ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          TextSpan(
-                            text: 'AI Association Analysis: ',
+                          Text(
+                            'AI ADVICE & SUMMARY',
                             style: TextStyle(
-                              fontWeight: FontWeight.w600,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.4,
                               color: cs.primary,
                             ),
                           ),
-                          const TextSpan(text: 'Customers who order '),
-                          TextSpan(
-                            text: "'Charcoal Ribeye'",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: cs.onSurface,
+                          const SizedBox(height: 4),
+                          if (isLoadingAi)
+                            const SizedBox(
+                              height: 20, 
+                              width: 20, 
+                              child: CircularProgressIndicator(strokeWidth: 2)
+                            )
+                          else
+                            Text(
+                              aiAdvice ?? 'No advice generated.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: cs.onSurface,
+                                height: 1.5,
+                              ),
                             ),
-                          ),
-                          const TextSpan(text: ' are '),
-                          TextSpan(
-                            text: '85% more likely',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: cs.onSurface,
-                            ),
-                          ),
-                          const TextSpan(text: ' to also order '),
-                          TextSpan(
-                            text: "'Smoked Old Fashioned'",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: cs.onSurface,
-                            ),
-                          ),
-                          const TextSpan(text: '. Consider a '),
-                          TextSpan(
-                            text: "'Hearth Special'",
-                            style: TextStyle(
-                              fontStyle: FontStyle.italic,
-                              color: cs.primary,
-                            ),
-                          ),
-                          const TextSpan(
-                            text:
-                                ' bundle to increase average ticket size and enhance the guest experience.',
-                          ),
                         ],
                       ),
                     ),
@@ -266,15 +404,16 @@ class _AiAssociationInsightCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Top Item Pairings — horizontal bar chart
+// Top Item Pairings Bar Chart
 // ─────────────────────────────────────────────────────────────
 class _TopPairingsCard extends StatelessWidget {
-  final List<ItemPairing> pairings;
+  final List<_ItemPairing> pairings;
   const _TopPairingsCard({required this.pairings});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final top5 = pairings.take(5).toList();
 
     return Container(
       width: double.infinity,
@@ -285,16 +424,14 @@ class _TopPairingsCard extends StatelessWidget {
         border: Border.all(color: cs.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 8)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header row
           Row(
             children: [
               Text(
@@ -307,7 +444,6 @@ class _TopPairingsCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              // Legend dot
               Row(
                 children: [
                   Container(
@@ -318,9 +454,8 @@ class _TopPairingsCard extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: cs.primary.withValues(alpha: 0.5),
-                          blurRadius: 6,
-                        ),
+                            color: cs.primary.withValues(alpha: 0.5),
+                            blurRadius: 6),
                       ],
                     ),
                   ),
@@ -339,9 +474,7 @@ class _TopPairingsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 28),
-
-          // Bars
-          ...pairings.map((p) => _PairingBar(pairing: p)),
+          ...top5.map((p) => _PairingBar(pairing: p)),
         ],
       ),
     );
@@ -349,7 +482,7 @@ class _TopPairingsCard extends StatelessWidget {
 }
 
 class _PairingBar extends StatelessWidget {
-  final ItemPairing pairing;
+  final _ItemPairing pairing;
   const _PairingBar({required this.pairing});
 
   @override
@@ -360,22 +493,18 @@ class _PairingBar extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 20),
       child: Row(
         children: [
-          // Label — fixed portion on the left
           SizedBox(
             width: 260,
             child: Text(
               pairing.label,
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: cs.onSurface,
-              ),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: cs.onSurface),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: 16),
-
-          // Bar — stretches to fill remaining space
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -389,7 +518,6 @@ class _PairingBar extends StatelessWidget {
                       height: 10,
                       child: Stack(
                         children: [
-                          // Track
                           Container(
                             width: trackWidth,
                             height: 10,
@@ -398,7 +526,6 @@ class _PairingBar extends StatelessWidget {
                               borderRadius: BorderRadius.circular(999),
                             ),
                           ),
-                          // Animated fill
                           Container(
                             width: trackWidth * value,
                             height: 10,
@@ -422,14 +549,13 @@ class _PairingBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-
-          // Order count — right side
           SizedBox(
-            width: 72,
+            width: 80,
             child: Text(
-              '${pairing.orders} Orders',
+              '${pairing.coOccurrence} Orders',
               textAlign: TextAlign.right,
-              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+              style:
+                  TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
             ),
           ),
         ],
@@ -439,11 +565,11 @@ class _PairingBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Item Association Table
+// Association Table
 // ─────────────────────────────────────────────────────────────
 class _AssociationTable extends StatelessWidget {
-  final List<AssociationRecord> records;
-  const _AssociationTable({required this.records});
+  final List<_ItemPairing> pairings;
+  const _AssociationTable({required this.pairings});
 
   @override
   Widget build(BuildContext context) {
@@ -457,25 +583,23 @@ class _AssociationTable extends StatelessWidget {
         border: Border.all(color: cs.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 8)),
         ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Column(
           children: [
-            // ── Toolbar ────────────────────────────────────────
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
               decoration: BoxDecoration(
                 color: cs.surfaceContainer.withValues(alpha: 0.5),
                 border: Border(
                   bottom: BorderSide(
-                    color: cs.outlineVariant.withValues(alpha: 0.4),
-                  ),
+                      color: cs.outlineVariant.withValues(alpha: 0.4)),
                 ),
               ),
               child: Row(
@@ -492,36 +616,24 @@ class _AssociationTable extends StatelessWidget {
                 ],
               ),
             ),
-
-            // ── Column headers ─────────────────────────────────
             Container(
               color: cs.surfaceContainerHigh,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               child: Row(
                 children: [
-                  _hdr(context, 'PRIMARY ITEM', flex: 25),
-                  _hdr(context, 'ASSOCIATED ITEM', flex: 25),
-                  _hdr(
-                    context,
-                    'CO-OCCURRENCE',
-                    flex: 20,
-                    align: TextAlign.center,
-                  ),
-                  _hdr(
-                    context,
-                    'ASSOCIATION STRENGTH',
-                    flex: 20,
-                    align: TextAlign.center,
-                  ),
+                  _hdr(context, 'ITEMS BOUGHT TOGETHER', flex: 50),
+                  _hdr(context, 'CO-OCCURRENCE',
+                      flex: 25, align: TextAlign.center),
+                  _hdr(context, 'STRENGTH',
+                      flex: 25, align: TextAlign.center),
                 ],
               ),
             ),
-
-            // ── Rows ───────────────────────────────────────────
-            ...records.asMap().entries.map((entry) {
-              return _AssociationRow(
-                record: entry.value,
-                isLast: entry.key == records.length - 1,
+            ...pairings.asMap().entries.map((entry) {
+              return _AssocRow(
+                pairing: entry.value,
+                isLast: entry.key == pairings.length - 1,
               );
             }),
           ],
@@ -530,12 +642,8 @@ class _AssociationTable extends StatelessWidget {
     );
   }
 
-  Widget _hdr(
-    BuildContext context,
-    String label, {
-    int flex = 1,
-    TextAlign align = TextAlign.left,
-  }) {
+  Widget _hdr(BuildContext context, String label,
+      {int flex = 1, TextAlign align = TextAlign.left}) {
     return Expanded(
       flex: flex,
       child: Text(
@@ -552,20 +660,16 @@ class _AssociationTable extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Single association row — flex updated for 4-col layout
-// ─────────────────────────────────────────────────────────────
-class _AssociationRow extends StatefulWidget {
-  final AssociationRecord record;
+class _AssocRow extends StatefulWidget {
+  final _ItemPairing pairing;
   final bool isLast;
-
-  const _AssociationRow({required this.record, required this.isLast});
+  const _AssocRow({required this.pairing, required this.isLast});
 
   @override
-  State<_AssociationRow> createState() => _AssociationRowState();
+  State<_AssocRow> createState() => _AssocRowState();
 }
 
-class _AssociationRowState extends State<_AssociationRow> {
+class _AssocRowState extends State<_AssocRow> {
   bool _hovered = false;
 
   @override
@@ -586,14 +690,14 @@ class _AssociationRowState extends State<_AssociationRow> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
               child: Row(
                 children: [
-                  // Primary item
                   Expanded(
-                    flex: 22,
+                    flex: 50,
                     child: Text(
-                      widget.record.primaryItem,
+                      widget.pairing.items.join(', '),
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -601,21 +705,10 @@ class _AssociationRowState extends State<_AssociationRow> {
                       ),
                     ),
                   ),
-
-                  // Associated item
                   Expanded(
-                    flex: 22,
+                    flex: 25,
                     child: Text(
-                      widget.record.associatedItem,
-                      style: TextStyle(fontSize: 13, color: cs.onSurface),
-                    ),
-                  ),
-
-                  // Co-occurrence count
-                  Expanded(
-                    flex: 20,
-                    child: Text(
-                      widget.record.coOccurrence.toString(),
+                      widget.pairing.coOccurrence.toString(),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
@@ -624,12 +717,10 @@ class _AssociationRowState extends State<_AssociationRow> {
                       ),
                     ),
                   ),
-
-                  // Association strength
                   Expanded(
-                    flex: 20,
+                    flex: 25,
                     child: Text(
-                      '${widget.record.strengthPercent}%',
+                      '${(widget.pairing.frequency * 100).toStringAsFixed(0)}%',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 15,
@@ -647,6 +738,82 @@ class _AssociationRowState extends State<_AssociationRow> {
                 thickness: 1,
                 color: cs.outlineVariant.withValues(alpha: 0.25),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Shared utility widgets
+// ─────────────────────────────────────────────────────────────
+class _LoadingCard extends StatelessWidget {
+  const _LoadingCard();
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(64),
+        child: Column(
+          children: [
+            CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.primary, strokeWidth: 3),
+            const SizedBox(height: 16),
+            Text('Loading data...',
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  final String message;
+  const _ErrorCard({required this.message});
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(64),
+        child: Column(
+          children: [
+            Icon(Icons.warning_rounded,
+                size: 48, color: Theme.of(context).colorScheme.error),
+            const SizedBox(height: 12),
+            Text(message,
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+                textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyCard extends StatelessWidget {
+  final IconData icon;
+  final String message;
+  const _EmptyCard({required this.icon, required this.message});
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(64),
+        child: Column(
+          children: [
+            Icon(icon,
+                size: 56,
+                color: Theme.of(context).colorScheme.outlineVariant),
+            const SizedBox(height: 16),
+            Text(message,
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 15),
+                textAlign: TextAlign.center),
           ],
         ),
       ),

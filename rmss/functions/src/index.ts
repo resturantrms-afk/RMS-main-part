@@ -70,24 +70,33 @@ export const onOrderWritten = onDocumentWritten("orders/{orderId}", async (event
 
   // 1. Kitchen Notification (New or Updated)
   if (orderStatus !== "paid") {
-    // If it's a minor update and we don't want to spam, we could add conditions here.
-    // For now, it matches the app logic: triggers on any change if not paid.
-    const title = isNew ? "New Order" : "Order Updated";
-    const body = isNew
-      ? `Table ${tableNumber} placed a new order.`
-      : `Table ${tableNumber} order has been updated.`;
-    
-    await notifyRole("kitchen", title, body);
+    let shouldNotify = isNew;
+    if (!isNew && before && after) {
+      const beforeItemsCount = Array.isArray(before.items) ? before.items.length : 0;
+      const afterItemsCount = Array.isArray(after.items) ? after.items.length : 0;
+      if (beforeItemsCount !== afterItemsCount) {
+        shouldNotify = true;
+      }
+    }
+
+    if (shouldNotify) {
+      const title = isNew ? "New Order" : "Order Updated";
+      const body = isNew
+        ? `Table ${tableNumber} placed a new order.`
+        : `Table ${tableNumber} order has been updated.`;
+      
+      await notifyRole("kitchen", title, body);
+    }
   }
 
   // 2. Waiter Notification (Order Ready)
   if (orderStatus === "ready" && oldStatus !== "ready") {
-    await notifyRole("waiter", "Order Ready", `Order for Table ${tableNumber} is ready to be served.`);
+    await notifyRole("waiter", "Order Ready", `Order is ready to be served.`);
   }
 
   // 3. Cashier & Admin Notification (Order Served)
   if (orderStatus === "served" && oldStatus !== "served") {
-    const msg = `Order for Table ${tableNumber} has been served.`;
+    const msg = `Order has been served.`;
     await notifyRole("cashier", "Order Served", msg);
     await notifyRole("admin", "Order Served", msg);
   }
@@ -106,14 +115,24 @@ export const onTableWritten = onDocumentWritten("tables/{tableId}", async (event
   const status = after.status;
   const oldStatus = before ? before.status : null;
   const tableNumber = after.tableNumber;
+  const needsHelp = after.needsHelp === true;
+  const oldNeedsHelp = before ? before.needsHelp === true : false;
 
-  // Waiter Notification (Table Needs Cleaning)
+  // Waiter Notification (Table Needs Cleaning or Help)
   if (status === "needsCleaning" && oldStatus !== "needsCleaning") {
     await notifyRole(
       "waiter", 
       "Table Needs Cleaning", 
       `Table ${tableNumber} just finished and needs cleaning.`,
       true // use pushCleaningAlertsEnabled instead of pushNotificationsEnabled
+    );
+  }
+  
+  if (needsHelp && !oldNeedsHelp) {
+    await notifyRole(
+      "waiter", 
+      "Table Needs Help", 
+      `Customer at Table ${tableNumber} needs your help.`
     );
   }
 });

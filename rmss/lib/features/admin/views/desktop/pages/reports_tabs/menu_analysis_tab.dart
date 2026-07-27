@@ -1,18 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rmss/features/admin/blocs/reports_bloc/reports_bloc.dart';
+import 'package:rmss/features/admin/blocs/reports_bloc/reports_event.dart';
+import 'package:rmss/features/admin/blocs/reports_bloc/reports_state.dart';
+import 'package:rmss/features/admin/models/reports/item_importance_report.dart';
+import 'package:rmss/core/services/ai_services.dart';
 
 // ─────────────────────────────────────────────────────────────
-// Data model
+// Time filter
 // ─────────────────────────────────────────────────────────────
-enum ItemStatus { highPerforming, underperforming }
+enum _TimeRange { today, thisWeek, thisMonth, allTime }
 
-class MenuItemReport {
+extension _TimeRangeLabel on _TimeRange {
+  String get label {
+    switch (this) {
+      case _TimeRange.today:
+        return 'Today';
+      case _TimeRange.thisWeek:
+        return 'This Week';
+      case _TimeRange.thisMonth:
+        return 'This Month';
+      case _TimeRange.allTime:
+        return 'All Time';
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Computed model
+// ─────────────────────────────────────────────────────────────
+enum ItemStatus { highPerforming, underperforming, normal }
+
+class _MenuItemReport {
   final String name;
   final String category;
   final int unitsSold;
   final double revenue;
   final ItemStatus status;
 
-  const MenuItemReport({
+  const _MenuItemReport({
     required this.name,
     required this.category,
     required this.unitsSold,
@@ -21,111 +47,258 @@ class MenuItemReport {
   });
 }
 
-const _mockItems = [
-  MenuItemReport(
-    name: 'Spicy Zinger',
-    category: 'Mains',
-    unitsSold: 142,
-    revenue: 1200,
-    status: ItemStatus.highPerforming,
-  ),
-  MenuItemReport(
-    name: 'Classic Fries',
-    category: 'Sides',
-    unitsSold: 210,
-    revenue: 840,
-    status: ItemStatus.highPerforming,
-  ),
-  MenuItemReport(
-    name: 'Garden Salad',
-    category: 'Sides',
-    unitsSold: 12,
-    revenue: 84,
-    status: ItemStatus.underperforming,
-  ),
-  MenuItemReport(
-    name: 'Cold Brew',
-    category: 'Beverages',
-    unitsSold: 85,
-    revenue: 425,
-    status: ItemStatus.underperforming,
-  ),
-  MenuItemReport(
-    name: 'BBQ Wings',
-    category: 'Starters',
-    unitsSold: 115,
-    revenue: 920,
-    status: ItemStatus.highPerforming,
-  ),
-  MenuItemReport(
-    name: 'Margherita Pizza',
-    category: 'Mains',
-    unitsSold: 95,
-    revenue: 1140,
-    status: ItemStatus.highPerforming,
-  ),
-  MenuItemReport(
-    name: 'Truffle Pasta',
-    category: 'Mains',
-    unitsSold: 45,
-    revenue: 810,
-    status: ItemStatus.highPerforming,
-  ),
-  MenuItemReport(
-    name: 'Caesar Salad',
-    category: 'Starters',
-    unitsSold: 30,
-    revenue: 270,
-    status: ItemStatus.underperforming,
-  ),
-  MenuItemReport(
-    name: 'Chocolate Lava Cake',
-    category: 'Desserts',
-    unitsSold: 88,
-    revenue: 616,
-    status: ItemStatus.highPerforming,
-  ),
-  MenuItemReport(
-    name: 'Garlic Bread',
-    category: 'Sides',
-    unitsSold: 150,
-    revenue: 600,
-    status: ItemStatus.highPerforming,
-  ),
-];
-
 // ─────────────────────────────────────────────────────────────
 // Tab widget
 // ─────────────────────────────────────────────────────────────
-class MenuAnalysisTab extends StatelessWidget {
-  const MenuAnalysisTab({super.key});
+class MenuAnalysisTab extends StatefulWidget {
+  final GlobalKey? exportKey;
+
+  const MenuAnalysisTab({super.key, this.exportKey});
+
+  @override
+  State<MenuAnalysisTab> createState() => _MenuAnalysisTabState();
+}
+
+class _MenuAnalysisTabState extends State<MenuAnalysisTab> {
+  _TimeRange _selected = _TimeRange.today;
+  String? _aiAdvice;
+  bool _isLoadingAi = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Dispatch initial load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadDataFor(_selected);
+    });
+  }
+
+  void _loadDataFor(_TimeRange range) {
+    final now = DateTime.now();
+    DateTime? startDate;
+    DateTime? endDate;
+
+    switch (range) {
+      case _TimeRange.today:
+        startDate = DateTime(now.year, now.month, now.day);
+        endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        break;
+      case _TimeRange.thisWeek:
+        final weekStart = now.subtract(Duration(days: now.weekday - 1));
+        startDate = DateTime(weekStart.year, weekStart.month, weekStart.day);
+        endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        break;
+      case _TimeRange.thisMonth:
+        startDate = DateTime(now.year, now.month, 1);
+        endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        break;
+      case _TimeRange.allTime:
+        startDate = null;
+        endDate = null;
+        break;
+    }
+
+    context.read<ReportsBloc>().add(
+      LoadReports(startDate: startDate, endDate: endDate),
+    );
+  }
+
+  void _onTimeRangeSelected(_TimeRange r) {
+    setState(() {
+      _selected = r;
+      _aiAdvice = null;
+    });
+    _loadDataFor(r);
+  }
+
+  Future<void> _fetchAiAdvice(List<_MenuItemReport> items) async {
+    if (items.isEmpty || _aiAdvice != null || _isLoadingAi) return;
+
+    setState(() => _isLoadingAi = true);
+    final top = items.first;
+    final under = items
+        .where((i) => i.status == ItemStatus.underperforming)
+        .firstOrNull;
+    final summary =
+        "top item: ${top.name} (${top.unitsSold} units)${under != null ? ', underperforming: ${under.name}' : ''}";
+    final prompt =
+        "You are an AI assistant for a restaurant. Context: $summary. Do not repeat or summarize these stats. Provide only a single, creative, 1-sentence actionable business advice on how to capitalize on the top item or improve the underperforming one.";
+    final result = await AiServices.generateAdvice(prompt);
+
+    if (mounted) {
+      setState(() {
+        _aiAdvice = result;
+        _isLoadingAi = false;
+      });
+    }
+  }
+
+  List<_MenuItemReport> _computeFromReports(
+    List<ItemImportanceReport> reports,
+  ) {
+    return reports.map((r) {
+      ItemStatus s = ItemStatus.normal;
+      if (r.status == ItemPerformanceStatus.highPerforming) {
+        s = ItemStatus.highPerforming;
+      } else if (r.status == ItemPerformanceStatus.underPerforming) {
+        s = ItemStatus.underperforming;
+      }
+      return _MenuItemReport(
+        name: r.dishName,
+        category: r.firstCategory,
+        unitsSold: r.unitsSold,
+        revenue: r.totalRevenue,
+        status: s,
+      );
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _AiInsightCard(),
-          const SizedBox(height: 24),
-          _RankedItemsTable(items: _mockItems),
-          const SizedBox(height: 24),
-        ],
-      ),
+    return BlocConsumer<ReportsBloc, ReportsState>(
+      listener: (context, state) {
+        if (state is ReportsLoaded) {
+          final items = _computeFromReports(state.itemImportanceReports);
+          _fetchAiAdvice(items);
+        }
+      },
+      builder: (context, state) {
+        final items = state is ReportsLoaded
+            ? _computeFromReports(state.itemImportanceReports)
+            : <_MenuItemReport>[];
+
+        final topItem = items.isNotEmpty ? items.first : null;
+        final underItems = items
+            .where((i) => i.status == ItemStatus.underperforming)
+            .toList();
+
+        return SingleChildScrollView(
+          child: RepaintBoundary(
+            key: widget.exportKey,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Time Filter ───────────────────────────────────
+                  _TimeFilterBar(
+                    selected: _selected,
+                    onSelected: _onTimeRangeSelected,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // ── AI Insight Card ───────────────────────────────
+                  _AiInsightCard(
+                    topItem: topItem,
+                    underItem: underItems.firstOrNull,
+                    aiAdvice: _aiAdvice,
+                    isLoadingAi: _isLoadingAi,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // ── Table ─────────────────────────────────────────
+                  if (state is ReportsLoading || state is ReportsInitial)
+                    const _LoadingCard()
+                  else if (state is ReportsError)
+                    _ErrorCard(message: state.message)
+                  else if (items.isEmpty)
+                    const _EmptyCard(
+                      icon: Icons.restaurant_menu_outlined,
+                      message: 'No paid orders for this period yet.',
+                    )
+                  else
+                    _RankedItemsTable(items: items),
+
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-// AI Insight card
+// Time filter bar (shared style)
 // ─────────────────────────────────────────────────────────────
-class _AiInsightCard extends StatelessWidget {
-  const _AiInsightCard();
+class _TimeFilterBar extends StatelessWidget {
+  final _TimeRange selected;
+  final ValueChanged<_TimeRange> onSelected;
+
+  const _TimeFilterBar({required this.selected, required this.onSelected});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: _TimeRange.values.map((r) {
+        final isActive = r == selected;
+        return Padding(
+          padding: const EdgeInsets.only(right: 10),
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => onSelected(r),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: isActive ? cs.primary : cs.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(999),
+                  border: isActive
+                      ? null
+                      : Border.all(color: cs.outline.withValues(alpha: 0.1)),
+                ),
+                child: Text(
+                  r.label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                    color: isActive ? cs.onPrimary : cs.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// AI Insight Card
+// ─────────────────────────────────────────────────────────────
+class _AiInsightCard extends StatelessWidget {
+  final _MenuItemReport? topItem;
+  final _MenuItemReport? underItem;
+  final String? aiAdvice;
+  final bool isLoadingAi;
+
+  const _AiInsightCard({
+    this.topItem,
+    this.underItem,
+    this.aiAdvice,
+    this.isLoadingAi = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    final topText = topItem != null
+        ? '${topItem!.name} (${topItem!.unitsSold} units · \$${topItem!.revenue.toStringAsFixed(0)})'
+        : 'No data yet';
+    final underText = underItem != null
+        ? '${underItem!.name} is underperforming with only ${underItem!.unitsSold} units sold.'
+        : 'No underperforming items detected.';
 
     return Container(
       width: double.infinity,
@@ -144,7 +317,6 @@ class _AiInsightCard extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Decorative glow
           Positioned(
             top: -60,
             right: -60,
@@ -157,11 +329,9 @@ class _AiInsightCard extends StatelessWidget {
               ),
             ),
           ),
-          // Content
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Psychology icon circle
               Container(
                 width: 56,
                 height: 56,
@@ -186,8 +356,6 @@ class _AiInsightCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 20),
-
-              // Text content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,79 +378,67 @@ class _AiInsightCard extends StatelessWidget {
                           color: cs.onSurfaceVariant,
                         ),
                         children: [
-                          const TextSpan(
-                            text:
-                                'Operational Summary: Your High-Performing Items are dominated by the ',
-                          ),
+                          const TextSpan(text: 'Top earner this period: '),
                           TextSpan(
-                            text: 'Spicy Zinger Burger',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: cs.onSurface,
-                            ),
-                          ),
-                          const TextSpan(
-                            text: ', which is currently your top earner ',
-                          ),
-                          TextSpan(
-                            text: '(\$1,200)',
+                            text: topText,
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               color: cs.primary,
                             ),
                           ),
-                          const TextSpan(text: '. On the other hand, the '),
-                          TextSpan(
-                            text: 'Garden Salad',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: cs.onSurface,
-                            ),
-                          ),
-                          const TextSpan(
-                            text:
-                                ' is Underperforming—it has very few sales and is not contributing significantly to your revenue.',
-                          ),
+                          TextSpan(text: '. $underText'),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-
-                    // Recommendation block
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: cs.surfaceContainerHigh.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border(
-                          left: BorderSide(color: cs.primary, width: 2.5),
+                    if (underItem != null ||
+                        aiAdvice != null ||
+                        isLoadingAi) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerHigh.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border(
+                            left: BorderSide(color: cs.primary, width: 2.5),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'RECOMMENDATION',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.4,
+                                color: cs.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            if (isLoadingAi)
+                              const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            else
+                              Text(
+                                aiAdvice ??
+                                    'Consider a promotional bundle or recipe change for underperforming items.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: cs.onSurface,
+                                  height: 1.5,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'RECOMMENDATION',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.4,
-                              color: cs.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Consider a promotional bundle or a recipe change.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: cs.onSurface,
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -298,7 +454,7 @@ class _AiInsightCard extends StatelessWidget {
 // Ranked Items Table
 // ─────────────────────────────────────────────────────────────
 class _RankedItemsTable extends StatelessWidget {
-  final List<MenuItemReport> items;
+  final List<_MenuItemReport> items;
 
   const _RankedItemsTable({required this.items});
 
@@ -324,7 +480,7 @@ class _RankedItemsTable extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         child: Column(
           children: [
-            // ── Table toolbar ──────────────────────────────────
+            // Toolbar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
               decoration: BoxDecoration(
@@ -347,25 +503,19 @@ class _RankedItemsTable extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  // Filter icon button
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Icon(
-                      Icons.filter_list_rounded,
-                      size: 16,
+                  Text(
+                    '${items.length} ITEMS',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.4,
                       color: cs.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
             ),
-
-            // ── Column headers ─────────────────────────────────
+            // Column headers
             Container(
               color: cs.surfaceContainerHigh,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -394,12 +544,12 @@ class _RankedItemsTable extends StatelessWidget {
                 ],
               ),
             ),
-
-            // ── Rows ───────────────────────────────────────────
+            // Rows
             ...items.asMap().entries.map((entry) {
-              final i = entry.key;
-              final item = entry.value;
-              return _ItemRow(item: item, isLast: i == items.length - 1);
+              return _ItemRow(
+                item: entry.value,
+                isLast: entry.key == items.length - 1,
+              );
             }),
           ],
         ),
@@ -430,11 +580,8 @@ class _RankedItemsTable extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Single item row
-// ─────────────────────────────────────────────────────────────
 class _ItemRow extends StatefulWidget {
-  final MenuItemReport item;
+  final _MenuItemReport item;
   final bool isLast;
 
   const _ItemRow({required this.item, required this.isLast});
@@ -449,10 +596,6 @@ class _ItemRowState extends State<_ItemRow> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isHigh = widget.item.status == ItemStatus.highPerforming;
-
-    // Revenue text: primary color only for top earner
-    final isTopEarner = widget.item.revenue == 1200;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -471,7 +614,6 @@ class _ItemRowState extends State<_ItemRow> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
                 children: [
-                  // Item name
                   Expanded(
                     flex: 30,
                     child: Text(
@@ -484,8 +626,6 @@ class _ItemRowState extends State<_ItemRow> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-
-                  // Category
                   Expanded(
                     flex: 20,
                     child: Text(
@@ -496,8 +636,6 @@ class _ItemRowState extends State<_ItemRow> {
                       ),
                     ),
                   ),
-
-                  // Units sold
                   Expanded(
                     flex: 18,
                     child: Text(
@@ -510,8 +648,6 @@ class _ItemRowState extends State<_ItemRow> {
                       ),
                     ),
                   ),
-
-                  // Revenue
                   Expanded(
                     flex: 18,
                     child: Text(
@@ -519,17 +655,16 @@ class _ItemRowState extends State<_ItemRow> {
                       textAlign: TextAlign.right,
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight:
-                            isTopEarner ? FontWeight.w800 : FontWeight.w600,
-                        color: isTopEarner ? cs.primary : cs.onSurface,
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
                       ),
                     ),
                   ),
-
-                  // Status badge
                   Expanded(
                     flex: 18,
-                    child: Center(child: _StatusBadge(isHigh: isHigh)),
+                    child: Center(
+                      child: _StatusBadge(status: widget.item.status),
+                    ),
                   ),
                 ],
               ),
@@ -547,28 +682,42 @@ class _ItemRowState extends State<_ItemRow> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Status badge
-// ─────────────────────────────────────────────────────────────
 class _StatusBadge extends StatelessWidget {
-  final bool isHigh;
-
-  const _StatusBadge({required this.isHigh});
+  final ItemStatus status;
+  const _StatusBadge({required this.status});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
     const highColor = Color(0xFF4ade80);
     final lowColor = cs.error;
+    final normalColor = cs.onSurfaceVariant;
 
-    final bgColor = isHigh
-        ? highColor.withValues(alpha: 0.10)
-        : lowColor.withValues(alpha: 0.10);
-    final textColor = isHigh ? highColor : lowColor;
-    final borderColor = isHigh
-        ? highColor.withValues(alpha: 0.20)
-        : lowColor.withValues(alpha: 0.20);
+    final Color bgColor;
+    final Color textColor;
+    final Color borderColor;
+    final String label;
+
+    switch (status) {
+      case ItemStatus.highPerforming:
+        bgColor = highColor.withValues(alpha: 0.10);
+        textColor = highColor;
+        borderColor = highColor.withValues(alpha: 0.20);
+        label = 'HIGH PERFORMING';
+        break;
+      case ItemStatus.underperforming:
+        bgColor = lowColor.withValues(alpha: 0.10);
+        textColor = lowColor;
+        borderColor = lowColor.withValues(alpha: 0.20);
+        label = 'UNDERPERFORMING';
+        break;
+      case ItemStatus.normal:
+        bgColor = normalColor.withValues(alpha: 0.08);
+        textColor = normalColor;
+        borderColor = normalColor.withValues(alpha: 0.15);
+        label = 'NORMAL';
+        break;
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -576,22 +725,98 @@ class _StatusBadge extends StatelessWidget {
         color: bgColor,
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: borderColor),
-        boxShadow: isHigh
-            ? [
-                BoxShadow(
-                  color: highColor.withValues(alpha: 0.10),
-                  blurRadius: 10,
-                ),
-              ]
-            : null,
       ),
       child: Text(
-        isHigh ? 'HIGH PERFORMING' : 'UNDERPERFORMING',
+        label,
         style: TextStyle(
           fontSize: 9,
           fontWeight: FontWeight.w800,
           letterSpacing: 1.0,
           color: textColor,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Shared utility widgets
+// ─────────────────────────────────────────────────────────────
+class _LoadingCard extends StatelessWidget {
+  const _LoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(64),
+        child: Column(
+          children: [
+            CircularProgressIndicator(
+              color: Theme.of(context).colorScheme.primary,
+              strokeWidth: 3,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Loading data...',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  final String message;
+  const _ErrorCard({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(64),
+        child: Column(
+          children: [
+            Icon(Icons.warning_rounded, size: 48, color: cs.error),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: TextStyle(color: cs.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyCard extends StatelessWidget {
+  final IconData icon;
+  final String message;
+  const _EmptyCard({required this.icon, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(64),
+        child: Column(
+          children: [
+            Icon(icon, size: 56, color: cs.outlineVariant),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 15),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );

@@ -8,9 +8,13 @@ import 'package:rmss/features/auth/bloc/auth_state.dart';
 import 'package:rmss/features/waiter/views/mobile/pages/orders_page.dart';
 import 'package:rmss/features/waiter/views/mobile/pages/waiter_tables_grid_page.dart';
 import 'package:rmss/features/waiter/views/mobile/pages/waiter_settings_page.dart';
-import 'package:rmss/features/waiter/blocs/notification_bloc/waiter_notification_bloc.dart';
-import 'package:rmss/features/waiter/blocs/notification_bloc/waiter_notification_state.dart';
+import 'package:rmss/core/blocs/notification_bloc/app_notification_bloc.dart';
+import 'package:rmss/core/blocs/notification_bloc/app_notification_event.dart';
+import 'package:rmss/core/blocs/notification_bloc/app_notification_state.dart';
+import 'package:rmss/features/kitchen/Screens/notification_screen.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:rmss/core/blocs/app_branding_cubit/app_branding_cubit.dart';
+import 'package:rmss/core/models/app_branding_model.dart';
 
 class WaiterDashboardMobile extends StatefulWidget {
   const WaiterDashboardMobile({super.key});
@@ -21,6 +25,7 @@ class WaiterDashboardMobile extends StatefulWidget {
 
 class _WaiterDashboardMobileState extends State<WaiterDashboardMobile> {
   int _selectedIndex = 0;
+  final Set<String> _shownNotifications = {};
 
   final List<Widget> _pages = [
     const OrdersPage(),
@@ -34,34 +39,63 @@ class _WaiterDashboardMobileState extends State<WaiterDashboardMobile> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return BlocListener<WaiterNotificationBloc, WaiterNotificationState>(
+    return BlocListener<AppNotificationBloc, AppNotificationState>(
       listener: (context, state) {
-        if (state is WaiterNotificationShow) {
-          if (state.notification.playSound) {
-            final player = AudioPlayer();
-            player.setVolume(state.notification.volume / 100.0);
-            // Playing a generic beep. For offline support, add an mp3 to assets and use AssetSource('sound.mp3')
-            player.play(UrlSource('https://actions.google.com/sounds/v1/alarms/beep_short.ogg'));
-          }
+        if (state is AppNotificationLoaded) {
+          for (var notification in state.notifications) {
+            if (!notification.isRead &&
+                !_shownNotifications.contains(notification.id)) {
+              _shownNotifications.add(notification.id);
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    state.notification.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+              if (notification.playSound) {
+                final player = AudioPlayer();
+                player.setVolume(notification.volume / 100.0);
+                player.play(AssetSource('sounds/beep.mp3'));
+              }
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              notification.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(notification.message),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.open_in_new,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const NotificationsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                  Text(state.notification.message),
-                ],
-              ),
-              duration: const Duration(seconds: 4),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: colorScheme.primary,
-            ),
-          );
+                  duration: const Duration(seconds: 4),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: colorScheme.primary,
+                ),
+              );
+            }
+          }
         }
       },
       child: Scaffold(
@@ -82,74 +116,145 @@ class _WaiterDashboardMobileState extends State<WaiterDashboardMobile> {
   }
 
   Widget _buildTopAppBar(ColorScheme colorScheme, TextTheme textTheme) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        if (state is AuthSuccess) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerLow,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        image: DecorationImage(
-                          image: CachedNetworkImageProvider(
-                            state.user.photoUrl,
-                          ),
-                          fit: BoxFit.cover,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
+    return BlocBuilder<AppBrandingCubit, AppBrandingModel>(
+      builder: (context, branding) {
+        return BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            if (state is AuthSuccess) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                    const SizedBox(width: 16),
-                    Text(
-                      "Crown Restaurant",
-                      style: textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: colorScheme.primary,
-                        letterSpacing: -0.5,
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            image: DecorationImage(
+                              image: CachedNetworkImageProvider(
+                                state.user.photoUrl,
+                              ),
+                              fit: BoxFit.cover,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Row(
+                          children: [
+                            if (branding.appLogoUrl.isNotEmpty) ...
+                              [
+                                Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    image: DecorationImage(
+                                      image: CachedNetworkImageProvider(branding.appLogoUrl),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                            Text(
+                              branding.appName.isNotEmpty ? branding.appName : 'Crown Restaurant',
+                              style: textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: colorScheme.primary,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHigh,
+                        shape: BoxShape.circle,
+                      ),
+                      child: BlocBuilder<AppNotificationBloc, AppNotificationState>(
+                        builder: (context, notifState) {
+                          int unread = 0;
+                          if (notifState is AppNotificationLoaded) {
+                            unread = notifState.notifications
+                                .where((n) => !n.isRead)
+                                .length;
+                          }
+                          return Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  Icons.notifications,
+                                  color: colorScheme.primary,
+                                ),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const NotificationsScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              if (unread > 0)
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 16,
+                                      minHeight: 16,
+                                    ),
+                                    child: Text(
+                                      '$unread',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ],
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHigh,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: Icon(Icons.notifications, color: colorScheme.primary),
-                    onPressed: () {
-                      // TODO: Notifications logic
-                    },
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        return const CircularProgressIndicator();
+              );
+            }
+            return const CircularProgressIndicator();
+          },
+        );
       },
     );
   }

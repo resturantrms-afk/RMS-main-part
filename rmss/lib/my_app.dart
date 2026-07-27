@@ -29,17 +29,13 @@ import 'package:rmss/features/admin/repository/reports_repository.dart';
 import 'package:rmss/features/admin/blocs/ai_bloc/ai_bloc.dart';
 import 'package:rmss/features/admin/blocs/navigation_cubit/navigation_cubit.dart'
     as admin_nav;
-import 'package:rmss/features/admin/repository/admin_notification_repository.dart';
-import 'package:rmss/features/admin/blocs/notification_bloc/admin_notification_bloc.dart';
-import 'package:rmss/features/admin/blocs/notification_bloc/admin_notification_event.dart'
-    as admin_notif_event;
+import 'package:rmss/core/repositories/app_notification_repository.dart';
+import 'package:rmss/core/blocs/notification_bloc/app_notification_bloc.dart';
+import 'package:rmss/core/blocs/notification_bloc/app_notification_event.dart';
 import 'package:rmss/features/cashier/blocs/navigation_cubit/navigation_cubit.dart';
-import 'package:rmss/features/cashier/repository/cashier_notification_repository.dart';
-import 'package:rmss/features/cashier/blocs/notification_bloc/cashier_notification_bloc.dart';
-import 'package:rmss/features/cashier/blocs/notification_bloc/cashier_notification_event.dart';
-import 'package:rmss/features/waiter/repository/waiter_notification_repository.dart';
-import 'package:rmss/features/waiter/blocs/notification_bloc/waiter_notification_bloc.dart';
-import 'package:rmss/features/waiter/blocs/notification_bloc/waiter_notification_event.dart';
+import 'package:rmss/core/repositories/app_branding_repository.dart';
+import 'package:rmss/core/blocs/app_branding_cubit/app_branding_cubit.dart';
+import 'package:rmss/core/models/app_branding_model.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -54,11 +50,9 @@ class MyApp extends StatelessWidget {
         RepositoryProvider(create: (context) => MenuRepository()),
         RepositoryProvider(create: (context) => OrderRepository()),
         RepositoryProvider(create: (context) => PaymentRepository()),
-        RepositoryProvider(
-          create: (context) => CashierNotificationRepository(),
-        ),
-        RepositoryProvider(create: (context) => AdminNotificationRepository()),
-        RepositoryProvider(create: (context) => WaiterNotificationRepository()),
+        RepositoryProvider(create: (context) => AppNotificationRepository()),
+        RepositoryProvider(create: (context) => ReportsRepository()),
+        RepositoryProvider(create: (context) => AppBrandingRepository()),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -102,34 +96,33 @@ class MyApp extends StatelessWidget {
           ),
           BlocProvider(create: (context) => CartBloc()),
           BlocProvider(
-            create: (context) => CashierNotificationBloc(
-              repository: context.read<CashierNotificationRepository>(),
-            )..add(StartListeningNotifications()),
+            create: (context) => AppNotificationBloc(
+              repository: context.read<AppNotificationRepository>(),
+            ),
           ),
           BlocProvider(
-            create: (context) => AdminNotificationBloc(
-              repository: context.read<AdminNotificationRepository>(),
-            )..add(admin_notif_event.StartListeningNotifications()),
-          ),
-          BlocProvider(
-            create: (context) => WaiterNotificationBloc(
-              repository: context.read<WaiterNotificationRepository>(),
-            )..add(WaiterStartListeningNotifications()),
+            create: (context) => AppBrandingCubit(
+              repository: context.read<AppBrandingRepository>(),
+            ),
           ),
         ],
         child: BlocBuilder<ThemeCubit, ThemeMode>(
-          builder: (context, state) {
-            return MaterialApp(
-              title: AppConfig.appName,
-              debugShowCheckedModeBanner: false,
-              darkTheme: AppTheme.darkTheme,
-              theme: AppTheme.lightTheme,
-              themeMode: state,
-              builder: (context, child) => GestureDetector(
-                onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-                child: child,
-              ),
-              home: const SplashScreen(),
+          builder: (context, themeState) {
+            return BlocBuilder<AppBrandingCubit, AppBrandingModel>(
+              builder: (context, brandingState) {
+                return MaterialApp(
+                  title: brandingState.appName.isNotEmpty ? brandingState.appName : AppConfig.appName,
+                  debugShowCheckedModeBanner: false,
+                  darkTheme: AppTheme.darkTheme,
+                  theme: AppTheme.lightTheme,
+                  themeMode: themeState,
+                  builder: (context, child) => GestureDetector(
+                    onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                    child: child,
+                  ),
+                  home: const SplashScreen(),
+                );
+              },
             );
           },
         ),

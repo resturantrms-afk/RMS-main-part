@@ -19,6 +19,8 @@ import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/core/models/payment_model.dart';
 import 'package:rmss/core/models/table_model.dart';
 import 'package:rmss/features/admin/blocs/navigation_cubit/navigation_cubit.dart';
+import 'package:rmss/features/auth/bloc/auth_bloc.dart';
+import 'package:rmss/features/auth/bloc/auth_state.dart';
 
 class OrderDetails extends StatelessWidget {
   final String orderId;
@@ -601,7 +603,7 @@ class OrderDetails extends StatelessWidget {
                                     onPressed:
                                         order.status == OrderStatus.served
                                         ? () {
-                                            _showPaymentDialog(context, order);
+                                            _verifyPinAndShowPaymentDialog(context, order);
                                           }
                                         : null,
 
@@ -786,6 +788,89 @@ class OrderDetails extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _verifyPinAndShowPaymentDialog(BuildContext context, OrderModel order) async {
+    final authState = context.read<AuthBloc>().state;
+    final savedPin = authState is AuthSuccess ? authState.user.paymentPin : null;
+
+    if (savedPin == null || savedPin.isEmpty) {
+      if (context.mounted) {
+        _showPaymentDialog(context, order);
+      }
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    final pinController = TextEditingController();
+    bool hasError = false;
+    bool obscurePin = true;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (innerContext, setDialogState) {
+            return AlertDialog(
+              title: const Text("Enter Payment PIN"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasError)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        "Incorrect PIN. Try again.",
+                        style: TextStyle(color: Theme.of(innerContext).colorScheme.error),
+                      ),
+                    ),
+                  TextField(
+                    controller: pinController,
+                    obscureText: obscurePin,
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    decoration: InputDecoration(
+                      labelText: "4-digit PIN",
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscurePin ? Icons.visibility : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setDialogState(() {
+                            obscurePin = !obscurePin;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text("CANCEL"),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (pinController.text == savedPin) {
+                      Navigator.pop(dialogContext);
+                      _showPaymentDialog(context, order);
+                    } else {
+                      setDialogState(() {
+                        hasError = true;
+                      });
+                    }
+                  },
+                  child: const Text("VERIFY"),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

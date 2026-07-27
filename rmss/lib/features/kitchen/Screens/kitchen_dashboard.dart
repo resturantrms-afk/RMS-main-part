@@ -6,6 +6,8 @@ import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
 import 'package:rmss/features/kitchen/Screens/notification_screen.dart';
 import 'package:rmss/features/kitchen/Screens/profile_screen.dart';
+import 'package:rmss/core/blocs/notification_bloc/app_notification_bloc.dart';
+import 'package:rmss/core/blocs/notification_bloc/app_notification_state.dart';
 
 import '../../../core/blocs/order_bloc/order_bloc.dart';
 import '../../../core/blocs/order_bloc/order_state.dart';
@@ -81,23 +83,33 @@ class _KitchenDashboardState extends State<KitchenDashboard> {
               Row(
                 children: [
                   const Spacer(),
-                  IconButton(
-                    onPressed: () {
-                      if (widget.onNavigate != null) {
-                        widget.onNavigate!(3);
-                      } else {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const NotificationsScreen(),
-                          ),
-                        );
+                  BlocBuilder<AppNotificationBloc, AppNotificationState>(
+                    builder: (context, state) {
+                      int unread = 0;
+                      if (state is AppNotificationLoaded) {
+                        unread = state.notifications.where((n) => !n.isRead).length;
                       }
+                      return Badge(
+                        isLabelVisible: unread > 0,
+                        label: Text('$unread', style: const TextStyle(fontSize: 10, color: Colors.white)),
+                        child: IconButton(
+                          onPressed: () {
+                            if (widget.onNavigate != null) {
+                              widget.onNavigate!(3);
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const NotificationsScreen(),
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.notifications_outlined),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      );
                     },
-                    icon: const Icon(Icons.notifications_outlined),
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 8),
                   BlocBuilder<ThemeCubit, ThemeMode>(
