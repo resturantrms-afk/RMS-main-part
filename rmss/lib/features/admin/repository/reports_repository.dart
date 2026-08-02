@@ -3,6 +3,7 @@ import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/core/models/payment_model.dart';
 import 'package:rmss/core/models/menu_item_model.dart';
 import 'package:rmss/core/models/user_model.dart';
+import 'package:rmss/core/utils/order_utils.dart';
 import 'package:rmss/features/admin/models/reports/association_report.dart';
 import 'package:rmss/features/admin/models/reports/category_performance_report.dart';
 import 'package:rmss/features/admin/models/reports/item_importance_report.dart';
@@ -36,9 +37,13 @@ class ReportsRepository {
     final allPayments = await _fetchAllPayments();
     final menuItems = await _fetchAllMenuItems();
     final users = await _fetchAllUsers();
+    
+    // Group orders and payments by session
+    final groupedOrders = OrderUtils.groupActiveOrdersByTable(allOrders);
+    final groupedPayments = _groupPayments(allPayments);
 
     // Filter orders by date range
-    var orders = allOrders;
+    var orders = groupedOrders;
     if (startDate != null && endDate != null) {
       orders = orders.where((o) {
         final dt = o.updatedAt.toDate();
@@ -48,7 +53,7 @@ class ReportsRepository {
     }
 
     // Filter payments by date range
-    var payments = allPayments;
+    var payments = groupedPayments;
     if (startDate != null && endDate != null) {
       payments = payments.where((p) {
         final dt = p.createdAt.toDate();
@@ -224,5 +229,29 @@ class ReportsRepository {
       'associationReport': AssociationAlgorithmReport(frequentlyBoughtTogether: itemSets.take(10).toList()),
       'paymentLedgers': ledgerMap.values.toList(),
     };
+  }
+
+  List<PaymentModel> _groupPayments(List<PaymentModel> rawPayments) {
+    final grouped = <int, List<PaymentModel>>{};
+    for (final p in rawPayments) {
+      final key = p.updatedAt.toDate().millisecondsSinceEpoch;
+      grouped.putIfAbsent(key, () => []).add(p);
+    }
+    
+    return grouped.values.map((group) {
+      if (group.length == 1) return group.first;
+      
+      final totalAmount = group.fold<double>(0, (sum, item) => sum + item.amountPaid);
+      return PaymentModel(
+        id: group.map((e) => e.id).join(','),
+        orderId: group.map((e) => e.orderId).join(','),
+        processedBy: group.first.processedBy,
+        paymentMethod: group.first.paymentMethod,
+        amountPaid: totalAmount,
+        status: group.any((e) => e.status == PaymentStatus.voided) ? PaymentStatus.voided : PaymentStatus.completed,
+        createdAt: group.first.createdAt,
+        updatedAt: group.first.updatedAt,
+      );
+    }).toList();
   }
 }

@@ -5,6 +5,7 @@ import '../../../core/blocs/menu_bloc/menu_bloc.dart';
 import '../../../core/blocs/menu_bloc/menu_state.dart';
 import '../../../core/blocs/order_bloc/order_bloc.dart';
 import '../../../core/blocs/order_bloc/order_event.dart';
+import '../../../core/blocs/order_bloc/order_state.dart';
 import '../../../core/models/menu_item_model.dart';
 import '../../../core/models/order_model.dart';
 
@@ -28,7 +29,9 @@ class OrderDetailsScreen extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+        iconTheme: IconThemeData(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
       ),
 
       body: Padding(
@@ -49,7 +52,9 @@ class OrderDetailsScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerLowest,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
 
                 child: Column(
@@ -70,7 +75,11 @@ class OrderDetailsScreen extends StatelessWidget {
 
                     _infoTile(context, "Source", order.source.name),
 
-                    _infoTile(context, "Status", order.status.name.toUpperCase()),
+                    _infoTile(
+                      context,
+                      "Status",
+                      order.status.name.toUpperCase(),
+                    ),
 
                     _infoTile(
                       context,
@@ -102,60 +111,117 @@ class OrderDetailsScreen extends StatelessWidget {
                               ? menuState.items
                               : const <MenuItemModel>[];
 
+                          final orderState = context.watch<OrderBloc>().state;
+                          List<OrderModel> originalOrders = [order];
+                          if (orderState is OrderLoaded) {
+                            final orderIds = order.id.split(',');
+                            originalOrders = orderState.items
+                                .where((o) => orderIds.contains(o.id))
+                                .toList();
+                          }
+                          if (originalOrders.isEmpty) originalOrders = [order];
+
                           return ListView.builder(
-                            itemCount: order.items.length,
+                            itemCount: originalOrders.length,
                             itemBuilder: (context, index) {
-                              final item = order.items[index];
-                              final imageUrl = _resolveItemImageUrl(
-                                item,
-                                menuItems,
-                              );
+                              final origOrder = originalOrders[index];
 
-                              return Card(
-                                color: Theme.of(context).colorScheme.surfaceContainerLowest,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-                                ),
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    radius: 28,
-                                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                    backgroundImage: imageUrl != null
-                                        ? NetworkImage(imageUrl)
-                                        : null,
-                                    child: imageUrl == null
-                                        ? Text(
-                                            item.quantity.toString(),
-                                            style: TextStyle(
-                                              color: Theme.of(context).colorScheme.onSurface,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          )
-                                        : null,
-                                  ),
-
-                                  title: Text(
-                                    "${item.quantity}x ${item.name}",
-                                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-                                  ),
-
-                                  subtitle: Text(
-                                    item.notes.isEmpty
-                                        ? "No Notes"
-                                        : item.notes,
-                                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                                  ),
-
-                                  trailing: Text(
-                                    "\$${item.price.toStringAsFixed(2)}",
-                                    style: TextStyle(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      fontWeight: FontWeight.bold,
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (originalOrders.length > 1)
+                                    Padding(
+                                      padding: EdgeInsets.only(
+                                        bottom: 12,
+                                        top: index > 0 ? 16 : 0,
+                                      ),
+                                      child: Text(
+                                        "Part - ${origOrder.status.name.toUpperCase()}",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.5,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
+                                  ...origOrder.items.map((item) {
+                                    final imageUrl = _resolveItemImageUrl(
+                                      item,
+                                      menuItems,
+                                    );
+
+                                    return Card(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerLowest,
+                                      elevation: 0,
+                                      margin: const EdgeInsets.only(bottom: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.outlineVariant,
+                                        ),
+                                      ),
+                                      child: ListTile(
+                                        leading: CircleAvatar(
+                                          radius: 28,
+                                          backgroundColor: Theme.of(
+                                            context,
+                                          ).colorScheme.surfaceContainerHighest,
+                                          backgroundImage: imageUrl != null
+                                              ? NetworkImage(imageUrl)
+                                              : null,
+                                          child: imageUrl == null
+                                              ? Text(
+                                                  item.quantity.toString(),
+                                                  style: TextStyle(
+                                                    color: Theme.of(
+                                                      context,
+                                                    ).colorScheme.onSurface,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                )
+                                              : null,
+                                        ),
+
+                                        title: Text(
+                                          "${item.quantity}x ${item.name}",
+                                          style: TextStyle(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                          ),
+                                        ),
+
+                                        subtitle: Text(
+                                          item.notes.isEmpty
+                                              ? "No Notes"
+                                              : item.notes,
+                                          style: TextStyle(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+
+                                        trailing: Text(
+                                          "\$${item.price.toStringAsFixed(2)}",
+                                          style: TextStyle(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ],
                               );
                             },
                           );
@@ -178,7 +244,9 @@ class OrderDetailsScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerLowest,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,8 +287,12 @@ class OrderDetailsScreen extends StatelessWidget {
                       height: 50,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
                         ),
                         onPressed: order.status == OrderStatus.ready
                             ? null
@@ -240,13 +312,28 @@ class OrderDetailsScreen extends StatelessWidget {
                                     return;
                                 }
 
-                                final updatedOrder = order.copyWith(
-                                  status: newStatus,
-                                  updatedAt: Timestamp.now(),
-                                );
-                                BlocProvider.of<OrderBloc>(
-                                  context,
-                                ).add(UpdateOrder(item: updatedOrder));
+                                final orderState = context
+                                    .read<OrderBloc>()
+                                    .state;
+                                if (orderState is OrderLoaded) {
+                                  final orderIds = order.id.split(',');
+                                  final originalOrders = orderState.items
+                                      .where((o) => orderIds.contains(o.id))
+                                      .toList();
+
+                                  final timestamp = Timestamp.now();
+                                  for (var origOrder in originalOrders) {
+                                    if (origOrder.status == order.status) {
+                                      final updatedOrder = origOrder.copyWith(
+                                        status: newStatus,
+                                        updatedAt: timestamp,
+                                      );
+                                      BlocProvider.of<OrderBloc>(
+                                        context,
+                                      ).add(UpdateOrder(item: updatedOrder));
+                                    }
+                                  }
+                                }
 
                                 Navigator.pop(context);
                               },
@@ -276,7 +363,12 @@ class OrderDetailsScreen extends StatelessWidget {
         children: [
           SizedBox(
             width: 90,
-            child: Text(title, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            child: Text(
+              title,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
           Expanded(
             child: Text(
@@ -299,12 +391,18 @@ class OrderDetailsScreen extends StatelessWidget {
         children: [
           Icon(
             done ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: done ? Colors.green : Theme.of(context).colorScheme.onSurfaceVariant,
+            color: done
+                ? Colors.green
+                : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 10),
           Text(
             title,
-            style: TextStyle(color: done ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant),
+            style: TextStyle(
+              color: done
+                  ? Theme.of(context).colorScheme.onSurface
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

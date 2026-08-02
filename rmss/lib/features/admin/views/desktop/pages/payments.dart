@@ -10,6 +10,7 @@ import 'package:rmss/core/blocs/order_bloc/order_state.dart';
 import 'package:rmss/core/models/payment_model.dart';
 import 'package:rmss/core/models/order_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:rmss/core/utils/order_utils.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
 import 'package:rmss/features/admin/blocs/users_bloc/admin_users_bloc.dart';
@@ -221,7 +222,52 @@ class _PaymentsState extends State<Payments> {
                       if (paymentState is PaymentsLoaded &&
                           orderState is OrderLoaded) {
                         // Filter payments
-                        var filteredPayments = paymentState.items;
+                        List<PaymentModel> groupPayments(
+                          List<PaymentModel> rawPayments,
+                        ) {
+                          final grouped = <int, List<PaymentModel>>{};
+                          for (final p in rawPayments) {
+                            final key = p.updatedAt
+                                .toDate()
+                                .millisecondsSinceEpoch;
+                            grouped.putIfAbsent(key, () => []).add(p);
+                          }
+
+                          return grouped.values.map((group) {
+                            if (group.length == 1) return group.first;
+
+                            final mergedIds = group.map((e) => e.id).join(',');
+                            final mergedOrderIds = group
+                                .map((e) => e.orderId)
+                                .join(',');
+                            final totalAmount = group.fold<double>(
+                              0,
+                              (sum, item) => sum + item.amountPaid,
+                            );
+
+                            final status =
+                                group.any(
+                                  (e) => e.status == PaymentStatus.voided,
+                                )
+                                ? PaymentStatus.voided
+                                : PaymentStatus.completed;
+
+                            return PaymentModel(
+                              id: mergedIds,
+                              orderId: mergedOrderIds,
+                              processedBy: group.first.processedBy,
+                              paymentMethod: group.first.paymentMethod,
+                              amountPaid: totalAmount,
+                              status: status,
+                              createdAt: group.first.createdAt,
+                              updatedAt: group.first.updatedAt,
+                            );
+                          }).toList();
+                        }
+
+                        var filteredPayments = groupPayments(
+                          paymentState.items,
+                        );
 
                         if (_selectedFilter == "VOIDED") {
                           filteredPayments = filteredPayments
@@ -270,10 +316,13 @@ class _PaymentsState extends State<Payments> {
                                       const SizedBox(height: 12),
                                   itemBuilder: (context, index) {
                                     final payment = filteredPayments[index];
+                                    final orderIds = payment.orderId.split(',');
                                     final order = orderState.items
                                         .cast<OrderModel?>()
                                         .firstWhere(
-                                          (o) => o?.id == payment.orderId,
+                                          (o) =>
+                                              o != null &&
+                                              orderIds.contains(o.id),
                                           orElse: () => null as OrderModel?,
                                         );
 
@@ -724,14 +773,18 @@ class _PaymentsState extends State<Payments> {
                         actions: [
                           TextButton(
                             style: ButtonStyle(
-                              mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+                              mouseCursor: WidgetStateProperty.all(
+                                SystemMouseCursors.click,
+                              ),
                             ),
                             onPressed: () => Navigator.pop(context, false),
                             child: const Text('Cancel'),
                           ),
                           TextButton(
                             style: ButtonStyle(
-                              mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+                              mouseCursor: WidgetStateProperty.all(
+                                SystemMouseCursors.click,
+                              ),
                             ),
                             onPressed: () => Navigator.pop(context, true),
                             child: Text(
@@ -743,24 +796,44 @@ class _PaymentsState extends State<Payments> {
                       ),
                     );
                     if (confirm == true && context.mounted) {
-                      // 1. Void the payment
-                      final voidedPayment = payment.copyWith(
-                        status: PaymentStatus.voided,
-                        updatedAt: Timestamp.now(),
-                      );
-                      context.read<PaymentBloc>().add(
-                        UpdatePayment(item: voidedPayment),
-                      );
+                      final paymentState = context.read<PaymentBloc>().state;
+                      final orderState = context.read<OrderBloc>().state;
 
-                      // 2. Revert order status to served
-                      if (order != null) {
-                        final revertedOrder = order.copyWith(
-                          status: OrderStatus.served,
-                          updatedAt: Timestamp.now(),
-                        );
-                        context.read<OrderBloc>().add(
-                          UpdateOrder(item: revertedOrder),
-                        );
+                      if (paymentState is PaymentsLoaded &&
+                          orderState is OrderLoaded) {
+                        final paymentIds = payment.id.split(',');
+                        final originalPayments = paymentState.items
+                            .where((p) => paymentIds.contains(p.id))
+                            .toList();
+
+                        final orderIds = payment.orderId.split(',');
+                        final originalOrders = orderState.items
+                            .where((o) => orderIds.contains(o.id))
+                            .toList();
+
+                        final timestamp = Timestamp.now();
+
+                        // 1. Void all original payments
+                        for (var origPayment in originalPayments) {
+                          final voidedPayment = origPayment.copyWith(
+                            status: PaymentStatus.voided,
+                            updatedAt: timestamp,
+                          );
+                          context.read<PaymentBloc>().add(
+                            UpdatePayment(item: voidedPayment),
+                          );
+                        }
+
+                        // 2. Revert all original orders to served
+                        for (var origOrder in originalOrders) {
+                          final revertedOrder = origOrder.copyWith(
+                            status: OrderStatus.served,
+                            updatedAt: timestamp,
+                          );
+                          context.read<OrderBloc>().add(
+                            UpdateOrder(item: revertedOrder),
+                          );
+                        }
                       }
                     }
                   },
@@ -771,19 +844,31 @@ class _PaymentsState extends State<Payments> {
                   tooltip: 'View Receipt',
                   onPressed: () {
                     if (order != null) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ReceiptPage(order: order),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Order details not found'),
-                        ),
-                      );
+                      final orderState = context.read<OrderBloc>().state;
+                      if (orderState is OrderLoaded) {
+                        final orderIds = payment.orderId.split(',');
+                        final originalOrders = orderState.items
+                            .where((o) => orderIds.contains(o.id))
+                            .toList();
+                        if (originalOrders.isNotEmpty) {
+                          final mergedOrderForReceipt = OrderUtils.mergeOrders(
+                            originalOrders,
+                          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ReceiptPage(order: mergedOrderForReceipt),
+                            ),
+                          );
+                          return;
+                        }
+                      }
                     }
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Order details not found')),
+                    );
                   },
                 ),
               ],

@@ -5,6 +5,7 @@ import 'package:rmss/core/blocs/order_bloc/order_state.dart';
 import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/order_details.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/receipt.dart';
+import 'package:rmss/core/utils/order_utils.dart';
 import 'package:rmss/core/blocs/payment_bloc/payment_bloc.dart';
 import 'package:rmss/core/blocs/payment_bloc/payment_state.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
@@ -60,7 +61,8 @@ class RecentTransactionsTable extends StatelessWidget {
                     ? paymentState.items
                     : [];
 
-                final filteredOrders = orderState.items.where((order) {
+                final groupedOrders = OrderUtils.groupActiveOrdersByTable(orderState.items);
+                final filteredOrders = groupedOrders.where((order) {
                   if (order.status == OrderStatus.paid) {
                     final matchingPayments = allPayments.where(
                       (p) => p.orderId == order.id,

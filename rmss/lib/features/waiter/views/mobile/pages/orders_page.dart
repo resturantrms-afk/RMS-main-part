@@ -13,6 +13,7 @@ import 'package:rmss/features/auth/bloc/auth_state.dart';
 import 'package:rmss/core/models/roles/waiter_model.dart';
 import 'package:rmss/core/repositories/user_repository.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:rmss/core/utils/order_utils.dart';
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
@@ -144,9 +145,10 @@ class _OrdersPageState extends State<OrdersPage> {
                   } else if (state is OrderError) {
                     return Center(child: Text('Error: ${state.message}'));
                   } else if (state is OrderLoaded) {
-                    final readyOrders = state.items
+                    final readyOrdersRaw = state.items
                         .where((order) => order.status == OrderStatus.ready)
                         .toList();
+                    final readyOrders = OrderUtils.groupActiveOrdersByTable(readyOrdersRaw);
 
                     if (readyOrders.isEmpty) {
                       return Center(
@@ -315,33 +317,38 @@ class _OrdersPageState extends State<OrdersPage> {
           ),
           ElevatedButton(
             onPressed: () {
-              context.read<OrderBloc>().add(
-                UpdateOrder(
-                  item: OrderModel(
-                    id: order.id,
-                    tableId: order.tableId,
-                    tableNumber: order.tableNumber,
-                    createdBy: order.createdBy,
-                    source: order.source,
-                    totalPrice: order.totalPrice,
-                    status: OrderStatus.served,
-                    createdAt: order.createdAt,
-                    updatedAt: Timestamp.now(),
-                    items: order.items,
-                  ),
-                ),
-              );
+              final orderState = context.read<OrderBloc>().state;
+              if (orderState is OrderLoaded) {
+                final orderIds = order.id.split(',');
+                final originalOrders = orderState.items.where((o) => orderIds.contains(o.id)).toList();
 
-              // Log the 'served' action
-              final authState = context.read<AuthBloc>().state;
-              if (authState is AuthSuccess) {
-                final action = WaiterAction(
-                  tableId: order.tableId,
-                  actionType: WaiterActionType.served,
-                  date: Timestamp.now(),
-                  orderId: order.id,
-                );
-                context.read<UserRepository>().logWaiterAction(authState.user.id, action);
+                for (var origOrder in originalOrders) {
+                  if (origOrder.status == OrderStatus.ready) {
+                    context.read<OrderBloc>().add(
+                      UpdateOrder(
+                        item: origOrder.copyWith(
+                          status: OrderStatus.served,
+                          updatedAt: Timestamp.now(),
+                        ),
+                      ),
+                    );
+
+                    // Log the 'served' action for each original order
+                    final authState = context.read<AuthBloc>().state;
+                    if (authState is AuthSuccess) {
+                      final action = WaiterAction(
+                        tableId: origOrder.tableId,
+                        actionType: WaiterActionType.served,
+                        date: Timestamp.now(),
+                        orderId: origOrder.id,
+                      );
+                      context.read<UserRepository>().logWaiterAction(
+                        authState.user.id,
+                        action,
+                      );
+                    }
+                  }
+                }
               }
             },
             style: ElevatedButton.styleFrom(
@@ -441,7 +448,10 @@ class _OrdersPageState extends State<OrdersPage> {
                   actionType: WaiterActionType.cleaned,
                   date: Timestamp.now(),
                 );
-                context.read<UserRepository>().logWaiterAction(authState.user.id, action);
+                context.read<UserRepository>().logWaiterAction(
+                  authState.user.id,
+                  action,
+                );
               }
             },
             style: ElevatedButton.styleFrom(

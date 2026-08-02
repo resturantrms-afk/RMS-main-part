@@ -961,7 +961,8 @@ class _TableCardState extends State<_TableCard>
 
   // ── Status helpers ───────────────────────────────────────────────────────
   Color _statusBg(ColorScheme cs) {
-    if (widget.table.needsHelp) return const Color(0xFFF44336).withValues(alpha: 0.12);
+    if (widget.table.needsHelp)
+      return const Color(0xFFF44336).withValues(alpha: 0.12);
     return switch (widget.table.status) {
       TableStatus.available => const Color(0xFF4CAF50).withValues(alpha: 0.12),
       TableStatus.occupied => cs.primary.withValues(alpha: 0.12),
@@ -988,7 +989,8 @@ class _TableCardState extends State<_TableCard>
   }
 
   Color _iconColor(ColorScheme cs) {
-    if (widget.table.needsHelp) return const Color(0xFFF44336).withValues(alpha: 0.65);
+    if (widget.table.needsHelp)
+      return const Color(0xFFF44336).withValues(alpha: 0.65);
     return switch (widget.table.status) {
       TableStatus.available => cs.onSurfaceVariant.withValues(alpha: 0.35),
       TableStatus.occupied => cs.primary.withValues(alpha: 0.65),
@@ -1655,7 +1657,7 @@ class _QrButtonState extends State<_QrButton> {
 
     final baseUrl =
         dotenv.env['CUSTOMER_SITE_URL'] ?? 'https://testproject-9d7aa.web.app';
-    final url = '$baseUrl/?table=$tableNumber';
+    final url = '$baseUrl/#/?table=$tableNumber';
     showDialog(
       context: context,
       builder: (context) {

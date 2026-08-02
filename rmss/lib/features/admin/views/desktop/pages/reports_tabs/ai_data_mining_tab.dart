@@ -22,6 +22,7 @@ import 'package:rmss/features/admin/blocs/ai_bloc/ai_state.dart';
 import 'package:rmss/features/admin/blocs/users_bloc/admin_users_bloc.dart';
 import 'package:rmss/features/admin/blocs/users_bloc/admin_users_state.dart';
 import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/ai_data_mining_components/editable_ai_chart_card.dart';
+import 'package:rmss/core/utils/order_utils.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Time filter
@@ -111,6 +112,8 @@ class _AiDataMiningTabState extends State<AiDataMiningTab> {
     List<OrderModel> orders,
     List<PaymentModel> payments,
   ) {
+    orders = OrderUtils.groupActiveOrdersByTable(orders);
+    payments = _groupPayments(payments);
     final filteredOrders = orders
         .where(
           (o) => o.status == OrderStatus.paid && _inRange(o.updatedAt.toDate()),
@@ -181,6 +184,8 @@ class _AiDataMiningTabState extends State<AiDataMiningTab> {
     List<TableModel> tables,
     Map<String, String> itemToCategory,
   ) {
+    orders = OrderUtils.groupActiveOrdersByTable(orders);
+    payments = _groupPayments(payments);
     bool inRange(DateTime dt) {
       final now = DateTime.now();
       switch (range) {
@@ -374,6 +379,30 @@ class _AiDataMiningTabState extends State<AiDataMiningTab> {
       "detailedUsers": detailedUsers,
     };
     return jsonEncode(map);
+  }
+
+  List<PaymentModel> _groupPayments(List<PaymentModel> rawPayments) {
+    final grouped = <int, List<PaymentModel>>{};
+    for (final p in rawPayments) {
+      final key = p.updatedAt.toDate().millisecondsSinceEpoch;
+      grouped.putIfAbsent(key, () => []).add(p);
+    }
+    
+    return grouped.values.map((group) {
+      if (group.length == 1) return group.first;
+      
+      final totalAmount = group.fold<double>(0, (sum, item) => sum + item.amountPaid);
+      return PaymentModel(
+        id: group.map((e) => e.id).join(','),
+        orderId: group.map((e) => e.orderId).join(','),
+        processedBy: group.first.processedBy,
+        paymentMethod: group.first.paymentMethod,
+        amountPaid: totalAmount,
+        status: group.any((e) => e.status == PaymentStatus.voided) ? PaymentStatus.voided : PaymentStatus.completed,
+        createdAt: group.first.createdAt,
+        updatedAt: group.first.updatedAt,
+      );
+    }).toList();
   }
 
   @override

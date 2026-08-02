@@ -6,6 +6,7 @@ import 'package:rmss/core/blocs/menu_bloc/menu_state.dart';
 import 'package:rmss/core/blocs/order_bloc/order_bloc.dart';
 import 'package:rmss/core/blocs/order_bloc/order_state.dart';
 import 'package:rmss/core/models/table_model.dart';
+import 'package:rmss/core/utils/order_utils.dart';
 import 'package:rmss/features/waiter/views/mobile/pages/waiter_menu_page.dart';
 
 class WaiterHistoryPage extends StatelessWidget {
@@ -22,7 +23,10 @@ class WaiterHistoryPage extends StatelessWidget {
     return BlocBuilder<OrderBloc, OrderState>(
       builder: (context, orderState) {
         if (orderState is OrderLoaded) {
-          final order = orderState.items.firstWhere((o) => o.id == orderId);
+          final orderIds = orderId.split(',');
+          final originalOrders = orderState.items.where((o) => orderIds.contains(o.id)).toList();
+          if (originalOrders.isEmpty) return const Center(child: Text("Order not found"));
+          final order = OrderUtils.mergeOrders(originalOrders);
           return BlocBuilder<MenuBloc, MenuState>(
             builder: (context, menuState) {
               return Scaffold(
@@ -91,59 +95,85 @@ class WaiterHistoryPage extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 48),
                                 // Items List
-                                ...order.items.map((item) {
-                                  String? imageUrl;
-                                  if (menuState is MenuLoaded) {
-                                    final menuItem = menuState.items
-                                        .where((m) => m.id == item.menuItemId)
-                                        .firstOrNull;
-                                    imageUrl = menuItem?.imageUrl;
-                                  }
-
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 16),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.surfaceContainer,
-                                        borderRadius: BorderRadius.circular(16),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.2,
+                                ...originalOrders.map((origOrder) {
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (originalOrders.length > 1)
+                                        Padding(
+                                          padding: const EdgeInsets.only(bottom: 12),
+                                          child: Text(
+                                            "Part - ${origOrder.status.name.toUpperCase()}",
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 1.5,
+                                              color: Theme.of(context).colorScheme.primary,
                                             ),
-                                            blurRadius: 16,
-                                            offset: const Offset(0, 8),
                                           ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          // Image
-                                          ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
+                                        ),
+                                      ...origOrder.items.map((item) {
+                                        String? imageUrl;
+                                        if (menuState is MenuLoaded) {
+                                          final menuItem = menuState.items
+                                              .where((m) => m.id == item.menuItemId)
+                                              .firstOrNull;
+                                          imageUrl = menuItem?.imageUrl;
+                                        }
+
+                                        return Padding(
+                                          padding: const EdgeInsets.only(bottom: 16),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.surfaceContainer,
+                                              borderRadius: BorderRadius.circular(16),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withValues(
+                                                    alpha: 0.2,
+                                                  ),
+                                                  blurRadius: 16,
+                                                  offset: const Offset(0, 8),
+                                                ),
+                                              ],
                                             ),
-                                            child: SizedBox(
-                                              width: 80,
-                                              height: 80,
-                                              child:
-                                                  imageUrl != null &&
-                                                      imageUrl.isNotEmpty
-                                                  ? CachedNetworkImage(
-                                                      imageUrl: imageUrl,
-                                                      fit: BoxFit.cover,
-                                                      placeholder: (_, _) => Container(
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .surfaceContainerHighest,
-                                                      ),
-                                                      errorWidget: (_, _, _) =>
-                                                          Container(
+                                            child: Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.center,
+                                              children: [
+                                                // Image
+                                                ClipRRect(
+                                                  borderRadius: BorderRadius.circular(
+                                                    12,
+                                                  ),
+                                                  child: SizedBox(
+                                                    width: 80,
+                                                    height: 80,
+                                                    child:
+                                                        imageUrl != null &&
+                                                            imageUrl.isNotEmpty
+                                                        ? CachedNetworkImage(
+                                                            imageUrl: imageUrl,
+                                                            fit: BoxFit.cover,
+                                                            placeholder: (_, _) => Container(
+                                                              color: Theme.of(context)
+                                                                  .colorScheme
+                                                                  .surfaceContainerHighest,
+                                                            ),
+                                                            errorWidget: (_, _, _) =>
+                                                                Container(
+                                                                  color: Theme.of(context)
+                                                                      .colorScheme
+                                                                      .surfaceContainerHighest,
+                                                                  child: const Icon(
+                                                                    Icons.restaurant,
+                                                                  ),
+                                                                ),
+                                                          )
+                                                        : Container(
                                                             color: Theme.of(context)
                                                                 .colorScheme
                                                                 .surfaceContainerHighest,
@@ -151,99 +181,93 @@ class WaiterHistoryPage extends StatelessWidget {
                                                               Icons.restaurant,
                                                             ),
                                                           ),
-                                                    )
-                                                  : Container(
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .surfaceContainerHighest,
-                                                      child: const Icon(
-                                                        Icons.restaurant,
-                                                      ),
-                                                    ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          // Details
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  item.name,
-                                                  style: const TextStyle(
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.bold,
                                                   ),
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
                                                 ),
-                                                if (item.notes.isNotEmpty) ...[
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    item.notes,
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .onSurfaceVariant,
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ],
-                                                const SizedBox(height: 8),
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                  children: [
-                                                    Text(
-                                                      "\$${(item.price * item.quantity).toStringAsFixed(2)}",
-                                                      style: TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Theme.of(
-                                                          context,
-                                                        ).colorScheme.primary,
-                                                      ),
-                                                    ),
-                                                    Container(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            horizontal: 12,
-                                                            vertical: 4,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .surfaceContainerHigh,
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              4,
-                                                            ),
-                                                      ),
-                                                      child: Text(
-                                                        "x${item.quantity}",
+                                                const SizedBox(width: 16),
+                                                // Details
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        item.name,
                                                         style: const TextStyle(
-                                                          fontSize: 10,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          letterSpacing: 1.0,
+                                                          fontSize: 18,
+                                                          fontWeight: FontWeight.bold,
                                                         ),
+                                                        maxLines: 1,
+                                                        overflow:
+                                                            TextOverflow.ellipsis,
                                                       ),
-                                                    ),
-                                                  ],
+                                                      if (item.notes.isNotEmpty) ...[
+                                                        const SizedBox(height: 4),
+                                                        Text(
+                                                          item.notes,
+                                                          style: TextStyle(
+                                                            fontSize: 14,
+                                                            color: Theme.of(context)
+                                                                .colorScheme
+                                                                .onSurfaceVariant,
+                                                          ),
+                                                          maxLines: 1,
+                                                          overflow:
+                                                              TextOverflow.ellipsis,
+                                                        ),
+                                                      ],
+                                                      const SizedBox(height: 8),
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
+                                                        children: [
+                                                          Text(
+                                                            "\$${(item.price * item.quantity).toStringAsFixed(2)}",
+                                                            style: TextStyle(
+                                                              fontSize: 16,
+                                                              fontWeight:
+                                                                  FontWeight.bold,
+                                                              color: Theme.of(
+                                                                context,
+                                                              ).colorScheme.primary,
+                                                            ),
+                                                          ),
+                                                          Container(
+                                                            padding:
+                                                                const EdgeInsets.symmetric(
+                                                                  horizontal: 12,
+                                                                  vertical: 4,
+                                                                ),
+                                                            decoration: BoxDecoration(
+                                                              color: Theme.of(context)
+                                                                  .colorScheme
+                                                                  .surfaceContainerHigh,
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    4,
+                                                                  ),
+                                                            ),
+                                                            child: Text(
+                                                              "x${item.quantity}",
+                                                              style: const TextStyle(
+                                                                fontSize: 10,
+                                                                fontWeight:
+                                                                    FontWeight.bold,
+                                                                letterSpacing: 1.0,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ],
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ),
+                                        );
+                                      }),
+                                    ],
                                   );
                                 }),
                               ],

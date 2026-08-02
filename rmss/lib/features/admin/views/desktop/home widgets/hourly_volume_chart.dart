@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rmss/core/blocs/order_bloc/order_bloc.dart';
 import 'package:rmss/core/blocs/order_bloc/order_state.dart';
+import 'package:rmss/core/utils/order_utils.dart';
 
 class HourlyVolumeChart extends StatelessWidget {
   final DateTime selectedDate;
@@ -25,7 +26,8 @@ class HourlyVolumeChart extends StatelessWidget {
         };
 
         if (state is OrderLoaded) {
-          for (var order in state.items) {
+          final groupedOrders = OrderUtils.groupActiveOrdersByTable(state.items);
+          for (var order in groupedOrders) {
             DateTime orderDate = order.createdAt.toDate();
             // Filter by the selected date
             if (orderDate.year == selectedDate.year &&

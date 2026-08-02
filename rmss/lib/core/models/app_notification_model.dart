@@ -12,6 +12,7 @@ class AppNotificationModel {
   final bool playSound;
   final double volume;
   bool isRead;
+  final List<String> targetRoles;
 
   AppNotificationModel({
     required this.id,
@@ -23,6 +24,7 @@ class AppNotificationModel {
     this.playSound = true,
     this.volume = 75.0,
     this.isRead = false,
+    this.targetRoles = const [],
   });
 
   AppNotificationModel copyWith({
@@ -35,6 +37,7 @@ class AppNotificationModel {
     bool? playSound,
     double? volume,
     bool? isRead,
+    List<String>? targetRoles,
   }) {
     return AppNotificationModel(
       id: id ?? this.id,
@@ -46,6 +49,7 @@ class AppNotificationModel {
       playSound: playSound ?? this.playSound,
       volume: volume ?? this.volume,
       isRead: isRead ?? this.isRead,
+      targetRoles: targetRoles ?? this.targetRoles,
     );
   }
 
@@ -71,5 +75,39 @@ class AppNotificationModel {
     } else {
       return "Just now";
     }
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'message': message,
+      'timestamp': timestamp.toIso8601String(),
+      'type': type.name,
+      'relatedId': relatedId,
+      'playSound': playSound,
+      'volume': volume,
+      'isRead': isRead,
+      'targetRoles': targetRoles,
+    };
+  }
+
+  factory AppNotificationModel.fromJson(Map<String, dynamic> json, String documentId) {
+    return AppNotificationModel(
+      id: documentId,
+      title: json['title'] ?? '',
+      message: json['message'] ?? '',
+      timestamp: json['timestamp'] != null 
+          ? DateTime.parse(json['timestamp']) 
+          : DateTime.now(),
+      type: AppNotificationType.values.firstWhere(
+          (e) => e.name == json['type'],
+          orElse: () => AppNotificationType.system),
+      relatedId: json['relatedId'],
+      playSound: json['playSound'] ?? true,
+      volume: (json['volume'] ?? 75.0).toDouble(),
+      isRead: json['isRead'] ?? false,
+      targetRoles: List<String>.from(json['targetRoles'] ?? []),
+    );
   }
 }

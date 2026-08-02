@@ -1,30 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:rmss/core/blocs/app_branding_cubit/app_branding_cubit.dart';
 
 import 'package:rmss/core/models/order_model.dart';
+import 'package:rmss/core/blocs/payment_bloc/payment_bloc.dart';
+import 'package:rmss/core/blocs/payment_bloc/payment_state.dart';
+import 'package:rmss/features/admin/blocs/users_bloc/admin_users_bloc.dart';
+import 'package:rmss/features/admin/blocs/users_bloc/admin_users_state.dart';
 
 class ReceiptPage extends StatelessWidget {
   final OrderModel order;
   const ReceiptPage({super.key, required this.order});
 
   Future<void> _generatePdf(BuildContext context) async {
+    final branding = context.read<AppBrandingCubit>().state;
+    final paymentState = context.read<PaymentBloc>().state;
+    final usersState = context.read<AdminUsersBloc>().state;
+
+    String cashierName = 'Unknown';
+    String? processorId;
+
+    if (paymentState is PaymentsLoaded) {
+      try {
+        final payment = paymentState.items.firstWhere(
+          (p) => p.orderId == order.id,
+        );
+        processorId = payment.processedBy['user'];
+      } catch (e) {
+        // Payment not found
+      }
+    }
+
+    processorId ??= order.createdBy['id'] ?? order.createdBy['user'];
+
+    if (processorId != null && usersState is AdminUsersLoaded) {
+      try {
+        final user = usersState.allUsers.firstWhere((u) => u.id == processorId);
+        cashierName = user.name;
+      } catch (e) {
+        cashierName = order.createdBy['name'] ?? 'Unknown';
+      }
+    } else {
+      cashierName = order.createdBy['name'] ?? 'Unknown';
+    }
     final pdf = pw.Document();
 
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.roll80, // Receipt format
         margin: const pw.EdgeInsets.all(16), // Add safe print margin
-        build: (pw.Context context) {
+        build: (pw.Context pwContext) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Center(
                 child: pw.Text(
-                  'Crown Restaurant',
+                  branding.appName,
                   style: const pw.TextStyle(
                     fontSize: 20,
                     fontWeight: pw.FontWeight.bold,
@@ -61,7 +97,7 @@ class ReceiptPage extends StatelessWidget {
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text(
-                    'Cashier: ${order.createdBy['name'] ?? 'Unknown'}',
+                    'Cashier: $cashierName',
                     style: const pw.TextStyle(fontSize: 8),
                   ),
                   pw.Text(
@@ -237,6 +273,36 @@ class ReceiptPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final branding = context.watch<AppBrandingCubit>().state;
+    final paymentState = context.watch<PaymentBloc>().state;
+    final usersState = context.watch<AdminUsersBloc>().state;
+
+    String cashierName = 'Unknown';
+    String? processorId;
+
+    if (paymentState is PaymentsLoaded) {
+      try {
+        final payment = paymentState.items.firstWhere(
+          (p) => p.orderId == order.id,
+        );
+        processorId = payment.processedBy['user'];
+      } catch (e) {
+        // Payment not found
+      }
+    }
+
+    processorId ??= order.createdBy['id'] ?? order.createdBy['user'];
+
+    if (processorId != null && usersState is AdminUsersLoaded) {
+      try {
+        final user = usersState.allUsers.firstWhere((u) => u.id == processorId);
+        cashierName = user.name;
+      } catch (e) {
+        cashierName = order.createdBy['name'] ?? 'Unknown';
+      }
+    } else {
+      cashierName = order.createdBy['name'] ?? 'Unknown';
+    }
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -286,7 +352,7 @@ class ReceiptPage extends StatelessWidget {
                           children: [
                             // Header Section
                             Text(
-                              "Crown Restaurant",
+                              branding.appName,
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 36,
                                 fontWeight: FontWeight.w900,
@@ -377,9 +443,7 @@ class ReceiptPage extends StatelessWidget {
                                           CrossAxisAlignment.end,
                                       children: [
                                         _buildMetaLabel("Cashier", colorScheme),
-                                        _buildMetaValue(
-                                          order.createdBy['name'] ?? 'Unknown',
-                                        ),
+                                        _buildMetaValue(cashierName),
                                         const SizedBox(height: 24),
                                         _buildMetaLabel("Order #", colorScheme),
                                         Text(

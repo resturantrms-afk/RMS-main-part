@@ -13,6 +13,7 @@ import 'package:rmss/features/admin/blocs/users_bloc/admin_users_bloc.dart';
 import 'package:rmss/features/admin/blocs/users_bloc/admin_users_state.dart';
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/cashier_top_bar.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/receipt.dart';
+import 'package:rmss/core/utils/order_utils.dart';
 
 class Payments extends StatefulWidget {
   const Payments({super.key});
@@ -210,7 +211,38 @@ class _PaymentsState extends State<Payments> {
                       if (paymentState is PaymentsLoaded &&
                           orderState is OrderLoaded) {
                         // Filter payments
-                        var filteredPayments = paymentState.items;
+                        List<PaymentModel> groupPayments(List<PaymentModel> rawPayments) {
+                          final grouped = <int, List<PaymentModel>>{};
+                          for (final p in rawPayments) {
+                            final key = p.updatedAt.toDate().millisecondsSinceEpoch;
+                            grouped.putIfAbsent(key, () => []).add(p);
+                          }
+                          
+                          return grouped.values.map((group) {
+                            if (group.length == 1) return group.first;
+                            
+                            final mergedIds = group.map((e) => e.id).join(',');
+                            final mergedOrderIds = group.map((e) => e.orderId).join(',');
+                            final totalAmount = group.fold<double>(0, (sum, item) => sum + item.amountPaid);
+                            
+                            final status = group.any((e) => e.status == PaymentStatus.voided) 
+                                ? PaymentStatus.voided 
+                                : PaymentStatus.completed;
+
+                            return PaymentModel(
+                              id: mergedIds,
+                              orderId: mergedOrderIds,
+                              processedBy: group.first.processedBy,
+                              paymentMethod: group.first.paymentMethod,
+                              amountPaid: totalAmount,
+                              status: status,
+                              createdAt: group.first.createdAt,
+                              updatedAt: group.first.updatedAt,
+                            );
+                          }).toList();
+                        }
+
+                        var filteredPayments = groupPayments(paymentState.items);
                         if (_selectedFilter != null) {
                           filteredPayments = filteredPayments
                               .where((p) => p.paymentMethod == _selectedFilter)
@@ -243,10 +275,11 @@ class _PaymentsState extends State<Payments> {
                                       const SizedBox(height: 12),
                                   itemBuilder: (context, index) {
                                     final payment = filteredPayments[index];
+                                    final orderIds = payment.orderId.split(',');
                                     final order = orderState.items
                                         .cast<OrderModel?>()
                                         .firstWhere(
-                                          (o) => o?.id == payment.orderId,
+                                          (o) => o != null && orderIds.contains(o.id),
                                           orElse: () => null as OrderModel?,
                                         );
 
@@ -647,17 +680,26 @@ class _PaymentsState extends State<Payments> {
                 tooltip: 'View Receipt',
                 onPressed: () {
                   if (order != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ReceiptPage(order: order),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Order details not found')),
-                    );
-                  }
+                    final orderState = context.read<OrderBloc>().state;
+                    if (orderState is OrderLoaded) {
+                      final orderIds = payment.orderId.split(',');
+                      final originalOrders = orderState.items.where((o) => orderIds.contains(o.id)).toList();
+                      if (originalOrders.isNotEmpty) {
+                        final mergedOrderForReceipt = OrderUtils.mergeOrders(originalOrders);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ReceiptPage(order: mergedOrderForReceipt),
+                          ),
+                        );
+                        return;
+                      }
+                    }
+                  } 
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Order details not found')),
+                  );
                 },
               ),
             ),

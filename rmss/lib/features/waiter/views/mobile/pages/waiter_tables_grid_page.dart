@@ -9,6 +9,7 @@ import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/core/models/table_model.dart';
 import 'package:rmss/features/waiter/views/mobile/pages/waiter_menu_page.dart';
 import 'package:rmss/features/waiter/views/mobile/pages/waiter_history_page.dart';
+import 'package:rmss/core/utils/order_utils.dart';
 
 class WaiterTablesGridPage extends StatelessWidget {
   const WaiterTablesGridPage({super.key});
@@ -28,31 +29,36 @@ class WaiterTablesGridPage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Expanded(
-              child: BlocBuilder<TableBloc, TableState>(
-                builder: (context, tableState) {
-                  if (tableState is TablesLoaded) {
-                    List<TableModel> tables = tableState.items;
-                    tables.sort(
-                      (a, b) => a.tableNumber.compareTo(b.tableNumber),
-                    );
-                    return GridView.builder(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
-                      itemCount: tables.length,
-                      itemBuilder: (itemContext, index) {
-                        return _buildTableTile(
-                          context,
-                          itemContext,
-                          tables[index],
+              child: BlocBuilder<OrderBloc, OrderState>(
+                builder: (context, orderState) {
+                  return BlocBuilder<TableBloc, TableState>(
+                    builder: (context, tableState) {
+                      if (tableState is TablesLoaded) {
+                        List<TableModel> tables = tableState.items;
+                        tables.sort(
+                          (a, b) => a.tableNumber.compareTo(b.tableNumber),
                         );
-                      },
-                    );
-                  }
-                  return const Center(child: CircularProgressIndicator());
+                        return GridView.builder(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                              ),
+                          itemCount: tables.length,
+                          itemBuilder: (itemContext, index) {
+                            return _buildTableTile(
+                              context,
+                              itemContext,
+                              tables[index],
+                              orderState,
+                            );
+                          },
+                        );
+                      }
+                      return const Center(child: CircularProgressIndicator());
+                    },
+                  );
                 },
               ),
             ),
@@ -66,6 +72,7 @@ class WaiterTablesGridPage extends StatelessWidget {
     BuildContext parentContext,
     BuildContext itemContext,
     TableModel table,
+    OrderState orderState,
   ) {
     Color borderColor = Colors.transparent;
     Color bgColor = Colors.transparent;
@@ -84,6 +91,24 @@ class WaiterTablesGridPage extends StatelessWidget {
       ).colorScheme.primary.withValues(alpha: 0.15);
       statusTextColor = Theme.of(itemContext).colorScheme.primary;
       statusText = "OCCUPIED";
+
+      if (orderState is OrderLoaded) {
+        final activeOrders = orderState.items
+            .where(
+              (o) =>
+                  o.tableId == table.id &&
+                  o.status != OrderStatus.paid &&
+                  o.status != OrderStatus.cancelled,
+            )
+            .toList();
+
+        if (activeOrders.isNotEmpty) {
+          final Set<String> statuses = activeOrders
+              .map((o) => o.status.name.toUpperCase())
+              .toSet();
+          statusText = statuses.join(" / ");
+        }
+      }
     } else if (table.status == TableStatus.needsCleaning) {
       borderColor = Theme.of(itemContext).colorScheme.primaryContainer;
       bgColor = Theme.of(
@@ -117,21 +142,36 @@ class WaiterTablesGridPage extends StatelessWidget {
             final orderState = parentContext.read<OrderBloc>().state;
             if (orderState is OrderLoaded) {
               try {
-                final order = orderState.items.firstWhere(
-                  (o) =>
-                      o.tableId == table.id &&
-                      o.status != OrderStatus.paid &&
-                      o.status != OrderStatus.cancelled,
-                );
+                final activeOrders = orderState.items
+                    .where(
+                      (o) =>
+                          o.tableId == table.id &&
+                          o.status != OrderStatus.paid &&
+                          o.status != OrderStatus.cancelled,
+                    )
+                    .toList();
 
-                if (!parentContext.mounted) return;
-                Navigator.push(
-                  parentContext,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        WaiterHistoryPage(orderId: order.id, table: table),
-                  ),
-                );
+                if (activeOrders.isNotEmpty) {
+                  final mergedOrder = OrderUtils.mergeOrders(activeOrders);
+                  if (!parentContext.mounted) return;
+                  Navigator.push(
+                    parentContext,
+                    MaterialPageRoute(
+                      builder: (_) => WaiterHistoryPage(
+                        orderId: mergedOrder.id,
+                        table: table,
+                      ),
+                    ),
+                  );
+                } else {
+                  if (!parentContext.mounted) return;
+                  Navigator.push(
+                    parentContext,
+                    MaterialPageRoute(
+                      builder: (_) => WaiterMenuPage(table: table),
+                    ),
+                  );
+                }
               } catch (_) {
                 if (!parentContext.mounted) return;
                 Navigator.push(

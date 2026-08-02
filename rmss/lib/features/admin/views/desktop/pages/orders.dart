@@ -7,6 +7,7 @@ import 'package:rmss/core/blocs/order_bloc/order_state.dart';
 import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/features/admin/views/desktop/home%20widgets/admin_top_bar.dart';
 import 'package:rmss/features/admin/views/desktop/pages/order_details.dart';
+import 'package:rmss/core/utils/order_utils.dart';
 
 class Orders extends StatefulWidget {
   Orders({super.key});
@@ -47,9 +48,13 @@ class _OrdersState extends State<Orders> {
                   .where((item) => item.status == OrderStatus.cancelled)
                   .length;
 
+              // Group orders by table!
+              List<OrderModel> groupedOrders =
+                  OrderUtils.groupActiveOrdersByTable(orderState.items);
+
               List<OrderModel> filteredItems = _selectedStatuses.isEmpty
-                  ? orderState.items.toList()
-                  : orderState.items
+                  ? groupedOrders
+                  : groupedOrders
                         .where(
                           (item) => _selectedStatuses.contains(
                             item.status.name.toUpperCase(),
@@ -252,9 +257,8 @@ class _OrdersState extends State<Orders> {
                                               vertical: 4,
                                             ),
                                             decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
                                               color: statusColor,
+
                                               border: Border.all(
                                                 color: Theme.of(
                                                   context,
@@ -452,74 +456,74 @@ class _OrdersState extends State<Orders> {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () {
-        if (_selectedStatuses.contains(filterName)) {
-          setState(() {
-            _selectedStatuses.remove(filterName);
-          });
-        } else {
-          setState(() {
-            _selectedStatuses.add(filterName);
-          });
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
+          if (_selectedStatuses.contains(filterName)) {
+            setState(() {
+              _selectedStatuses.remove(filterName);
+            });
+          } else {
+            setState(() {
+              _selectedStatuses.add(filterName);
+            });
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                filterName,
+                style: TextStyle(
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              numberOf > 0
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.onPrimary.withValues(alpha: 0.2)
+                            : Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        "$numberOf",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.onSurface
+                              : Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ],
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              filterName,
-              style: TextStyle(
-                color: isSelected
-                    ? Theme.of(context).colorScheme.onPrimary
-                    : Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(width: 8),
-
-            numberOf > 0
-                ? Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.onPrimary.withValues(alpha: 0.2)
-                          : Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      "$numberOf",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                        color: isSelected
-                            ? Theme.of(context).colorScheme.onSurface
-                            : Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ],
-        ),
       ),
-    ),
     );
   }
 }

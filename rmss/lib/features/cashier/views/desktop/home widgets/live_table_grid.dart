@@ -6,6 +6,7 @@ import 'package:rmss/core/blocs/table_bloc/table_bloc.dart';
 import 'package:rmss/core/blocs/table_bloc/table_state.dart';
 import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/core/models/table_model.dart';
+import 'package:rmss/core/utils/order_utils.dart';
 import 'package:rmss/features/cashier/blocs/navigation_cubit/navigation_cubit.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/order_details.dart';
 
@@ -94,19 +95,22 @@ class LiveTableGrid extends StatelessWidget {
 
             if (orderState is OrderLoaded) {
               try {
-                final order = orderState.items.firstWhere(
+                final activeOrders = orderState.items.where(
                   (o) =>
                       o.tableId == table.id &&
                       o.status != OrderStatus.paid &&
                       o.status != OrderStatus.cancelled,
-                );
+                ).toList();
 
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => OrderDetails(orderId: order.id),
-                  ),
-                );
+                if (activeOrders.isNotEmpty) {
+                  final mergedOrder = OrderUtils.mergeOrders(activeOrders);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => OrderDetails(orderId: mergedOrder.id),
+                    ),
+                  );
+                }
               } catch (_) {}
             }
           } else if (table.status == TableStatus.available) {

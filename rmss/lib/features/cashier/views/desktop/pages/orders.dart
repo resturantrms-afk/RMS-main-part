@@ -7,6 +7,7 @@ import 'package:rmss/core/blocs/order_bloc/order_state.dart';
 import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/cashier_top_bar.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/order_details.dart';
+import 'package:rmss/core/utils/order_utils.dart';
 
 class Orders extends StatefulWidget {
   Orders({super.key});
@@ -47,9 +48,12 @@ class _OrdersState extends State<Orders> {
                   .where((item) => item.status == OrderStatus.cancelled)
                   .length;
 
+              // Group orders by table!
+              List<OrderModel> groupedOrders = OrderUtils.groupActiveOrdersByTable(orderState.items);
+
               List<OrderModel> filteredItems = _selectedStatuses.isEmpty
-                  ? orderState.items.toList()
-                  : orderState.items
+                  ? groupedOrders
+                  : groupedOrders
                         .where(
                           (item) => _selectedStatuses.contains(
                             item.status.name.toUpperCase(),

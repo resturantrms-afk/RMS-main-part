@@ -16,6 +16,7 @@ import 'package:rmss/core/blocs/table_bloc/table_bloc.dart';
 import 'package:rmss/core/blocs/table_bloc/table_event.dart';
 import 'package:rmss/core/blocs/table_bloc/table_state.dart';
 import 'package:rmss/core/models/order_model.dart';
+import 'package:rmss/core/utils/order_utils.dart';
 import 'package:rmss/core/models/payment_model.dart';
 import 'package:rmss/core/models/table_model.dart';
 import 'package:rmss/features/admin/blocs/navigation_cubit/navigation_cubit.dart';
@@ -105,8 +106,16 @@ class OrderDetails extends StatelessWidget {
               }
               if (state is OrderLoaded) {
                 try {
-                  // Find the specific order by ID
-                  final order = state.items.firstWhere((o) => o.id == orderId);
+                  // Find all original orders from the comma-separated IDs
+                  final orderIds = orderId.split(',');
+                  final originalOrders = state.items.where((o) => orderIds.contains(o.id)).toList();
+                  
+                  if (originalOrders.isEmpty) {
+                    throw Exception("No matching orders found.");
+                  }
+                  
+                  // Merge them purely for display purposes
+                  final order = OrderUtils.mergeOrders(originalOrders);
 
                   // Use dynamic color matching the logic in orders.dart
                   Color statusColor = colorScheme.primary;
@@ -374,25 +383,68 @@ class OrderDetails extends StatelessWidget {
                             ),
                             const SizedBox(height: 16),
 
-                            // Map over real OrderItems data
-                            ...order.items.map((item) {
-                              String imageUrl = '';
-                              if (menuState is MenuLoaded) {
-                                try {
-                                  final menuItem = menuState.items.firstWhere(
-                                    (m) => m.id == item.menuItemId,
-                                  );
-                                  imageUrl = menuItem.imageUrl;
-                                } catch (_) {}
+                            ...originalOrders.map((origOrder) {
+                              Color origStatusColor = colorScheme.primary;
+                              if (origOrder.status == OrderStatus.ready ||
+                                  origOrder.status == OrderStatus.cancelled ||
+                                  origOrder.status == OrderStatus.paid) {
+                                origStatusColor = colorScheme.outline;
                               }
 
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: _buildItemCard(
-                                  context: context,
-                                  item: item,
-                                  imageUrl: imageUrl,
-                                ),
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (originalOrders.length > 1)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 12),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: origStatusColor.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(
+                                            color: origStatusColor.withValues(
+                                              alpha: 0.5,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          "Part - ${origOrder.status.name.toUpperCase()}",
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 1.5,
+                                            color: origStatusColor,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ...origOrder.items.map((item) {
+                                    String imageUrl = '';
+                                    if (menuState is MenuLoaded) {
+                                      try {
+                                        final menuItem = menuState.items.firstWhere(
+                                          (m) => m.id == item.menuItemId,
+                                        );
+                                        imageUrl = menuItem.imageUrl;
+                                      } catch (_) {}
+                                    }
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 16),
+                                      child: _buildItemCard(
+                                        context: context,
+                                        item: item,
+                                        imageUrl: imageUrl,
+                                      ),
+                                    );
+                                  }),
+                                ],
                               );
                             }),
                           ],
@@ -522,24 +574,26 @@ class OrderDetails extends StatelessWidget {
 
                                             if (confirm == true && context.mounted) {
                                               // 1. Cancel the Order
-                                              final updatedOrder = order.copyWith(status: OrderStatus.cancelled, updatedAt: Timestamp.now());
-                                              context.read<OrderBloc>().add(
-                                                UpdateOrder(item: updatedOrder),
-                                              );
+                                              // Cancel all original orders grouped in this tab simultaneously
+                                              final timestamp = Timestamp.now();
+                                              for (var origOrder in originalOrders) {
+                                                final updatedOrder = origOrder.copyWith(status: OrderStatus.cancelled, updatedAt: timestamp);
+                                                context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));
+                                              }
 
                                               // 2. Void associated payment if the order was paid
                                               if (order.status == OrderStatus.paid) {
                                                 final paymentState = context.read<PaymentBloc>().state;
                                                 if (paymentState is PaymentsLoaded) {
-                                                  try {
-                                                    final payment = paymentState.items.firstWhere(
-                                                      (p) => p.orderId == order.id,
-                                                    );
-                                                    final voidedPayment = payment.copyWith(status: PaymentStatus.voided, updatedAt: Timestamp.now());
-                                                    context.read<PaymentBloc>().add(
-                                                      UpdatePayment(item: voidedPayment),
-                                                    );
-                                                  } catch (_) {}
+                                                  for (var origOrder in originalOrders) {
+                                                    try {
+                                                      final payment = paymentState.items.firstWhere(
+                                                        (p) => p.orderId == origOrder.id,
+                                                      );
+                                                      final voidedPayment = payment.copyWith(status: PaymentStatus.voided, updatedAt: Timestamp.now());
+                                                      context.read<PaymentBloc>().add(UpdatePayment(item: voidedPayment));
+                                                    } catch (_) {}
+                                                  }
                                                 }
                                               }
 
@@ -603,7 +657,7 @@ class OrderDetails extends StatelessWidget {
                                     onPressed:
                                         order.status == OrderStatus.served
                                         ? () {
-                                            _verifyPinAndShowPaymentDialog(context, order);
+                                            _verifyPinAndShowPaymentDialog(context, order, originalOrders);
                                           }
                                         : null,
 
@@ -791,13 +845,18 @@ class OrderDetails extends StatelessWidget {
     );
   }
 
-  Future<void> _verifyPinAndShowPaymentDialog(BuildContext context, OrderModel order) async {
+  Future<void> _verifyPinAndShowPaymentDialog(
+    BuildContext context,
+    OrderModel order,
+    List<OrderModel> originalOrders,
+  ) async {
     final authState = context.read<AuthBloc>().state;
-    final savedPin = authState is AuthSuccess ? authState.user.paymentPin : null;
+    final savedPin =
+        authState is AuthSuccess ? authState.user.paymentPin : null;
 
     if (savedPin == null || savedPin.isEmpty) {
       if (context.mounted) {
-        _showPaymentDialog(context, order);
+        _showPaymentDialog(context, order, originalOrders);
       }
       return;
     }
@@ -823,7 +882,9 @@ class OrderDetails extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 16),
                       child: Text(
                         "Incorrect PIN. Try again.",
-                        style: TextStyle(color: Theme.of(innerContext).colorScheme.error),
+                        style: TextStyle(
+                          color: Theme.of(innerContext).colorScheme.error,
+                        ),
                       ),
                     ),
                   TextField(
@@ -856,8 +917,10 @@ class OrderDetails extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     if (pinController.text == savedPin) {
-                      Navigator.pop(dialogContext);
-                      _showPaymentDialog(context, order);
+                      if (context.mounted) {
+                        Navigator.pop(dialogContext); // Close the PIN dialog
+                        _showPaymentDialog(context, order, originalOrders);
+                      }
                     } else {
                       setDialogState(() {
                         hasError = true;
@@ -875,7 +938,7 @@ class OrderDetails extends StatelessWidget {
   }
 
   // Shows the popup asking for Cash or Zaad
-  void _showPaymentDialog(BuildContext context, OrderModel order) {
+  void _showPaymentDialog(BuildContext context, OrderModel order, List<OrderModel> originalOrders) {
     final colorScheme = Theme.of(context).colorScheme;
 
     showDialog(
@@ -899,7 +962,9 @@ class OrderDetails extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              style: ButtonStyle(mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click)),
+              style: ButtonStyle(
+                mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+              ),
               onPressed: () => Navigator.pop(dialogContext),
               child: Text(
                 "CANCEL",
@@ -909,7 +974,12 @@ class OrderDetails extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(dialogContext); // Close dialog
-                _processPaymentAndComplete(context, order, PaymentMethod.cash);
+                _processPaymentAndComplete(
+                  context,
+                  order,
+                  originalOrders,
+                  PaymentMethod.cash,
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green.shade700,
@@ -920,7 +990,12 @@ class OrderDetails extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(dialogContext); // Close dialog
-                _processPaymentAndComplete(context, order, PaymentMethod.zaad);
+                _processPaymentAndComplete(
+                  context,
+                  order,
+                  originalOrders,
+                  PaymentMethod.zaad,
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
@@ -934,6 +1009,7 @@ class OrderDetails extends StatelessWidget {
                 _processPaymentAndComplete(
                   context,
                   order,
+                  originalOrders,
                   PaymentMethod.edahab,
                 );
               },
@@ -953,37 +1029,34 @@ class OrderDetails extends StatelessWidget {
   void _processPaymentAndComplete(
     BuildContext context,
     OrderModel order,
+    List<OrderModel> originalOrders,
     PaymentMethod method,
   ) {
-    // 1. Create Payment
     final currentUser = FirebaseAuth.instance.currentUser;
-    final payment = PaymentModel(
-      id: '', // Firebase will auto-generate the document ID
-      orderId: order.id,
-      processedBy: {
-        'user': currentUser?.uid ?? 'unknown',
-      }, // Logs the admin/admin
-      paymentMethod: method,
-      amountPaid: order.totalPrice,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    );
-    context.read<PaymentBloc>().add(AddPayment(item: payment));
+    final timestamp = Timestamp.now();
 
-    // 2. Complete Order
-    final updatedOrder = OrderModel(
-      id: order.id,
-      tableId: order.tableId,
-      tableNumber: order.tableNumber,
-      createdBy: order.createdBy,
-      source: order.source,
-      totalPrice: order.totalPrice,
-      status: OrderStatus.paid,
-      createdAt: order.createdAt,
-      updatedAt: Timestamp.now(),
-      items: order.items,
-    );
-    context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));
+    for (var origOrder in originalOrders) {
+      // 1. Create Payment
+      final payment = PaymentModel(
+        id: '', // Firebase will auto-generate the document ID
+        orderId: origOrder.id,
+        processedBy: {
+          'user': currentUser?.uid ?? 'unknown',
+        }, // Logs the admin/admin
+        paymentMethod: method,
+        amountPaid: origOrder.totalPrice,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      );
+      context.read<PaymentBloc>().add(AddPayment(item: payment));
+
+      // 2. Complete Order
+      final updatedOrder = origOrder.copyWith(
+        status: OrderStatus.paid,
+        updatedAt: timestamp,
+      );
+      context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));
+    }
 
     // 3. Mark Table as Needs Cleaning
     final tableState = context.read<TableBloc>().state;

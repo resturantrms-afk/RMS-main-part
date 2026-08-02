@@ -12,6 +12,7 @@ import 'package:rmss/core/blocs/notification_bloc/app_notification_state.dart';
 import '../../../core/blocs/order_bloc/order_bloc.dart';
 import '../../../core/blocs/order_bloc/order_state.dart';
 import '../../../core/models/order_model.dart';
+import 'package:rmss/core/utils/order_utils.dart';
 import '../widget/order_card.dart';
 import 'order_details.dart';
 
@@ -54,7 +55,7 @@ class _KitchenDashboardState extends State<KitchenDashboard> {
           return const SizedBox();
         }
 
-        final orders = state.items;
+        final orders = OrderUtils.groupActiveOrdersByTable(state.items);
 
         final currentStatus = _tabs[_activeTab];
 
@@ -87,11 +88,19 @@ class _KitchenDashboardState extends State<KitchenDashboard> {
                     builder: (context, state) {
                       int unread = 0;
                       if (state is AppNotificationLoaded) {
-                        unread = state.notifications.where((n) => !n.isRead).length;
+                        unread = state.notifications
+                            .where((n) => !n.isRead)
+                            .length;
                       }
                       return Badge(
                         isLabelVisible: unread > 0,
-                        label: Text('$unread', style: const TextStyle(fontSize: 10, color: Colors.white)),
+                        label: Text(
+                          '$unread',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.white,
+                          ),
+                        ),
                         child: IconButton(
                           onPressed: () {
                             if (widget.onNavigate != null) {
@@ -119,18 +128,14 @@ class _KitchenDashboardState extends State<KitchenDashboard> {
                           onPressed: () =>
                               context.read<ThemeCubit>().toggleTheme(),
                           icon: const Icon(Icons.light_mode_outlined),
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         );
                       } else {
                         return IconButton(
                           onPressed: () =>
                               context.read<ThemeCubit>().toggleTheme(),
                           icon: const Icon(Icons.dark_mode_outlined),
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         );
                       }
                     },
@@ -148,10 +153,17 @@ class _KitchenDashboardState extends State<KitchenDashboard> {
                         String urlImage = state.user.photoUrl;
                         avatar = CircleAvatar(
                           radius: 18,
-                          backgroundImage: urlImage.isNotEmpty ? CachedNetworkImageProvider(
-                            urlImage,
-                          ) : null,
-                          child: urlImage.isEmpty ? Icon(Icons.person, color: Theme.of(context).colorScheme.onSurface) : null,
+                          backgroundImage: urlImage.isNotEmpty
+                              ? CachedNetworkImageProvider(urlImage)
+                              : null,
+                          child: urlImage.isEmpty
+                              ? Icon(
+                                  Icons.person,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                )
+                              : null,
                         );
                       }
                       return GestureDetector(
@@ -199,7 +211,12 @@ class _KitchenDashboardState extends State<KitchenDashboard> {
                     ? Center(
                         child: Text(
                           "No Orders",
-                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 18),
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                            fontSize: 18,
+                          ),
                         ),
                       )
                     : GridView.builder(
@@ -248,10 +265,14 @@ class _KitchenDashboardState extends State<KitchenDashboard> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: active ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerLowest,
+          color: active
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: active ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outlineVariant,
+            color: active
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.outlineVariant,
           ),
         ),
         child: Row(
@@ -259,7 +280,9 @@ class _KitchenDashboardState extends State<KitchenDashboard> {
             Text(
               title,
               style: TextStyle(
-                color: active ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
+                color: active
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -268,14 +291,20 @@ class _KitchenDashboardState extends State<KitchenDashboard> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: active
-                    ? Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.15)
-                    : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.15),
+                    ? Theme.of(
+                        context,
+                      ).colorScheme.onPrimary.withValues(alpha: 0.15)
+                    : Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 count.toString(),
                 style: TextStyle(
-                  color: active ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: active
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.bold,
                 ),
               ),
