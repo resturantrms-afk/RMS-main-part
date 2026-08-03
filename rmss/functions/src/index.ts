@@ -137,3 +137,22 @@ export const onTableWritten = onDocumentWritten("tables/{tableId}", async (event
   }
 });
 
+/**
+ * Triggered whenever a user is created, updated, or deleted
+ */
+export const onUserWritten = onDocumentWritten("users/{userId}", async (event) => {
+  const before = event.data?.before.data();
+  const after = event.data?.after.data();
+
+  // If user was deleted from Firestore, delete them from Firebase Auth as well
+  if (before && !after) {
+    const userId = event.params.userId;
+    try {
+      await admin.auth().deleteUser(userId);
+      console.log(`Successfully deleted auth user: ${userId}`);
+    } catch (error) {
+      console.error(`Error deleting auth user ${userId}:`, error);
+    }
+  }
+});
+
