@@ -6,11 +6,13 @@ import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/revenue_spl
 import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/staff_payments_tab.dart';
 import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/ai_data_mining_tab.dart';
 import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/pdf_export_service.dart';
+import 'package:rmss/features/admin/views/desktop/pages/reports_tabs/orders_report_tab.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Sub-tabs
 // ─────────────────────────────────────────────────────────────
 const _tabs = [
+  'Orders Report',
   'Menu Analysis',
   'Staff Payments',
   'Association Analysis',
@@ -30,7 +32,7 @@ class ReportsAiPage extends StatefulWidget {
 
 class _ReportsAiPageState extends State<ReportsAiPage> {
   int _selectedTab = 0;
-  final List<GlobalKey> _exportKeys = List.generate(5, (_) => GlobalKey());
+  final List<GlobalKey> _exportKeys = List.generate(6, (_) => GlobalKey());
   bool _isExporting = false;
 
   Future<void> _handleExport() async {
@@ -77,16 +79,18 @@ class _ReportsAiPageState extends State<ReportsAiPage> {
             // ── Content — switches per tab ───────────────────────────────
             Expanded(
               child: [
-                // Tab 0 — Menu Analysis
-                MenuAnalysisTab(exportKey: _exportKeys[0]),
-                // Tab 1 — Staff Payments
-                StaffPaymentsTab(exportKey: _exportKeys[1]),
-                // Tab 2 — Association Analysis
-                AssociationAnalysisTab(exportKey: _exportKeys[2]),
-                // Tab 3 — Revenue Split
-                RevenueSplitTab(exportKey: _exportKeys[3]),
-                // Tab 4 - AI Data Mining
-                AiDataMiningTab(exportKey: _exportKeys[4]),
+                // Tab 0 — Orders Report
+                OrdersReportTab(exportKey: _exportKeys[0]),
+                // Tab 1 — Menu Analysis
+                MenuAnalysisTab(exportKey: _exportKeys[1]),
+                // Tab 2 — Staff Payments
+                StaffPaymentsTab(exportKey: _exportKeys[2]),
+                // Tab 3 — Association Analysis
+                AssociationAnalysisTab(exportKey: _exportKeys[3]),
+                // Tab 4 — Revenue Split
+                RevenueSplitTab(exportKey: _exportKeys[4]),
+                // Tab 5 - AI Data Mining
+                AiDataMiningTab(exportKey: _exportKeys[5]),
               ][_selectedTab],
             ),
           ],
