@@ -34,120 +34,95 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     return Scaffold(
       backgroundColor: colorScheme.surfaceContainer,
-
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-
-        child: Column(
+      appBar: AppBar(
+        backgroundColor: colorScheme.surfaceContainer,
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    if (widget.onBack != null || Navigator.canPop(context))
-                      Padding(
-                        padding: const EdgeInsets.only(right: 16),
-                        child: IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: () {
-                            if (widget.onBack != null) {
-                              widget.onBack!();
-                            } else {
-                              Navigator.pop(context);
-                            }
-                          },
-                        ),
-                      ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Notifications",
-                          style: TextStyle(
-                            color: colorScheme.onSurface,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          "$unreadCount unread alerts",
-                          style: TextStyle(color: colorScheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<AppNotificationBloc>().add(const MarkAllNotificationsAsRead());
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: colorScheme.onPrimary,
-                  ),
-                  child: const Text("Mark All Read"),
-                ),
-              ],
+            const Text(
+              "Notifications",
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
-
-            const SizedBox(height: 24),
-
-            Expanded(
-              child: ListView.builder(
-                itemCount: notifications.length,
-                itemBuilder: (context, index) {
-                  final notification = notifications[index];
-                  
-                  Widget? actionBtn;
-                  if (notification.title == "Table Needs Help" && notification.relatedId != null) {
-                    actionBtn = ElevatedButton(
-                      onPressed: () {
-                        try {
-                          final tableState = context.read<TableBloc>().state;
-                          if (tableState is TablesLoaded) {
-                            final table = tableState.items.firstWhere(
-                              (t) => t.id == notification.relatedId,
-                            );
-                            if (table.needsHelp) {
-                              context.read<TableBloc>().add(
-                                UpdateTable(item: table.copyWith(needsHelp: false))
-                              );
-                            }
-                          }
-                        } catch (_) {
-                          // Ignore if TableBloc is not found or table is missing
-                        }
-                        
-                        // Mark as read and optionally dismiss or clear
-                        context.read<AppNotificationBloc>().add(
-                          MarkNotificationAsRead(notification.id)
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.primary,
-                        foregroundColor: colorScheme.onPrimary,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        minimumSize: const Size(0, 32),
-                      ),
-                      child: const Text("Done"),
-                    );
-                  }
-
-                  return NotificationCard(
-                    notification: notification,
-                    actionButton: actionBtn,
-                    onTap: () {
-                      context.read<AppNotificationBloc>().add(MarkNotificationAsRead(notification.id));
-                    },
-                  );
-                },
+            Text(
+              "$unreadCount unread alerts",
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: 14,
               ),
             ),
           ],
+        ),
+        leading: (widget.onBack != null || Navigator.canPop(context))
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  if (widget.onBack != null) {
+                    widget.onBack!();
+                  } else {
+                    Navigator.pop(context);
+                  }
+                },
+              )
+            : null,
+        actions: [
+          TextButton(
+            onPressed: () {
+              context.read<AppNotificationBloc>().add(const MarkAllNotificationsAsRead());
+            },
+            child: const Text("Mark All Read"),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        child: ListView.builder(
+          itemCount: notifications.length,
+          itemBuilder: (context, index) {
+            final notification = notifications[index];
+            
+            Widget? actionBtn;
+            if (notification.title == "Table Needs Help" && notification.relatedId != null) {
+              actionBtn = ElevatedButton(
+                onPressed: () {
+                  try {
+                    final tableState = context.read<TableBloc>().state;
+                    if (tableState is TablesLoaded) {
+                      final table = tableState.items.firstWhere(
+                        (t) => t.id == notification.relatedId,
+                      );
+                      if (table.needsHelp) {
+                        context.read<TableBloc>().add(
+                          UpdateTable(item: table.copyWith(needsHelp: false))
+                        );
+                      }
+                    }
+                  } catch (_) {
+                    // Ignore if TableBloc is not found or table is missing
+                  }
+                  
+                  // Mark as read and optionally dismiss or clear
+                  context.read<AppNotificationBloc>().add(
+                    MarkNotificationAsRead(notification.id)
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  minimumSize: const Size(0, 32),
+                ),
+                child: const Text("Done"),
+              );
+            }
+
+            return NotificationCard(
+              notification: notification,
+              actionButton: actionBtn,
+              onTap: () {
+                context.read<AppNotificationBloc>().add(MarkNotificationAsRead(notification.id));
+              },
+            );
+          },
         ),
       ),
     );

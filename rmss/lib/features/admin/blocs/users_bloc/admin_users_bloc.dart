@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rmss/core/repositories/user_repository.dart';
 import 'package:rmss/core/models/user_model.dart';
 import 'dart:async';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'admin_users_event.dart';
 import 'admin_users_state.dart';
 
@@ -54,11 +56,30 @@ class AdminUsersBloc extends Bloc<AdminUsersEvent, AdminUsersState> {
 
     on<AddUser>((event, emit) async {
       try {
+        // Create user in Firebase Auth using a secondary app instance
+        // This prevents the admin from being logged out of their own account
+        FirebaseApp secondaryApp = await Firebase.initializeApp(
+          name: 'SecondaryApp_${DateTime.now().millisecondsSinceEpoch}',
+          options: Firebase.app().options,
+        );
+
+        UserCredential credential = await FirebaseAuth.instanceFor(app: secondaryApp)
+            .createUserWithEmailAndPassword(
+          email: event.userData['email'],
+          password: event.password,
+        );
+
+        final uid = credential.user!.uid;
+
+        // Clean up the secondary app instance
+        await secondaryApp.delete();
+
         final data = Map<String, dynamic>.from(event.userData);
         data['createdDate'] = Timestamp.now();
         data['lastLoginDate'] = Timestamp.now();
         data['deviceToken'] = '';
-        await userRepository.addUser(data);
+        
+        await userRepository.addUserWithId(uid, data);
       } catch (e) {
         emit(AdminUsersError(message: e.toString()));
       }

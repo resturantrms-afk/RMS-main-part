@@ -84,4 +84,9 @@ class UserRepository {
   Future<void> addUser(Map<String, dynamic> userData) async {
     await _firestore.collection('users').add(userData);
   }
+
+  /// Creates a new user document in Firestore with a specific ID
+  Future<void> addUserWithId(String uid, Map<String, dynamic> userData) async {
+    await _firestore.collection('users').doc(uid).set(userData);
+  }
 }
