@@ -10,6 +10,10 @@ import 'package:rmss/core/blocs/table_bloc/table_bloc.dart';
 import 'package:rmss/core/blocs/table_bloc/table_event.dart';
 import 'package:rmss/core/blocs/table_bloc/table_state.dart';
 import 'package:rmss/core/models/table_model.dart';
+import 'package:rmss/core/blocs/order_bloc/order_bloc.dart';
+import 'package:rmss/core/blocs/order_bloc/order_event.dart';
+import 'package:rmss/core/blocs/order_bloc/order_state.dart';
+import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/features/admin/views/desktop/home%20widgets/admin_top_bar.dart';
 
 // ---------------------------------------------------------------------------
@@ -1354,20 +1358,94 @@ class _ChangeStatusButtonState extends State<_ChangeStatusButton> {
                             onTap: isCurrentStatus
                                 ? null
                                 : () {
-                                    final updated = TableModel(
-                                      id: widget.table.id,
-                                      tableNumber: widget.table.tableNumber,
-                                      status: status,
-                                    );
-                                    bloc.add(UpdateTable(item: updated));
-                                    Navigator.of(dialogCtx).pop();
-                                    ScaffoldMessenger.of(ctx).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'Table ${widget.table.tableNumber} → ${_statusLabel(status)}',
+                                    showDialog(
+                                      context: ctx,
+                                      builder: (confirmCtx) => AlertDialog(
+                                        title: const Text(
+                                          'Change Status & Cancel Orders?',
                                         ),
-                                        backgroundColor: colorScheme.primary,
-                                        behavior: SnackBarBehavior.floating,
+                                        content: Text(
+                                          'Changing the status of Table ${widget.table.tableNumber} to ${_statusLabel(status)} will automatically cancel all active orders for this table.\n\nAre you sure you want to proceed?',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.of(confirmCtx).pop(),
+                                            child: const Text('CANCEL'),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              final updated = TableModel(
+                                                id: widget.table.id,
+                                                tableNumber:
+                                                    widget.table.tableNumber,
+                                                status: status,
+                                              );
+                                              bloc.add(
+                                                UpdateTable(item: updated),
+                                              );
+
+                                              // Cancel active orders
+                                              final orderBloc = ctx
+                                                  .read<OrderBloc>();
+                                              if (orderBloc.state
+                                                  is OrderLoaded) {
+                                                final orders =
+                                                    (orderBloc.state
+                                                            as OrderLoaded)
+                                                        .items;
+                                                final activeOrders = orders
+                                                    .where(
+                                                      (o) =>
+                                                          o.tableNumber ==
+                                                              widget
+                                                                  .table
+                                                                  .tableNumber &&
+                                                          o.status !=
+                                                              OrderStatus
+                                                                  .cancelled &&
+                                                          o.status !=
+                                                              OrderStatus.paid,
+                                                    );
+
+                                                for (var order
+                                                    in activeOrders) {
+                                                  final cancelledOrder = order
+                                                      .copyWith(
+                                                        status: OrderStatus
+                                                            .cancelled,
+                                                      );
+                                                  orderBloc.add(
+                                                    UpdateOrder(
+                                                      item: cancelledOrder,
+                                                    ),
+                                                  );
+                                                }
+                                              }
+
+                                              Navigator.of(
+                                                confirmCtx,
+                                              ).pop(); // Close confirm dialog
+                                              Navigator.of(
+                                                dialogCtx,
+                                              ).pop(); // Close status picker dialog
+                                              ScaffoldMessenger.of(
+                                                ctx,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    'Table ${widget.table.tableNumber} updated & active orders cancelled.',
+                                                  ),
+                                                  backgroundColor:
+                                                      colorScheme.primary,
+                                                  behavior:
+                                                      SnackBarBehavior.floating,
+                                                ),
+                                              );
+                                            },
+                                            child: const Text('PROCEED'),
+                                          ),
+                                        ],
                                       ),
                                     );
                                   },

@@ -501,17 +501,37 @@ class _CartItemTile extends StatelessWidget {
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (item.notes.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    item.notes,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                const SizedBox(height: 4),
+                InkWell(
+                  onTap: () => _editNote(context),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.edit_note,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            item.notes.isNotEmpty ? item.notes : 'Add note',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: item.notes.isNotEmpty
+                                  ? Theme.of(context).colorScheme.onSurfaceVariant
+                                  : Theme.of(context).colorScheme.primary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
+                ),
               ],
             ),
           ),
@@ -630,6 +650,44 @@ class _CartItemTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _editNote(BuildContext context) {
+    final TextEditingController _controller = TextEditingController(text: item.notes);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Note'),
+          content: TextField(
+            controller: _controller,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              hintText: 'Enter note here...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                context.read<CartBloc>().add(
+                  UpdateCartItemNote(
+                    menuItemId: item.menuItemId,
+                    newNotes: _controller.text,
+                  ),
+                );
+                Navigator.pop(context);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
   }
 

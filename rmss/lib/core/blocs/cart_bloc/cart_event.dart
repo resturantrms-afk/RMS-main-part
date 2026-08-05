@@ -35,3 +35,13 @@ class UpdateCartItemQuantity extends CartEvent {
   @override
   List<Object?> get props => [menuItemId, delta];
 }
+
+class UpdateCartItemNote extends CartEvent {
+  final String menuItemId;
+  final String newNotes;
+
+  UpdateCartItemNote({required this.menuItemId, required this.newNotes});
+
+  @override
+  List<Object?> get props => [menuItemId, newNotes];
+}

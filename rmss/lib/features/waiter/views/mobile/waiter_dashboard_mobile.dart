@@ -42,6 +42,12 @@ class _WaiterDashboardMobileState extends State<WaiterDashboardMobile> {
     return BlocListener<AppNotificationBloc, AppNotificationState>(
       listener: (context, state) {
         if (state is AppNotificationLoaded) {
+          // Remove IDs that are no longer unread or no longer exist
+          _shownNotifications.removeWhere((id) {
+            final existsAsUnread = state.notifications.any((n) => n.id == id && !n.isRead);
+            return !existsAsUnread;
+          });
+
           for (var notification in state.notifications) {
             if (!notification.isRead &&
                 !_shownNotifications.contains(notification.id)) {

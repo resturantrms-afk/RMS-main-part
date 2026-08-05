@@ -70,5 +70,25 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       }
       emit(CartState(items: List.from(_cartItems)));
     });
+
+    on<UpdateCartItemNote>((event, emit) {
+      final index = _cartItems.indexWhere(
+        (i) => i.menuItemId == event.menuItemId,
+      );
+      if (index < 0) return;
+
+      final item = _cartItems[index];
+      
+      _cartItems[index] = OrderItemModel(
+        menuItemId: item.menuItemId,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        notes: event.newNotes,
+        imageUrl: item.imageUrl,
+      );
+      
+      emit(CartState(items: List.from(_cartItems)));
+    });
   }
 }

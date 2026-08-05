@@ -445,6 +445,7 @@ class OrderDetails extends StatelessWidget {
                                       padding: const EdgeInsets.only(bottom: 16),
                                       child: _buildItemCard(
                                         context: context,
+                                        origOrder: origOrder,
                                         item: item,
                                         imageUrl: imageUrl,
                                       ),
@@ -708,6 +709,7 @@ class OrderDetails extends StatelessWidget {
   // Helper method using real order data and cached network image
   Widget _buildItemCard({
     required BuildContext context,
+    required OrderModel origOrder,
     required OrderItemModel item,
     required String imageUrl,
   }) {
@@ -809,18 +811,87 @@ class OrderDetails extends StatelessWidget {
                     ),
                   ],
                 ),
-                // Display notes if they exist!
-                if (item.notes.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    "Notes: ${item.notes}",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colorScheme.onSurfaceVariant,
-                      fontStyle: FontStyle.italic,
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () {
+                    // Only allow editing if the order is pending or preparing
+                    if (origOrder.status != OrderStatus.pending && origOrder.status != OrderStatus.preparing) return;
+
+                    final TextEditingController _controller = TextEditingController(text: item.notes);
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: const Text('Edit Note'),
+                          content: TextField(
+                            controller: _controller,
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              hintText: 'Enter note here...',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              onPressed: () {
+                                final updatedItems = List<OrderItemModel>.from(origOrder.items);
+                                final index = updatedItems.indexWhere((i) => i.menuItemId == item.menuItemId && i.notes == item.notes);
+                                if (index != -1) {
+                                  updatedItems[index] = OrderItemModel(
+                                    menuItemId: item.menuItemId,
+                                    name: item.name,
+                                    price: item.price,
+                                    quantity: item.quantity,
+                                    notes: _controller.text,
+                                    imageUrl: item.imageUrl,
+                                  );
+                                  final updatedOrder = origOrder.copyWith(items: updatedItems, updatedAt: Timestamp.now());
+                                  context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));
+                                }
+                                Navigator.pop(context);
+                              },
+                              child: const Text('Save'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(4),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.edit_note,
+                          size: 16,
+                          color: (origOrder.status == OrderStatus.pending || origOrder.status == OrderStatus.preparing) 
+                              ? colorScheme.primary 
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            item.notes.isNotEmpty ? "Notes: ${item.notes}" : 'Add note',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: item.notes.isNotEmpty
+                                  ? colorScheme.onSurfaceVariant
+                                  : colorScheme.primary,
+                              fontStyle: item.notes.isNotEmpty ? FontStyle.italic : FontStyle.normal,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ],
             ),
           ),
