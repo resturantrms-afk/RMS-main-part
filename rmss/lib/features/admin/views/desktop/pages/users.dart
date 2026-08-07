@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rmss/core/models/user_model.dart';
@@ -1072,6 +1073,7 @@ class _EditPanelState extends State<_EditPanel> {
                       label: 'PHONE',
                       controller: widget.phoneCtrl,
                       keyboardType: TextInputType.phone,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     ),
                     const SizedBox(height: 12),
 
@@ -1250,11 +1252,13 @@ class _FormField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
 
   const _FormField({
     required this.label,
     required this.controller,
     this.keyboardType,
+    this.inputFormatters,
   });
 
   @override
@@ -1285,6 +1289,7 @@ class _FormField extends StatelessWidget {
           TextField(
             controller: controller,
             keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -1405,6 +1410,19 @@ class _AddUserDialogState extends State<_AddUserDialog> {
   UserRoles _role = UserRoles.waiter;
   UserStatus _status = UserStatus.active;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final updateState = () {
+      if (mounted) setState(() {});
+    };
+    _nameCtrl.addListener(updateState);
+    _emailCtrl.addListener(updateState);
+    _phoneCtrl.addListener(updateState);
+    _addressCtrl.addListener(updateState);
+    _passwordCtrl.addListener(updateState);
+  }
 
   @override
   void dispose() {
@@ -1553,6 +1571,7 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                             hint: '+1 234 567 8900',
                             icon: Icons.phone_outlined,
                             keyboardType: TextInputType.phone,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -1650,20 +1669,14 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                     ),
                     const SizedBox(width: 12),
                     FilledButton.icon(
-                      onPressed: _isLoading
+                      onPressed: _isLoading ||
+                              _nameCtrl.text.trim().isEmpty ||
+                              _emailCtrl.text.trim().isEmpty ||
+                              _phoneCtrl.text.trim().isEmpty ||
+                              _addressCtrl.text.trim().isEmpty ||
+                              _passwordCtrl.text.trim().isEmpty
                           ? null
                           : () async {
-                              if (_nameCtrl.text.trim().isEmpty ||
-                                  _emailCtrl.text.trim().isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Name and Email are required.',
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
                               setState(() => _isLoading = true);
                               final userData = {
                                 'name': _nameCtrl.text.trim(),
@@ -1746,6 +1759,7 @@ class _DialogField extends StatelessWidget {
   final bool obscureText;
   final Widget? suffix;
   final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
 
   const _DialogField({
     required this.label,
@@ -1755,6 +1769,7 @@ class _DialogField extends StatelessWidget {
     this.obscureText = false,
     this.suffix,
     this.keyboardType,
+    this.inputFormatters,
   });
 
   @override
@@ -1777,6 +1792,7 @@ class _DialogField extends StatelessWidget {
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           style: TextStyle(fontSize: 14, color: colorScheme.onSurface),
           decoration: InputDecoration(
             hintText: hint,

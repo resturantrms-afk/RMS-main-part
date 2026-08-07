@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:rmss/core/blocs/order_bloc/order_bloc.dart';
@@ -108,12 +109,14 @@ class OrderDetails extends StatelessWidget {
                 try {
                   // Find all original orders from the comma-separated IDs
                   final orderIds = orderId.split(',');
-                  final originalOrders = state.items.where((o) => orderIds.contains(o.id)).toList();
-                  
+                  final originalOrders = state.items
+                      .where((o) => orderIds.contains(o.id))
+                      .toList();
+
                   if (originalOrders.isEmpty) {
                     throw Exception("No matching orders found.");
                   }
-                  
+
                   // Merge them purely for display purposes
                   final order = OrderUtils.mergeOrders(originalOrders);
 
@@ -243,10 +246,15 @@ class OrderDetails extends StatelessWidget {
                                     Text(
                                       (() {
                                         DateTime ct = order.createdAt.toDate();
-                                        Duration d = DateTime.now().difference(ct);
-                                        if (d.inDays > 0) return "${d.inDays} days ago";
-                                        if (d.inHours > 0) return "${d.inHours} hrs ago";
-                                        if (d.inMinutes > 0) return "${d.inMinutes} mins ago";
+                                        Duration d = DateTime.now().difference(
+                                          ct,
+                                        );
+                                        if (d.inDays > 0)
+                                          return "${d.inDays} days ago";
+                                        if (d.inHours > 0)
+                                          return "${d.inHours} hrs ago";
+                                        if (d.inMinutes > 0)
+                                          return "${d.inMinutes} mins ago";
                                         return "Just now";
                                       })(),
                                       style: const TextStyle(
@@ -396,7 +404,9 @@ class OrderDetails extends StatelessWidget {
                                 children: [
                                   if (originalOrders.length > 1)
                                     Padding(
-                                      padding: const EdgeInsets.only(bottom: 12),
+                                      padding: const EdgeInsets.only(
+                                        bottom: 12,
+                                      ),
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 8,
@@ -406,7 +416,9 @@ class OrderDetails extends StatelessWidget {
                                           color: origStatusColor.withValues(
                                             alpha: 0.1,
                                           ),
-                                          borderRadius: BorderRadius.circular(4),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
                                           border: Border.all(
                                             color: origStatusColor.withValues(
                                               alpha: 0.5,
@@ -428,15 +440,18 @@ class OrderDetails extends StatelessWidget {
                                     String imageUrl = '';
                                     if (menuState is MenuLoaded) {
                                       try {
-                                        final menuItem = menuState.items.firstWhere(
-                                          (m) => m.id == item.menuItemId,
-                                        );
+                                        final menuItem = menuState.items
+                                            .firstWhere(
+                                              (m) => m.id == item.menuItemId,
+                                            );
                                         imageUrl = menuItem.imageUrl;
                                       } catch (_) {}
                                     }
 
                                     return Padding(
-                                      padding: const EdgeInsets.only(bottom: 16),
+                                      padding: const EdgeInsets.only(
+                                        bottom: 16,
+                                      ),
                                       child: _buildItemCard(
                                         context: context,
                                         origOrder: origOrder,
@@ -544,80 +559,157 @@ class OrderDetails extends StatelessWidget {
                                   const SizedBox(width: 16),
 
                                   OutlinedButton(
-                                    onPressed: order.status != OrderStatus.cancelled
+                                    onPressed:
+                                        order.status != OrderStatus.cancelled
                                         ? () async {
-                                            final bool? confirm = await showDialog<bool>(
+                                            final bool?
+                                            confirm = await showDialog<bool>(
                                               context: context,
                                               builder: (context) => AlertDialog(
-                                                title: const Text('Cancel Order?'),
+                                                title: const Text(
+                                                  'Cancel Order?',
+                                                ),
                                                 content: Text(
-                                                  order.status == OrderStatus.paid
+                                                  order.status ==
+                                                          OrderStatus.paid
                                                       ? 'Are you sure you want to cancel this order? \n\n WARNING: This will also void the payment history that accompanies it.'
                                                       : 'Are you sure you want to cancel this order?',
                                                 ),
                                                 actions: [
                                                   TextButton(
-                                                    style: ButtonStyle(mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click)),
-                                                    onPressed: () => Navigator.pop(context, false),
+                                                    style: ButtonStyle(
+                                                      mouseCursor:
+                                                          WidgetStateProperty.all(
+                                                            SystemMouseCursors
+                                                                .click,
+                                                          ),
+                                                    ),
+                                                    onPressed: () =>
+                                                        Navigator.pop(
+                                                          context,
+                                                          false,
+                                                        ),
                                                     child: const Text('No'),
                                                   ),
                                                   TextButton(
-                                                    style: ButtonStyle(mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click)),
-                                                    onPressed: () => Navigator.pop(context, true),
+                                                    style: ButtonStyle(
+                                                      mouseCursor:
+                                                          WidgetStateProperty.all(
+                                                            SystemMouseCursors
+                                                                .click,
+                                                          ),
+                                                    ),
+                                                    onPressed: () =>
+                                                        Navigator.pop(
+                                                          context,
+                                                          true,
+                                                        ),
                                                     child: Text(
                                                       'Yes, Cancel',
-                                                      style: TextStyle(color: colorScheme.error),
+                                                      style: TextStyle(
+                                                        color:
+                                                            colorScheme.error,
+                                                      ),
                                                     ),
                                                   ),
                                                 ],
                                               ),
                                             );
 
-                                            if (confirm == true && context.mounted) {
+                                            if (confirm == true &&
+                                                context.mounted) {
                                               // 1. Cancel the Order
                                               // Cancel all original orders grouped in this tab simultaneously
                                               final timestamp = Timestamp.now();
-                                              for (var origOrder in originalOrders) {
-                                                final updatedOrder = origOrder.copyWith(status: OrderStatus.cancelled, updatedAt: timestamp);
-                                                context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));
+                                              for (var origOrder
+                                                  in originalOrders) {
+                                                final updatedOrder = origOrder
+                                                    .copyWith(
+                                                      status:
+                                                          OrderStatus.cancelled,
+                                                      updatedAt: timestamp,
+                                                    );
+                                                context.read<OrderBloc>().add(
+                                                  UpdateOrder(
+                                                    item: updatedOrder,
+                                                  ),
+                                                );
                                               }
 
                                               // 2. Void associated payment if the order was paid
-                                              if (order.status == OrderStatus.paid) {
-                                                final paymentState = context.read<PaymentBloc>().state;
-                                                if (paymentState is PaymentsLoaded) {
-                                                  for (var origOrder in originalOrders) {
+                                              if (order.status ==
+                                                  OrderStatus.paid) {
+                                                final paymentState = context
+                                                    .read<PaymentBloc>()
+                                                    .state;
+                                                if (paymentState
+                                                    is PaymentsLoaded) {
+                                                  for (var origOrder
+                                                      in originalOrders) {
                                                     try {
-                                                      final payment = paymentState.items.firstWhere(
-                                                        (p) => p.orderId == origOrder.id,
-                                                      );
-                                                      final voidedPayment = payment.copyWith(status: PaymentStatus.voided, updatedAt: Timestamp.now());
-                                                      context.read<PaymentBloc>().add(UpdatePayment(item: voidedPayment));
+                                                      final payment =
+                                                          paymentState.items
+                                                              .firstWhere(
+                                                                (p) =>
+                                                                    p.orderId ==
+                                                                    origOrder
+                                                                        .id,
+                                                              );
+                                                      final voidedPayment =
+                                                          payment.copyWith(
+                                                            status:
+                                                                PaymentStatus
+                                                                    .voided,
+                                                            updatedAt:
+                                                                Timestamp.now(),
+                                                          );
+                                                      context
+                                                          .read<PaymentBloc>()
+                                                          .add(
+                                                            UpdatePayment(
+                                                              item:
+                                                                  voidedPayment,
+                                                            ),
+                                                          );
                                                     } catch (_) {}
                                                   }
                                                 }
                                               }
 
                                               // 3. Free up the Table
-                                              final tableState = context.read<TableBloc>().state;
+                                              final tableState = context
+                                                  .read<TableBloc>()
+                                                  .state;
                                               if (tableState is TablesLoaded) {
                                                 try {
-                                                  final table = tableState.items.firstWhere(
-                                                    (t) => t.id == order.tableId,
-                                                  );
-                                                  
-                                                  TableStatus targetStatus = TableStatus.available;
-                                                  if (order.status == OrderStatus.served || order.status == OrderStatus.paid) {
-                                                    targetStatus = TableStatus.needsCleaning;
+                                                  final table = tableState.items
+                                                      .firstWhere(
+                                                        (t) =>
+                                                            t.id ==
+                                                            order.tableId,
+                                                      );
+
+                                                  TableStatus targetStatus =
+                                                      TableStatus.available;
+                                                  if (order.status ==
+                                                          OrderStatus.served ||
+                                                      order.status ==
+                                                          OrderStatus.paid) {
+                                                    targetStatus = TableStatus
+                                                        .needsCleaning;
                                                   }
-                                                  
-                                                  final updatedTable = TableModel(
-                                                    id: table.id,
-                                                    tableNumber: table.tableNumber,
-                                                    status: targetStatus,
-                                                  );
+
+                                                  final updatedTable =
+                                                      TableModel(
+                                                        id: table.id,
+                                                        tableNumber:
+                                                            table.tableNumber,
+                                                        status: targetStatus,
+                                                      );
                                                   context.read<TableBloc>().add(
-                                                    UpdateTable(item: updatedTable),
+                                                    UpdateTable(
+                                                      item: updatedTable,
+                                                    ),
                                                   );
                                                 } catch (_) {}
                                               }
@@ -658,7 +750,11 @@ class OrderDetails extends StatelessWidget {
                                     onPressed:
                                         order.status == OrderStatus.served
                                         ? () {
-                                            _verifyPinAndShowPaymentDialog(context, order, originalOrders);
+                                            _verifyPinAndShowPaymentDialog(
+                                              context,
+                                              order,
+                                              originalOrders,
+                                            );
                                           }
                                         : null,
 
@@ -731,9 +827,10 @@ class OrderDetails extends StatelessWidget {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // We use a fallback URL if no image is provided.
-    final String displayImageUrl = imageUrl.isNotEmpty
-        ? imageUrl
+    // We use a fallback URL if no valid http image is provided.
+    final String displayImageUrl =
+        (imageUrl.trim().isNotEmpty && imageUrl.trim().startsWith('http'))
+        ? imageUrl.trim()
         : 'https://via.placeholder.com/150/2A1E17/E88328?text=${Uri.encodeComponent(item.name.substring(0, 1))}';
 
     return Container(
@@ -831,9 +928,12 @@ class OrderDetails extends StatelessWidget {
                 InkWell(
                   onTap: () {
                     // Only allow editing if the order is pending or preparing
-                    if (origOrder.status != OrderStatus.pending && origOrder.status != OrderStatus.preparing) return;
+                    if (origOrder.status != OrderStatus.pending &&
+                        origOrder.status != OrderStatus.preparing)
+                      return;
 
-                    final TextEditingController _controller = TextEditingController(text: item.notes);
+                    final TextEditingController _controller =
+                        TextEditingController(text: item.notes);
                     showDialog(
                       context: context,
                       builder: (context) {
@@ -854,8 +954,14 @@ class OrderDetails extends StatelessWidget {
                             ),
                             FilledButton(
                               onPressed: () {
-                                final updatedItems = List<OrderItemModel>.from(origOrder.items);
-                                final index = updatedItems.indexWhere((i) => i.menuItemId == item.menuItemId && i.notes == item.notes);
+                                final updatedItems = List<OrderItemModel>.from(
+                                  origOrder.items,
+                                );
+                                final index = updatedItems.indexWhere(
+                                  (i) =>
+                                      i.menuItemId == item.menuItemId &&
+                                      i.notes == item.notes,
+                                );
                                 if (index != -1) {
                                   updatedItems[index] = OrderItemModel(
                                     menuItemId: item.menuItemId,
@@ -865,8 +971,13 @@ class OrderDetails extends StatelessWidget {
                                     notes: _controller.text,
                                     imageUrl: item.imageUrl,
                                   );
-                                  final updatedOrder = origOrder.copyWith(items: updatedItems, updatedAt: Timestamp.now());
-                                  context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));
+                                  final updatedOrder = origOrder.copyWith(
+                                    items: updatedItems,
+                                    updatedAt: Timestamp.now(),
+                                  );
+                                  context.read<OrderBloc>().add(
+                                    UpdateOrder(item: updatedOrder),
+                                  );
                                 }
                                 Navigator.pop(context);
                               },
@@ -886,20 +997,26 @@ class OrderDetails extends StatelessWidget {
                         Icon(
                           Icons.edit_note,
                           size: 16,
-                          color: (origOrder.status == OrderStatus.pending || origOrder.status == OrderStatus.preparing) 
-                              ? colorScheme.primary 
+                          color:
+                              (origOrder.status == OrderStatus.pending ||
+                                  origOrder.status == OrderStatus.preparing)
+                              ? colorScheme.primary
                               : colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            item.notes.isNotEmpty ? "Notes: ${item.notes}" : 'Add note',
+                            item.notes.isNotEmpty
+                                ? "Notes: ${item.notes}"
+                                : 'Add note',
                             style: TextStyle(
                               fontSize: 14,
                               color: item.notes.isNotEmpty
                                   ? colorScheme.onSurfaceVariant
                                   : colorScheme.primary,
-                              fontStyle: item.notes.isNotEmpty ? FontStyle.italic : FontStyle.normal,
+                              fontStyle: item.notes.isNotEmpty
+                                  ? FontStyle.italic
+                                  : FontStyle.normal,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -922,8 +1039,9 @@ class OrderDetails extends StatelessWidget {
     List<OrderModel> originalOrders,
   ) async {
     final authState = context.read<AuthBloc>().state;
-    final savedPin =
-        authState is AuthSuccess ? authState.user.paymentPin : null;
+    final savedPin = authState is AuthSuccess
+        ? authState.user.paymentPin
+        : null;
 
     if (savedPin == null || savedPin.isEmpty) {
       if (context.mounted) {
@@ -962,6 +1080,7 @@ class OrderDetails extends StatelessWidget {
                     controller: pinController,
                     obscureText: obscurePin,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     maxLength: 4,
                     decoration: InputDecoration(
                       labelText: "4-digit PIN",
@@ -978,6 +1097,8 @@ class OrderDetails extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  _buildNumberPad(innerContext, pinController),
                 ],
               ),
               actions: [
@@ -1009,7 +1130,11 @@ class OrderDetails extends StatelessWidget {
   }
 
   // Shows the popup asking for Cash or Zaad
-  void _showPaymentDialog(BuildContext context, OrderModel order, List<OrderModel> originalOrders) {
+  void _showPaymentDialog(
+    BuildContext context,
+    OrderModel order,
+    List<OrderModel> originalOrders,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
 
     showDialog(
@@ -1145,5 +1270,101 @@ class OrderDetails extends StatelessWidget {
 
     // 4. Go Back to main dashboard
     Navigator.pop(context);
+  }
+
+  Widget _buildNumberPad(
+    BuildContext context,
+    TextEditingController controller,
+  ) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            '1',
+            '2',
+            '3',
+          ].map((d) => _buildNumpadButton(context, d, controller)).toList(),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            '4',
+            '5',
+            '6',
+          ].map((d) => _buildNumpadButton(context, d, controller)).toList(),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            '7',
+            '8',
+            '9',
+          ].map((d) => _buildNumpadButton(context, d, controller)).toList(),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildNumpadButton(context, 'C', controller, isClear: true),
+            _buildNumpadButton(context, '0', controller),
+            _buildNumpadButton(context, '<', controller, isBackspace: true),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNumpadButton(
+    BuildContext context,
+    String label,
+    TextEditingController controller, {
+    bool isClear = false,
+    bool isBackspace = false,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: 64,
+      height: 64,
+      child: FilledButton(
+        style: FilledButton.styleFrom(
+          backgroundColor: colorScheme.surface,
+          foregroundColor: colorScheme.onSurface,
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colorScheme.outlineVariant),
+          ),
+          elevation: 0,
+        ),
+        onPressed: () {
+          if (isClear) {
+            controller.clear();
+          } else if (isBackspace) {
+            if (controller.text.isNotEmpty) {
+              controller.text = controller.text.substring(
+                0,
+                controller.text.length - 1,
+              );
+            }
+          } else {
+            if (controller.text.length < 4) {
+              controller.text += label;
+            }
+          }
+        },
+        child: isBackspace
+            ? const Icon(Icons.backspace_outlined)
+            : Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+      ),
+    );
   }
 }

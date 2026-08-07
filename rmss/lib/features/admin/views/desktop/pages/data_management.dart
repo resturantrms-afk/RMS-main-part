@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:rmss/features/admin/views/desktop/home%20widgets/admin_top_bar.dart';
+import 'package:rmss/core/services/backup_service.dart';
 
 class DataManagementPage extends StatefulWidget {
   const DataManagementPage({super.key});
@@ -22,6 +23,8 @@ class _DataManagementPageState extends State<DataManagementPage> {
   Map<String, bool> _selectedCollections = {};
   bool _isLoading = true;
   bool _isDeleting = false;
+  bool _isRestoring = false;
+  bool _isExporting = false;
 
   @override
   void initState() {
@@ -307,20 +310,6 @@ class _DataManagementPageState extends State<DataManagementPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                OutlinedButton.icon(
-                                  onPressed: _deleteAll,
-                                  icon: const Icon(Icons.delete_forever),
-                                  label: const Text("DELETE ALL COLLECTIONS"),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: colorScheme.error,
-                                    side: BorderSide(color: colorScheme.error),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 16,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
                                 ElevatedButton.icon(
                                   onPressed:
                                       anySelected ? _deleteSelected : null,
@@ -339,6 +328,146 @@ class _DataManagementPageState extends State<DataManagementPage> {
                             ),
                           ],
                         ),
+            ),
+            const SizedBox(height: 32),
+
+            // --- Backup & Restore Section ---
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: colorScheme.outlineVariant),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 24,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: (_isRestoring || _isExporting)
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 16),
+                          Text(
+                            _isRestoring
+                                ? "Restoring data, please wait..."
+                                : "Exporting data, please wait...",
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Backup & Restore",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Export a complete backup of your database (JSON format) and restore it when needed. Users will not be imported during restoration.",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                try {
+                                  setState(() => _isExporting = true);
+                                  await BackupService.exportBackup();
+                                  if (context.mounted) {
+                                    setState(() => _isExporting = false);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              'Backup Exported Successfully!')),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    setState(() => _isExporting = false);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text('Backup Failed: $e')),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.download),
+                              label: const Text("EXPORT BACKUP"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: colorScheme.primary,
+                                foregroundColor: colorScheme.onPrimary,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 16,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            OutlinedButton.icon(
+                              onPressed: () async {
+                                try {
+                                  setState(() => _isRestoring = true);
+                                  final result =
+                                      await BackupService.restoreBackup();
+                                  if (context.mounted) {
+                                    setState(() => _isRestoring = false);
+                                    if (result['status'] == 1) {
+                                      final added = result['added'];
+                                      final skipped = result['skipped'];
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Restore Complete: $added new items added, $skipped existing items skipped.',
+                                          ),
+                                          duration: const Duration(seconds: 5),
+                                        ),
+                                      );
+                                      _fetchCounts();
+                                    }
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    setState(() => _isRestoring = false);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text('Restore Failed: $e')),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.upload),
+                              label: const Text("RESTORE BACKUP"),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 16,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
             ),
           ],
         ),

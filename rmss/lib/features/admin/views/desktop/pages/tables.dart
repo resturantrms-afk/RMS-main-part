@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:file_saver/file_saver.dart';
@@ -505,6 +506,14 @@ class _AddTableDialogState extends State<_AddTableDialog> {
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    _tableNumberCtrl.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
   void dispose() {
     _tableNumberCtrl.dispose();
     super.dispose();
@@ -627,6 +636,7 @@ class _AddTableDialogState extends State<_AddTableDialog> {
                     TextField(
                       controller: _tableNumberCtrl,
                       keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       style: TextStyle(
                         fontSize: 14,
                         color: colorScheme.onSurface,
@@ -751,7 +761,7 @@ class _AddTableDialogState extends State<_AddTableDialog> {
                     ),
                     const SizedBox(width: 12),
                     FilledButton.icon(
-                      onPressed: _isLoading
+                      onPressed: _isLoading || _tableNumberCtrl.text.trim().isEmpty
                           ? null
                           : () {
                               final numText = _tableNumberCtrl.text.trim();
@@ -765,6 +775,20 @@ class _AddTableDialogState extends State<_AddTableDialog> {
                                   ),
                                 );
                                 return;
+                              }
+
+                              final tableState = context.read<TableBloc>().state;
+                              if (tableState is TablesLoaded) {
+                                final bool exists = tableState.items.any((t) => t.tableNumber == tableNum);
+                                if (exists) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Table $tableNum already exists.'),
+                                      backgroundColor: colorScheme.error,
+                                    ),
+                                  );
+                                  return;
+                                }
                               }
                               setState(() => _isLoading = true);
                               final newTable = TableModel(

@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:rmss/core/blocs/order_bloc/order_bloc.dart';
@@ -402,7 +403,9 @@ class OrderDetails extends StatelessWidget {
                                 children: [
                                   if (originalOrders.length > 1)
                                     Padding(
-                                      padding: const EdgeInsets.only(bottom: 12),
+                                      padding: const EdgeInsets.only(
+                                        bottom: 12,
+                                      ),
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 8,
@@ -412,7 +415,9 @@ class OrderDetails extends StatelessWidget {
                                           color: origStatusColor.withValues(
                                             alpha: 0.1,
                                           ),
-                                          borderRadius: BorderRadius.circular(4),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
                                           border: Border.all(
                                             color: origStatusColor.withValues(
                                               alpha: 0.5,
@@ -434,15 +439,18 @@ class OrderDetails extends StatelessWidget {
                                     String imageUrl = '';
                                     if (menuState is MenuLoaded) {
                                       try {
-                                        final menuItem = menuState.items.firstWhere(
-                                          (m) => m.id == item.menuItemId,
-                                        );
+                                        final menuItem = menuState.items
+                                            .firstWhere(
+                                              (m) => m.id == item.menuItemId,
+                                            );
                                         imageUrl = menuItem.imageUrl;
                                       } catch (_) {}
                                     }
 
                                     return Padding(
-                                      padding: const EdgeInsets.only(bottom: 16),
+                                      padding: const EdgeInsets.only(
+                                        bottom: 16,
+                                      ),
                                       child: _buildItemCard(
                                         context: context,
                                         origOrder: origOrder,
@@ -559,17 +567,25 @@ class OrderDetails extends StatelessWidget {
                                             final timestamp = Timestamp.now();
                                             bool hasRemainingParts = false;
 
-                                            for (var origOrder in originalOrders) {
-                                              if (origOrder.status == OrderStatus.pending || 
-                                                  origOrder.status == OrderStatus.preparing) {
-                                                final updatedOrder = origOrder.copyWith(
-                                                  status: OrderStatus.cancelled,
-                                                  updatedAt: timestamp,
-                                                );
+                                            for (var origOrder
+                                                in originalOrders) {
+                                              if (origOrder.status ==
+                                                      OrderStatus.pending ||
+                                                  origOrder.status ==
+                                                      OrderStatus.preparing) {
+                                                final updatedOrder = origOrder
+                                                    .copyWith(
+                                                      status:
+                                                          OrderStatus.cancelled,
+                                                      updatedAt: timestamp,
+                                                    );
                                                 context.read<OrderBloc>().add(
-                                                  UpdateOrder(item: updatedOrder),
+                                                  UpdateOrder(
+                                                    item: updatedOrder,
+                                                  ),
                                                 );
-                                              } else if (origOrder.status != OrderStatus.cancelled) {
+                                              } else if (origOrder.status !=
+                                                  OrderStatus.cancelled) {
                                                 hasRemainingParts = true;
                                               }
                                             }
@@ -584,7 +600,8 @@ class OrderDetails extends StatelessWidget {
                                                   final table = tableState.items
                                                       .firstWhere(
                                                         (t) =>
-                                                            t.id == order.tableId,
+                                                            t.id ==
+                                                            order.tableId,
                                                       );
                                                   final updatedTable = TableModel(
                                                     id: table.id,
@@ -715,9 +732,9 @@ class OrderDetails extends StatelessWidget {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // We use a fallback URL if no image is provided.
-    final String displayImageUrl = imageUrl.isNotEmpty
-        ? imageUrl
+    // We use a fallback URL if no valid http image is provided.
+    final String displayImageUrl = (imageUrl.trim().isNotEmpty && imageUrl.trim().startsWith('http'))
+        ? imageUrl.trim()
         : 'https://via.placeholder.com/150/2A1E17/E88328?text=${Uri.encodeComponent(item.name.substring(0, 1))}';
 
     return Container(
@@ -815,9 +832,12 @@ class OrderDetails extends StatelessWidget {
                 InkWell(
                   onTap: () {
                     // Only allow editing if the order is pending or preparing
-                    if (origOrder.status != OrderStatus.pending && origOrder.status != OrderStatus.preparing) return;
+                    if (origOrder.status != OrderStatus.pending &&
+                        origOrder.status != OrderStatus.preparing)
+                      return;
 
-                    final TextEditingController _controller = TextEditingController(text: item.notes);
+                    final TextEditingController _controller =
+                        TextEditingController(text: item.notes);
                     showDialog(
                       context: context,
                       builder: (context) {
@@ -838,8 +858,14 @@ class OrderDetails extends StatelessWidget {
                             ),
                             FilledButton(
                               onPressed: () {
-                                final updatedItems = List<OrderItemModel>.from(origOrder.items);
-                                final index = updatedItems.indexWhere((i) => i.menuItemId == item.menuItemId && i.notes == item.notes);
+                                final updatedItems = List<OrderItemModel>.from(
+                                  origOrder.items,
+                                );
+                                final index = updatedItems.indexWhere(
+                                  (i) =>
+                                      i.menuItemId == item.menuItemId &&
+                                      i.notes == item.notes,
+                                );
                                 if (index != -1) {
                                   updatedItems[index] = OrderItemModel(
                                     menuItemId: item.menuItemId,
@@ -849,8 +875,13 @@ class OrderDetails extends StatelessWidget {
                                     notes: _controller.text,
                                     imageUrl: item.imageUrl,
                                   );
-                                  final updatedOrder = origOrder.copyWith(items: updatedItems, updatedAt: Timestamp.now());
-                                  context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));
+                                  final updatedOrder = origOrder.copyWith(
+                                    items: updatedItems,
+                                    updatedAt: Timestamp.now(),
+                                  );
+                                  context.read<OrderBloc>().add(
+                                    UpdateOrder(item: updatedOrder),
+                                  );
                                 }
                                 Navigator.pop(context);
                               },
@@ -870,20 +901,26 @@ class OrderDetails extends StatelessWidget {
                         Icon(
                           Icons.edit_note,
                           size: 16,
-                          color: (origOrder.status == OrderStatus.pending || origOrder.status == OrderStatus.preparing) 
-                              ? colorScheme.primary 
+                          color:
+                              (origOrder.status == OrderStatus.pending ||
+                                  origOrder.status == OrderStatus.preparing)
+                              ? colorScheme.primary
                               : colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            item.notes.isNotEmpty ? "Notes: ${item.notes}" : 'Add note',
+                            item.notes.isNotEmpty
+                                ? "Notes: ${item.notes}"
+                                : 'Add note',
                             style: TextStyle(
                               fontSize: 14,
                               color: item.notes.isNotEmpty
                                   ? colorScheme.onSurfaceVariant
                                   : colorScheme.primary,
-                              fontStyle: item.notes.isNotEmpty ? FontStyle.italic : FontStyle.normal,
+                              fontStyle: item.notes.isNotEmpty
+                                  ? FontStyle.italic
+                                  : FontStyle.normal,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -947,6 +984,7 @@ class OrderDetails extends StatelessWidget {
                     controller: pinController,
                     obscureText: obscurePin,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     maxLength: 4,
                     decoration: InputDecoration(
                       labelText: "4-digit PIN",
@@ -963,6 +1001,8 @@ class OrderDetails extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  _buildNumberPad(innerContext, pinController),
                 ],
               ),
               actions: [
@@ -1129,5 +1169,101 @@ class OrderDetails extends StatelessWidget {
 
     // 4. Go Back to main dashboard
     Navigator.pop(context);
+  }
+
+  Widget _buildNumberPad(
+    BuildContext context,
+    TextEditingController controller,
+  ) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            '1',
+            '2',
+            '3',
+          ].map((d) => _buildNumpadButton(context, d, controller)).toList(),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            '4',
+            '5',
+            '6',
+          ].map((d) => _buildNumpadButton(context, d, controller)).toList(),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            '7',
+            '8',
+            '9',
+          ].map((d) => _buildNumpadButton(context, d, controller)).toList(),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildNumpadButton(context, 'C', controller, isClear: true),
+            _buildNumpadButton(context, '0', controller),
+            _buildNumpadButton(context, '<', controller, isBackspace: true),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNumpadButton(
+    BuildContext context,
+    String label,
+    TextEditingController controller, {
+    bool isClear = false,
+    bool isBackspace = false,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: 64,
+      height: 64,
+      child: FilledButton(
+        style: FilledButton.styleFrom(
+          backgroundColor: colorScheme.surface,
+          foregroundColor: colorScheme.onSurface,
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colorScheme.outlineVariant),
+          ),
+          elevation: 0,
+        ),
+        onPressed: () {
+          if (isClear) {
+            controller.clear();
+          } else if (isBackspace) {
+            if (controller.text.isNotEmpty) {
+              controller.text = controller.text.substring(
+                0,
+                controller.text.length - 1,
+              );
+            }
+          } else {
+            if (controller.text.length < 4) {
+              controller.text += label;
+            }
+          }
+        },
+        child: isBackspace
+            ? const Icon(Icons.backspace_outlined)
+            : Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+      ),
+    );
   }
 }

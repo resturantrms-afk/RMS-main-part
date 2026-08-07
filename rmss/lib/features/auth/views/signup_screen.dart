@@ -24,6 +24,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isUploadingImage = false;
+  bool _obscurePassword = true;
 
   File? _profileImage;
 
@@ -244,7 +245,17 @@ class _SignupScreenState extends State<SignupScreen> {
                   textFiled(
                     controller: _passwordController,
                     hintText: "Password",
-                    obscureText: true,
+                    obscureText: _obscurePassword,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
                   ),
 
                   const SizedBox(height: 40),
@@ -339,6 +350,7 @@ class _SignupScreenState extends State<SignupScreen> {
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.name,
     List<TextInputFormatter>? textInputFormatters,
+    Widget? suffixIcon,
   }) {
     return TextField(
       controller: controller,
@@ -351,6 +363,7 @@ class _SignupScreenState extends State<SignupScreen> {
         hintStyle: TextStyle(
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
+        suffixIcon: suffixIcon,
         filled: true,
         fillColor: Theme.of(context).colorScheme.surface,
         border: OutlineInputBorder(
