@@ -180,6 +180,9 @@ Return ONLY valid JSON, no markdown blocks, no other text.
     return keys;
   }
 
+  /// Quickly check if any API key is configured.
+  static bool get isAiConnected => _getGeminiKeys().isNotEmpty;
+
   /// Fetches and sorts the available models for a given API key.
   ///
   /// Filtering: only keeps models that support `generateContent` AND

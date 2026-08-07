@@ -12,6 +12,7 @@ import 'package:rmss/features/admin/views/desktop/home%20widgets/recent_transact
 import 'package:rmss/features/admin/views/desktop/home%20widgets/summary_card.dart';
 import 'package:rmss/features/admin/views/desktop/home%20widgets/admin_welcome_hero.dart';
 import 'package:rmss/features/admin/views/desktop/home%20widgets/hourly_volume_chart.dart';
+import 'package:rmss/core/services/ai_services.dart';
 
 class AdminHome extends StatefulWidget {
   const AdminHome({super.key});
@@ -22,6 +23,50 @@ class AdminHome extends StatefulWidget {
 
 class _AdminHomeState extends State<AdminHome> {
   DateTime selectedDate = DateTime.now();
+
+  String? _aiInsight;
+  DateTime? _lastInsightFetchTime;
+  bool _isFetchingInsight = false;
+
+  Future<void> _fetchInsightIfNeeded({
+    required int activeOrders,
+    required int completedOrders,
+    required double totalRevenue,
+    required int unPaidTabs,
+    required String activeOrdersPercentage,
+    required String completedOrdersPercentage,
+    required String revenuePercentage,
+  }) async {
+    if (!AiServices.isAiConnected) return;
+
+    final now = DateTime.now();
+    // Fetch if we don't have one, or if 1 hour has passed
+    if (_aiInsight == null ||
+        _lastInsightFetchTime == null ||
+        now.difference(_lastInsightFetchTime!).inHours >= 1) {
+      if (_isFetchingInsight) return;
+      _isFetchingInsight = true;
+
+      final prompt = '''
+You are a restaurant AI assistant. Current stats:
+- Active Orders: $activeOrders ($activeOrdersPercentage)
+- Completed Orders: $completedOrders ($completedOrdersPercentage)
+- Gross Revenue: \$${totalRevenue.toStringAsFixed(2)} ($revenuePercentage)
+- Pending Tabs: $unPaidTabs
+Write a SINGLE, very short sentence (max 8 words) providing a quick insight based on this data. Do not use quotes or introductory text.
+''';
+
+      final result = await AiServices.generateAdvice(prompt);
+
+      if (mounted) {
+        setState(() {
+          _aiInsight = result;
+          _lastInsightFetchTime = now;
+          _isFetchingInsight = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +132,24 @@ class _AdminHomeState extends State<AdminHome> {
                                     selectedDate,
                                   );
 
+                              _fetchInsightIfNeeded(
+                                activeOrders: activeOrders,
+                                completedOrders: completedOrders,
+                                totalRevenue: totalRevenue,
+                                unPaidTabs: unPaidTabs,
+                                activeOrdersPercentage: activeOrdersPercentage,
+                                completedOrdersPercentage: completedOrdersPercentage,
+                                revenuePercentage: revenuePercentage,
+                              );
+
+                              final bool hasAi = AiServices.isAiConnected;
+                              final String aiSubText = hasAi
+                                  ? (_aiInsight ?? "Analyzing data...")
+                                  : "OFF";
+                              final Color aiColor = hasAi
+                                  ? Colors.greenAccent
+                                  : Colors.redAccent;
+
                               return IntrinsicHeight(
                                 child: Row(
                                   crossAxisAlignment:
@@ -128,10 +191,9 @@ class _AdminHomeState extends State<AdminHome> {
                                     SummaryCard(
                                       title: "AI INSIGHTS & PENDING TABS",
                                       value: "$unPaidTabs Pending",
-                                      subText: "Review AI suggestions",
-                                      subTextColor: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
+                                      subText: aiSubText,
+                                      subTextColor: aiColor,
+                                      subTextSize: 14,
                                     ),
                                   ],
                                 ),
