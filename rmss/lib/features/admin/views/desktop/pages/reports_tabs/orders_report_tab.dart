@@ -91,7 +91,7 @@ class _OrdersReportTabState extends State<OrdersReportTab> {
                   // Apply Filters
                   List<OrderModel> filteredOrders = groupedOrders.where((order) {
                     
-                    if (order.status == OrderStatus.cancelled) return false;
+                    if (order.status != OrderStatus.paid) return false;
 
                     // User / Role resolution logic
                     String userId = order.createdBy['id']?.toString() ?? '';

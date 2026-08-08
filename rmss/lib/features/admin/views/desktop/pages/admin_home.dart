@@ -52,7 +52,7 @@ You are a restaurant AI assistant. Current stats:
 - Active Orders: $activeOrders ($activeOrdersPercentage)
 - Completed Orders: $completedOrders ($completedOrdersPercentage)
 - Gross Revenue: \$${totalRevenue.toStringAsFixed(2)} ($revenuePercentage)
-- Pending Tabs: $unPaidTabs
+- Unpaid Tabs: $unPaidTabs
 Write a SINGLE, very short sentence (max 8 words) providing a quick insight based on this data. Do not use quotes or introductory text.
 ''';
 
@@ -189,8 +189,8 @@ Write a SINGLE, very short sentence (max 8 words) providing a quick insight base
                                     ),
 
                                     SummaryCard(
-                                      title: "AI INSIGHTS & PENDING TABS",
-                                      value: "$unPaidTabs Pending",
+                                      title: "AI INSIGHTS & UNPAID TABS",
+                                      value: "$unPaidTabs Unpaid",
                                       subText: aiSubText,
                                       subTextColor: aiColor,
                                       subTextSize: 14,

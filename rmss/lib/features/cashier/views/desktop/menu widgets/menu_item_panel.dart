@@ -167,13 +167,18 @@ class _MenuItemPanelState extends State<MenuItemPanel> {
                   ),
                   const SizedBox(height: 24),
                   Expanded(
-                    child: SingleChildScrollView(
-                      child: Wrap(
-                        spacing: 24,
-                        runSpacing: 24,
-                        children: [
-                          ...filteredItems.map((item) {
-                            return GestureDetector(
+                    child: GridView.builder(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 320,
+                        mainAxisExtent: 380, // Fixed height to prevent overflow
+                        mainAxisSpacing: 24,
+                        crossAxisSpacing: 24,
+                      ),
+                      itemCount: filteredItems.length,
+                      itemBuilder: (context, index) {
+                        final item = filteredItems[index];
+                        return GestureDetector(
                               onTap: () {
                                 // Navigate to the Details Page and pass the specific item
                                 Navigator.push(
@@ -185,15 +190,13 @@ class _MenuItemPanelState extends State<MenuItemPanel> {
                                   ),
                                 );
                               },
-                              child: SizedBox(
-                                width: 280,
-                                child: Container(
-                                  clipBehavior: Clip.antiAlias,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerLowest,
-                                    border: Border.all(
+                              child: Container(
+                                clipBehavior: Clip.antiAlias,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerLowest,
+                                  border: Border.all(
                                       color: Theme.of(
                                         context,
                                       ).colorScheme.outlineVariant,
@@ -339,11 +342,8 @@ class _MenuItemPanelState extends State<MenuItemPanel> {
                                     ],
                                   ),
                                 ),
-                              ),
-                            );
-                          }),
-                        ],
-                      ),
+                              );
+                      },
                     ),
                   ),
                 ],

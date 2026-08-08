@@ -129,10 +129,12 @@ class _MenuItemPanelState extends State<MenuItemPanel> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: selectedCategory.contains(category)
-                                          ? Theme.of(context).colorScheme.primary
-                                          : Theme.of(
+                                          ? Theme.of(
                                               context,
-                                            ).colorScheme.surfaceContainerLowest,
+                                            ).colorScheme.primary
+                                          : Theme.of(context)
+                                                .colorScheme
+                                                .surfaceContainerLowest,
                                       border: Border.all(
                                         color: Theme.of(
                                           context,
@@ -146,7 +148,8 @@ class _MenuItemPanelState extends State<MenuItemPanel> {
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
                                         letterSpacing: 1.2,
-                                        color: selectedCategory.contains(category)
+                                        color:
+                                            selectedCategory.contains(category)
                                             ? Theme.of(
                                                 context,
                                               ).colorScheme.onPrimary
@@ -166,186 +169,174 @@ class _MenuItemPanelState extends State<MenuItemPanel> {
                   ),
                   const SizedBox(height: 24),
                   Expanded(
-                    child: SingleChildScrollView(
-                      child: Wrap(
-                        spacing: 24,
-                        runSpacing: 24,
-                        children: [
-                          ...filteredItems.map((item) {
-                            return MouseRegion(
-                              cursor: SystemMouseCursors.click,
-                              child: GestureDetector(
-                                onTap: () {
-                                  // Navigate to the Details Page and pass the specific item
-                                  Navigator.push(
+                    child: GridView.builder(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 320,
+                            mainAxisExtent:
+                                380, // Fixed height to prevent overflow
+                            mainAxisSpacing: 24,
+                            crossAxisSpacing: 24,
+                          ),
+                      itemCount: filteredItems.length,
+                      itemBuilder: (context, index) {
+                        final item = filteredItems[index];
+                        return MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () {
+                              // Navigate to the Details Page and pass the specific item
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ItemDetailsPage(
+                                    item: item,
+                                  ), // Pass your MenuItemModel here
+                                ),
+                              );
+                            },
+                            child: Container(
+                              clipBehavior: Clip.antiAlias,
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerLowest,
+                                border: Border.all(
+                                  color: Theme.of(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ItemDetailsPage(
-                                        item: item,
-                                      ), // Pass your MenuItemModel here
-                                    ),
-                                  );
-                                },
-                                child: SizedBox(
-                                  width: 280,
-                                  child: Container(
-                                    clipBehavior: Clip.antiAlias,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.surfaceContainerLowest,
-                                      border: Border.all(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.outlineVariant,
-                                      ),
-                                      borderRadius: BorderRadius.circular(32),
-                                    ),
-                                    foregroundDecoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.outlineVariant,
-                                      ),
-                                      borderRadius: BorderRadius.circular(32),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                  ).colorScheme.outlineVariant,
+                                ),
+                                borderRadius: BorderRadius.circular(32),
+                              ),
+                              foregroundDecoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.outlineVariant,
+                                ),
+                                borderRadius: BorderRadius.circular(32),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    height: 192,
+                                    width: double.infinity,
+                                    child: Stack(
                                       children: [
-                                        SizedBox(
-                                          height: 192,
+                                        CachedNetworkImage(
+                                          imageUrl: item.imageUrl,
+                                          fit: BoxFit.cover,
                                           width: double.infinity,
-                                          child: Stack(
-                                            children: [
-                                              CachedNetworkImage(
-                                                imageUrl: item.imageUrl,
-                                                fit: BoxFit.cover,
-                                                width: double.infinity,
-                                                height: 192,
-                                                placeholder: (context, url) =>
-                                                    const Center(
-                                                      child:
-                                                          CircularProgressIndicator(),
-                                                    ),
-                                                errorWidget:
-                                                    (context, url, error) =>
-                                                        const Icon(Icons.error),
+                                          height: 192,
+                                          placeholder: (context, url) =>
+                                              const Center(
+                                                child:
+                                                    CircularProgressIndicator(),
                                               ),
-                                              Positioned.fill(
-                                                child: Container(
-                                                  decoration: BoxDecoration(
-                                                    gradient: LinearGradient(
-                                                      begin: Alignment.topCenter,
-                                                      end: Alignment.bottomCenter,
-                                                      colors: [
-                                                        Colors.transparent,
-                                                        Theme.of(context)
-                                                            .colorScheme
-                                                            .surfaceContainerLow,
-                                                      ],
-                                                    ).withOpacity(0.1),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                          errorWidget: (context, url, error) =>
+                                              const Icon(Icons.error),
                                         ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(20),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                item.name,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 18,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 5),
-                                              Text(
-                                                item.description,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Theme.of(
-                                                    context,
-                                                  ).colorScheme.onSurfaceVariant,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 16),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    "\$${item.price.toStringAsFixed(2)}",
-                                                    style: TextStyle(
-                                                      fontSize: 20,
-                                                      color: Theme.of(
-                                                        context,
-                                                      ).colorScheme.primary,
-                                                      fontWeight: FontWeight.w900,
-                                                    ),
-                                                  ),
-                                                  IconButton(
-                                                    style: IconButton.styleFrom(
-                                                      backgroundColor: Theme.of(
-                                                        context,
-                                                      ).colorScheme.primary,
-                                                      foregroundColor: Theme.of(
-                                                        context,
-                                                      ).colorScheme.onPrimary,
-                                                      minimumSize: const Size(
-                                                        40,
-                                                        40,
-                                                      ),
-                                                      shape: RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              32,
-                                                            ),
-                                                      ),
-                                                    ),
-                                                    onPressed: () {
-                                                      context
-                                                          .read<CartBloc>()
-                                                          .add(
-                                                            AddToCart(
-                                                              item:
-                                                                  OrderItemModel(
-                                                                    menuItemId:
-                                                                        item.id,
-                                                                    name:
-                                                                        item.name,
-                                                                    price: item
-                                                                        .price,
-                                                                    quantity: 1,
-                                                                    notes: "",
-                                                                  ),
-                                                            ),
-                                                          );
-                                                    },
-                                                    icon: const Icon(Icons.add),
-                                                  ),
+                                        Positioned.fill(
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                                colors: [
+                                                  Colors.transparent,
+                                                  Theme.of(context)
+                                                      .colorScheme
+                                                      .surfaceContainerLow,
                                                 ],
-                                              ),
-                                            ],
+                                              ).withOpacity(0.1),
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 5),
+                                        Text(
+                                          item.description,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              "\$${item.price.toStringAsFixed(2)}",
+                                              style: TextStyle(
+                                                fontSize: 20,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                            ),
+                                            IconButton(
+                                              style: IconButton.styleFrom(
+                                                backgroundColor: Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                                foregroundColor: Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimary,
+                                                minimumSize: const Size(40, 40),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(32),
+                                                ),
+                                              ),
+                                              onPressed: () {
+                                                context.read<CartBloc>().add(
+                                                  AddToCart(
+                                                    item: OrderItemModel(
+                                                      menuItemId: item.id,
+                                                      name: item.name,
+                                                      price: item.price,
+                                                      quantity: 1,
+                                                      notes: "",
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              icon: const Icon(Icons.add),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            );
-                          }),
-                        ],
-                      ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],

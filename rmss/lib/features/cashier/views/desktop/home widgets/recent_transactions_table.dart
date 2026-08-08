@@ -10,6 +10,7 @@ import 'package:rmss/core/blocs/payment_bloc/payment_bloc.dart';
 import 'package:rmss/core/blocs/payment_bloc/payment_state.dart';
 import 'package:rmss/features/auth/bloc/auth_bloc.dart';
 import 'package:rmss/features/auth/bloc/auth_state.dart';
+import 'package:rmss/features/cashier/blocs/navigation_cubit/navigation_cubit.dart';
 
 class RecentTransactionsTable extends StatelessWidget {
   const RecentTransactionsTable({super.key});
@@ -37,7 +38,13 @@ class RecentTransactionsTable extends StatelessWidget {
                   style: TextStyle(fontSize: 20),
                 ),
 
-                TextButton(onPressed: () {}, child: const Text("View All")),
+                TextButton(
+                  style: ButtonStyle(
+                    mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+                  ),
+                  onPressed: () => context.read<NavigationCubit>().navigateTo(2),
+                  child: const Text("View All"),
+                ),
               ],
             ),
           ),

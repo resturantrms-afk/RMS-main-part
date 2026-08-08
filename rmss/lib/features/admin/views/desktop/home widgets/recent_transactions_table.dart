@@ -6,6 +6,7 @@ import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/features/admin/views/desktop/pages/order_details.dart';
 import 'package:rmss/features/admin/views/desktop/pages/receipt.dart';
 import 'package:rmss/core/utils/order_utils.dart';
+import 'package:rmss/features/admin/blocs/navigation_cubit/navigation_cubit.dart';
 
 class RecentTransactionsTable extends StatelessWidget {
   const RecentTransactionsTable({super.key});
@@ -37,7 +38,7 @@ class RecentTransactionsTable extends StatelessWidget {
                   style: ButtonStyle(
                     mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
                   ),
-                  onPressed: () {},
+                  onPressed: () => context.read<NavigationCubit>().navigateTo(2),
                   child: const Text("View All"),
                 ),
               ],

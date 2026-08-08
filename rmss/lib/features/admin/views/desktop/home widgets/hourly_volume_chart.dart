@@ -84,10 +84,6 @@ class HourlyVolumeChart extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.more_vert),
-                    ),
                   ],
                 ),
               ),
