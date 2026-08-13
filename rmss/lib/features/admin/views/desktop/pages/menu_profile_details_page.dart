@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rmss/core/blocs/menu_profile_bloc/menu_profile_bloc.dart';
-import 'package:rmss/core/blocs/menu_profile_bloc/menu_profile_event.dart';
 import 'package:rmss/core/blocs/menu_profile_bloc/menu_profile_state.dart';
 import 'package:rmss/core/models/menu_item_model.dart';
 import 'package:rmss/core/models/menu_profile_model.dart';
@@ -25,7 +24,9 @@ class MenuProfileDetailsPage extends StatelessWidget {
         MenuProfileModel currentProfile = profile;
         if (state is MenuProfilesLoaded) {
           try {
-            currentProfile = state.profiles.firstWhere((p) => p.id == profile.id);
+            currentProfile = state.profiles.firstWhere(
+              (p) => p.id == profile.id,
+            );
           } catch (_) {}
         }
 
@@ -152,8 +153,9 @@ class MenuProfileDetailsPage extends StatelessWidget {
                                 onPressed: () {
                                   showDialog(
                                     context: context,
-                                    builder: (context) =>
-                                        MenuProfileDialog(profile: currentProfile),
+                                    builder: (context) => MenuProfileDialog(
+                                      profile: currentProfile,
+                                    ),
                                   );
                                 },
                                 icon: const Icon(Icons.edit),

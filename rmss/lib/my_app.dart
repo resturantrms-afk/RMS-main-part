@@ -34,7 +34,6 @@ import 'package:rmss/features/admin/blocs/navigation_cubit/navigation_cubit.dart
     as admin_nav;
 import 'package:rmss/core/repositories/app_notification_repository.dart';
 import 'package:rmss/core/blocs/notification_bloc/app_notification_bloc.dart';
-import 'package:rmss/core/blocs/notification_bloc/app_notification_event.dart';
 import 'package:rmss/features/cashier/blocs/navigation_cubit/navigation_cubit.dart';
 import 'package:rmss/core/repositories/app_branding_repository.dart';
 import 'package:rmss/core/blocs/app_branding_cubit/app_branding_cubit.dart';
@@ -84,9 +83,9 @@ class MyApp extends StatelessWidget {
                   ..add(LoadMenu()),
           ),
           BlocProvider(
-            create: (context) =>
-                MenuProfileBloc(repository: context.read<MenuProfileRepository>())
-                  ..add(LoadMenuProfiles()),
+            create: (context) => MenuProfileBloc(
+              repository: context.read<MenuProfileRepository>(),
+            )..add(LoadMenuProfiles()),
           ),
           BlocProvider(
             create: (context) =>
@@ -120,10 +119,18 @@ class MyApp extends StatelessWidget {
             return BlocBuilder<AppBrandingCubit, AppBrandingModel>(
               builder: (context, brandingState) {
                 return MaterialApp(
-                  title: brandingState.appName.isNotEmpty ? brandingState.appName : AppConfig.appName,
+                  title: brandingState.appName.isNotEmpty
+                      ? brandingState.appName
+                      : AppConfig.appName,
                   debugShowCheckedModeBanner: false,
-                  darkTheme: AppTheme.getTheme(Brightness.dark, brandingState.brandColorHex),
-                  theme: AppTheme.getTheme(Brightness.light, brandingState.brandColorHex),
+                  darkTheme: AppTheme.getTheme(
+                    Brightness.dark,
+                    brandingState.brandColorHex,
+                  ),
+                  theme: AppTheme.getTheme(
+                    Brightness.light,
+                    brandingState.brandColorHex,
+                  ),
                   themeMode: themeState,
                   builder: (context, child) => GestureDetector(
                     onTap: () => FocusManager.instance.primaryFocus?.unfocus(),

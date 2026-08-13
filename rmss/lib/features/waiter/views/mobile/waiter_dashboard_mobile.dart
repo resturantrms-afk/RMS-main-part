@@ -9,7 +9,6 @@ import 'package:rmss/features/waiter/views/mobile/pages/orders_page.dart';
 import 'package:rmss/features/waiter/views/mobile/pages/waiter_tables_grid_page.dart';
 import 'package:rmss/features/waiter/views/mobile/pages/waiter_settings_page.dart';
 import 'package:rmss/core/blocs/notification_bloc/app_notification_bloc.dart';
-import 'package:rmss/core/blocs/notification_bloc/app_notification_event.dart';
 import 'package:rmss/core/blocs/notification_bloc/app_notification_state.dart';
 import 'package:rmss/features/kitchen/Screens/notification_screen.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -44,7 +43,9 @@ class _WaiterDashboardMobileState extends State<WaiterDashboardMobile> {
         if (state is AppNotificationLoaded) {
           // Remove IDs that are no longer unread or no longer exist
           _shownNotifications.removeWhere((id) {
-            final existsAsUnread = state.notifications.any((n) => n.id == id && !n.isRead);
+            final existsAsUnread = state.notifications.any(
+              (n) => n.id == id && !n.isRead,
+            );
             return !existsAsUnread;
           });
 
@@ -128,7 +129,10 @@ class _WaiterDashboardMobileState extends State<WaiterDashboardMobile> {
           builder: (context, state) {
             if (state is AuthSuccess) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: colorScheme.surfaceContainerLow,
                   boxShadow: [
@@ -167,23 +171,26 @@ class _WaiterDashboardMobileState extends State<WaiterDashboardMobile> {
                         const SizedBox(width: 12),
                         Row(
                           children: [
-                            if (branding.appLogoUrl.isNotEmpty) ...
-                              [
-                                Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    image: DecorationImage(
-                                      image: CachedNetworkImageProvider(branding.appLogoUrl),
-                                      fit: BoxFit.cover,
+                            if (branding.appLogoUrl.isNotEmpty) ...[
+                              Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  image: DecorationImage(
+                                    image: CachedNetworkImageProvider(
+                                      branding.appLogoUrl,
                                     ),
+                                    fit: BoxFit.cover,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                              ],
+                              ),
+                              const SizedBox(width: 8),
+                            ],
                             Text(
-                              branding.appName.isNotEmpty ? branding.appName : 'Crown Restaurant',
+                              branding.appName.isNotEmpty
+                                  ? branding.appName
+                                  : 'Crown Restaurant',
                               style: textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 color: colorScheme.primary,
@@ -199,60 +206,65 @@ class _WaiterDashboardMobileState extends State<WaiterDashboardMobile> {
                         color: colorScheme.surfaceContainerHigh,
                         shape: BoxShape.circle,
                       ),
-                      child: BlocBuilder<AppNotificationBloc, AppNotificationState>(
-                        builder: (context, notifState) {
-                          int unread = 0;
-                          if (notifState is AppNotificationLoaded) {
-                            unread = notifState.notifications
-                                .where((n) => !n.isRead)
-                                .length;
-                          }
-                          return Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              IconButton(
-                                icon: Icon(
-                                  Icons.notifications,
-                                  color: colorScheme.primary,
-                                ),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const NotificationsScreen(),
+                      child:
+                          BlocBuilder<
+                            AppNotificationBloc,
+                            AppNotificationState
+                          >(
+                            builder: (context, notifState) {
+                              int unread = 0;
+                              if (notifState is AppNotificationLoaded) {
+                                unread = notifState.notifications
+                                    .where((n) => !n.isRead)
+                                    .length;
+                              }
+                              return Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.notifications,
+                                      color: colorScheme.primary,
                                     ),
-                                  );
-                                },
-                              ),
-                              if (unread > 0)
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(3),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.red,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    constraints: const BoxConstraints(
-                                      minWidth: 16,
-                                      minHeight: 16,
-                                    ),
-                                    child: Text(
-                                      '$unread',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const NotificationsScreen(),
+                                        ),
+                                      );
+                                    },
                                   ),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
+                                  if (unread > 0)
+                                    Positioned(
+                                      top: 4,
+                                      right: 4,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(3),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.red,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        constraints: const BoxConstraints(
+                                          minWidth: 16,
+                                          minHeight: 16,
+                                        ),
+                                        child: Text(
+                                          '$unread',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
                     ),
                   ],
                 ),

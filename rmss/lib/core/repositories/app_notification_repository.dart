@@ -68,8 +68,12 @@ class AppNotificationRepository {
 
     // Check if there are newly added or modified notifications to trigger haptic/sound
     for (var change in snapshot.docChanges) {
-      if (change.type == DocumentChangeType.added || change.type == DocumentChangeType.modified) {
-        final changedNotif = AppNotificationModel.fromJson(change.doc.data()!, change.doc.id);
+      if (change.type == DocumentChangeType.added ||
+          change.type == DocumentChangeType.modified) {
+        final changedNotif = AppNotificationModel.fromJson(
+          change.doc.data()!,
+          change.doc.id,
+        );
         if (changedNotif.playSound) {
           hasNew = true;
           break;

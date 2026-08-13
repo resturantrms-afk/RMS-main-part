@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rmss/core/services/api_services.dart';
 import 'package:rmss/core/blocs/app_branding_cubit/app_branding_cubit.dart';
-import 'package:rmss/core/models/app_branding_model.dart';
 import 'package:rmss/features/admin/views/desktop/home%20widgets/admin_top_bar.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
