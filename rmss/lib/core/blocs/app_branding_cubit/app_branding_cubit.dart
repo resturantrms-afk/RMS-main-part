@@ -15,8 +15,8 @@ class AppBrandingCubit extends Cubit<AppBrandingModel> {
     });
   }
 
-  Future<void> updateBranding(String name, String logoUrl) async {
-    await _repository.updateBranding(AppBrandingModel(appName: name, appLogoUrl: logoUrl));
+  Future<void> updateBranding(String name, String logoUrl, String brandColorHex) async {
+    await _repository.updateBranding(AppBrandingModel(appName: name, appLogoUrl: logoUrl, brandColorHex: brandColorHex));
   }
 
   @override

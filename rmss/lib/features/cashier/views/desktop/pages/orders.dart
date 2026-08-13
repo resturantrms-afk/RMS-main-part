@@ -49,7 +49,8 @@ class _OrdersState extends State<Orders> {
                   .length;
 
               // Group orders by table!
-              List<OrderModel> groupedOrders = OrderUtils.groupActiveOrdersByTable(orderState.items);
+              List<OrderModel> groupedOrders =
+                  OrderUtils.groupActiveOrdersByTable(orderState.items);
 
               List<OrderModel> filteredItems = _selectedStatuses.isEmpty
                   ? groupedOrders
@@ -155,16 +156,28 @@ class _OrdersState extends State<Orders> {
                           : ListView.separated(
                               itemBuilder: (context, index) {
                                 final order = filteredItems[index];
-                                Color statusColor = Theme.of(
+                                final colorScheme = Theme.of(
                                   context,
-                                ).colorScheme.primary;
-
-                                if (order.status == OrderStatus.ready ||
-                                    order.status == OrderStatus.cancelled ||
-                                    order.status == OrderStatus.paid) {
-                                  statusColor = Theme.of(
-                                    context,
-                                  ).colorScheme.outline;
+                                ).colorScheme;
+                                Color statusColor;
+                                switch (order.status) {
+                                  case OrderStatus.served:
+                                    statusColor =
+                                        colorScheme.brightness ==
+                                            Brightness.dark
+                                        ? Colors.greenAccent
+                                        : Colors.green.shade700;
+                                    break;
+                                  case OrderStatus.paid:
+                                  case OrderStatus.cancelled:
+                                    statusColor = colorScheme.secondary;
+                                    break;
+                                  case OrderStatus.ready:
+                                  case OrderStatus.pending:
+                                  case OrderStatus.preparing:
+                                  default:
+                                    statusColor = colorScheme.primary;
+                                    break;
                                 }
                                 return Container(
                                   padding: const EdgeInsets.all(24),
@@ -268,9 +281,10 @@ class _OrdersState extends State<Orders> {
 
                                             child: Text(
                                               order.status.name.toUpperCase(),
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.bold,
+                                                color: colorScheme.onPrimary,
                                               ),
                                             ),
                                           ),

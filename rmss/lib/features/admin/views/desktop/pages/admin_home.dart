@@ -142,13 +142,19 @@ Write a SINGLE, very short sentence (max 8 words) providing a quick insight base
                                 revenuePercentage: revenuePercentage,
                               );
 
+                              final colorScheme = Theme.of(context).colorScheme;
+                              final Color positiveColor = colorScheme.brightness == Brightness.dark 
+                                  ? Colors.greenAccent 
+                                  : Colors.green.shade700;
+                              final Color negativeColor = colorScheme.error;
+
                               final bool hasAi = AiServices.isAiConnected;
                               final String aiSubText = hasAi
                                   ? (_aiInsight ?? "Analyzing data...")
                                   : "OFF";
                               final Color aiColor = hasAi
-                                  ? Colors.greenAccent
-                                  : Colors.redAccent;
+                                  ? positiveColor
+                                  : negativeColor;
 
                               return IntrinsicHeight(
                                 child: Row(
@@ -161,8 +167,8 @@ Write a SINGLE, very short sentence (max 8 words) providing a quick insight base
                                       subText: activeOrdersPercentage,
                                       subTextColor:
                                           activeOrdersPercentage.startsWith('-')
-                                          ? Colors.redAccent
-                                          : Colors.greenAccent,
+                                          ? negativeColor
+                                          : positiveColor,
                                     ),
 
                                     SummaryCard(
@@ -173,8 +179,8 @@ Write a SINGLE, very short sentence (max 8 words) providing a quick insight base
                                           completedOrdersPercentage.startsWith(
                                             '-',
                                           )
-                                          ? Colors.redAccent
-                                          : Colors.greenAccent,
+                                          ? negativeColor
+                                          : positiveColor,
                                     ),
 
                                     SummaryCard(
@@ -184,8 +190,8 @@ Write a SINGLE, very short sentence (max 8 words) providing a quick insight base
                                       subText: revenuePercentage,
                                       subTextColor:
                                           revenuePercentage.startsWith('-')
-                                          ? Colors.redAccent
-                                          : Colors.greenAccent,
+                                          ? negativeColor
+                                          : positiveColor,
                                     ),
 
                                     SummaryCard(

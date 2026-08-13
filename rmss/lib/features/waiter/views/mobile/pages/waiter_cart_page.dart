@@ -103,175 +103,9 @@ class WaiterCartPage extends StatelessWidget {
 
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 16),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.surfaceContainer,
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.2,
-                                          ),
-                                          blurRadius: 16,
-                                          offset: const Offset(0, 8),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        // Image
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          child: SizedBox(
-                                            width: 80,
-                                            height: 80,
-                                            child:
-                                                imageUrl != null &&
-                                                    imageUrl.isNotEmpty
-                                                ? CachedNetworkImage(
-                                                    imageUrl: imageUrl,
-                                                    fit: BoxFit.cover,
-                                                    placeholder: (_, _) => Container(
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .surfaceContainerHighest,
-                                                    ),
-                                                    errorWidget: (_, _, _) =>
-                                                        Container(
-                                                          color: Theme.of(context)
-                                                              .colorScheme
-                                                              .surfaceContainerHighest,
-                                                          child: const Icon(
-                                                            Icons.restaurant,
-                                                          ),
-                                                        ),
-                                                  )
-                                                : Container(
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .surfaceContainerHighest,
-                                                    child: const Icon(
-                                                      Icons.restaurant,
-                                                    ),
-                                                  ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        // Details
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Expanded(
-                                                    child: Text(
-                                                      item.name,
-                                                      style: const TextStyle(
-                                                        fontSize: 18,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                  GestureDetector(
-                                                    onTap: () {
-                                                      context
-                                                          .read<CartBloc>()
-                                                          .add(
-                                                            RemoveFromCart(
-                                                              item: item,
-                                                            ),
-                                                          );
-                                                    },
-                                                    child: Icon(
-                                                      Icons.close,
-                                                      size: 20,
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .onSurfaceVariant,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              if (item.notes.isNotEmpty) ...[
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  item.notes,
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .onSurfaceVariant,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ],
-                                              const SizedBox(height: 8),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    "\$${(item.price * item.quantity).toStringAsFixed(2)}",
-                                                    style: TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Theme.of(
-                                                        context,
-                                                      ).colorScheme.primary,
-                                                    ),
-                                                  ),
-                                                  Container(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 12,
-                                                          vertical: 4,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .surfaceContainerHigh,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            4,
-                                                          ),
-                                                    ),
-                                                    child: Text(
-                                                      "x${item.quantity}",
-                                                      style: const TextStyle(
-                                                        fontSize: 10,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        letterSpacing: 1.0,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                  child: _WaiterCartItemTile(
+                                    item: item,
+                                    imageUrl: imageUrl,
                                   ),
                                 );
                               }),
@@ -446,5 +280,242 @@ class WaiterCartPage extends StatelessWidget {
 
     // 5. Navigate back to WaiterDashboardMobile
     Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+}
+
+class _WaiterCartItemTile extends StatelessWidget {
+  final OrderItemModel item;
+  final String? imageUrl;
+
+  const _WaiterCartItemTile({required this.item, this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 80,
+              height: 80,
+              child: imageUrl != null && imageUrl!.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: imageUrl!,
+                      fit: BoxFit.cover,
+                      placeholder: (_, _) => Container(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      ),
+                      errorWidget: (_, _, _) => Container(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        child: const Icon(Icons.restaurant),
+                      ),
+                    )
+                  : Container(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: const Icon(Icons.restaurant),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        context.read<CartBloc>().add(RemoveFromCart(item: item));
+                      },
+                      child: Icon(
+                        Icons.close,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                // Editable Note
+                InkWell(
+                  onTap: () => _editNote(context),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.edit_note,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            item.notes.isNotEmpty ? item.notes : 'Add note',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: item.notes.isNotEmpty
+                                  ? Theme.of(context).colorScheme.onSurfaceVariant
+                                  : Theme.of(context).colorScheme.primary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "\$${(item.price * item.quantity).toStringAsFixed(2)}",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    // Quantity Control
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          InkWell(
+                            onTap: () => context.read<CartBloc>().add(
+                                  UpdateCartItemQuantity(
+                                    menuItemId: item.menuItemId,
+                                    delta: -1,
+                                  ),
+                                ),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Icon(
+                                Icons.remove,
+                                size: 14,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Text(
+                              "${item.quantity}",
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () => context.read<CartBloc>().add(
+                                  UpdateCartItemQuantity(
+                                    menuItemId: item.menuItemId,
+                                    delta: 1,
+                                  ),
+                                ),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Icon(
+                                Icons.add,
+                                size: 14,
+                                color: Theme.of(context).colorScheme.onPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editNote(BuildContext context) {
+    final TextEditingController _controller = TextEditingController(text: item.notes);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Note'),
+          content: TextField(
+            controller: _controller,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              hintText: 'Enter note here...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                context.read<CartBloc>().add(
+                  UpdateCartItemNote(
+                    menuItemId: item.menuItemId,
+                    newNotes: _controller.text,
+                  ),
+                );
+                Navigator.pop(context);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

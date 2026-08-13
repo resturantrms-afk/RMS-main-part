@@ -493,6 +493,75 @@ class OrderDetails extends StatelessWidget {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
+                                  // --- PREPARATION STATUS BUTTONS ---
+                                  if (order.status.index < OrderStatus.ready.index) ...[
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        OrderStatus newStatus = order.status;
+                                        switch (order.status) {
+                                          case OrderStatus.pending:
+                                            newStatus = OrderStatus.preparing;
+                                            break;
+                                          case OrderStatus.preparing:
+                                            newStatus = OrderStatus.ready;
+                                            break;
+                                          default:
+                                            return;
+                                        }
+                                        _updateOrderStatus(context, order, newStatus, originalOrders);
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: colorScheme.tertiary,
+                                        foregroundColor: colorScheme.onTertiary,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 32,
+                                          vertical: 24,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(999),
+                                        ),
+                                        elevation: 0,
+                                      ),
+                                      child: Text(
+                                        order.status == OrderStatus.pending ? "START PREPARING" : "MARK AS READY",
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    if (order.status == OrderStatus.pending) ...[
+                                      OutlinedButton(
+                                        onPressed: () {
+                                          _updateOrderStatus(context, order, OrderStatus.ready, originalOrders);
+                                        },
+                                        style: OutlinedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 32,
+                                            vertical: 24,
+                                          ),
+                                          side: BorderSide(
+                                            color: colorScheme.tertiary.withValues(alpha: 0.5),
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(999),
+                                          ),
+                                          foregroundColor: colorScheme.tertiary,
+                                        ),
+                                        child: const Text(
+                                          "SKIP TO READY",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 1.5,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                    ],
+                                  ],
                                   // --- ADD THIS NEW BUTTON (ADD ITEMS) ---
                                   OutlinedButton.icon(
                                     onPressed:
@@ -721,6 +790,26 @@ class OrderDetails extends StatelessWidget {
         },
       ),
     );
+  }
+
+  void _updateOrderStatus(
+    BuildContext context,
+    OrderModel order,
+    OrderStatus newStatus,
+    List<OrderModel> originalOrders,
+  ) {
+    final timestamp = Timestamp.now();
+    for (var origOrder in originalOrders) {
+      if (origOrder.status == order.status) {
+        final updatedOrder = origOrder.copyWith(
+          status: newStatus,
+          updatedAt: timestamp,
+        );
+        BlocProvider.of<OrderBloc>(
+          context,
+        ).add(UpdateOrder(item: updatedOrder));
+      }
+    }
   }
 
   // Helper method using real order data and cached network image

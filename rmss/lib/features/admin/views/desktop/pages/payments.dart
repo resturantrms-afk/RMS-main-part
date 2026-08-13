@@ -619,10 +619,10 @@ class _PaymentsState extends State<Payments> {
                           : Icons.payments,
                       size: 16,
                       color: payment.paymentMethod == PaymentMethod.zaad
-                          ? Colors.blue.shade400
+                          ? Theme.of(context).colorScheme.primary
                           : payment.paymentMethod == PaymentMethod.edahab
                           ? Theme.of(context).colorScheme.secondary
-                          : Colors.green.shade400,
+                          : Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(width: 8),
                     Text(

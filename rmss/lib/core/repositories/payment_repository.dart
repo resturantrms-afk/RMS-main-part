@@ -44,6 +44,16 @@ class PaymentRepository {
     return total;
   }
 
+  int getCompletedOrdersProcessedByUserAndDate(List<PaymentModel> payments, String userId, DateTime date) {
+    int count = 0;
+    for (var p in payments) {
+      if (_isSameDay(p.createdAt.toDate(), date) && p.processedBy.containsValue(userId)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
   String getRevenuePercentage(List<PaymentModel> payments, DateTime selectedDate) {
     DateTime yesterday = selectedDate.subtract(const Duration(days: 1));
     double todayRevenue = getTotalRevenueForDate(payments, selectedDate);

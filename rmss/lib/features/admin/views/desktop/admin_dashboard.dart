@@ -10,6 +10,7 @@ import 'package:rmss/features/admin/views/desktop/pages/menu.dart';
 import 'package:rmss/features/admin/views/desktop/pages/orders.dart';
 import 'package:rmss/features/admin/views/desktop/pages/payments.dart';
 import 'package:rmss/features/admin/views/desktop/pages/settings.dart';
+import 'package:rmss/features/admin/views/desktop/pages/menu_profiles_page.dart';
 import 'package:rmss/core/blocs/notification_bloc/app_notification_bloc.dart';
 import 'package:rmss/core/blocs/notification_bloc/app_notification_state.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -42,6 +43,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           const TablesPage(),
           const UsersPage(),
           const ReportsAiPage(),
+          const MenuProfilesPage(),
           const Settings(),
         ];
         return BlocListener<AppNotificationBloc, AppNotificationState>(
@@ -218,6 +220,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         _buildDestination(
                           label: "Reports & AI",
                           icon: Icons.stacked_line_chart,
+                        ),
+                        _buildDestination(
+                          label: "Menu Profiles",
+                          icon: Icons.restaurant_menu_outlined,
                         ),
                         _buildDestination(
                           label: "Setting",

@@ -28,6 +28,7 @@ class AvailabilityScreen extends StatefulWidget {
 class _AvailabilityScreenState extends State<AvailabilityScreen> {
   final TextEditingController searchController = TextEditingController();
   List<String> selectedCategory = [];
+  int _availabilityTabIndex = 0; // 0: Available, 1: Unavailable
   final FocusNode _searchFocusNode = FocusNode();
 
   @override
@@ -137,6 +138,17 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                   filteredItems,
                   textEditingValue.text,
                 );
+              }
+
+              // Apply availability tab filter
+              if (_availabilityTabIndex == 0) {
+                filteredItems = filteredItems
+                    .where((item) => item.status == MenuItemStatus.available)
+                    .toList();
+              } else {
+                filteredItems = filteredItems
+                    .where((item) => item.status == MenuItemStatus.unavailable)
+                    .toList();
               }
 
               return Scaffold(
@@ -302,6 +314,97 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                       summary.InventorySummary(
                         activeItems: activeItems,
                         outOfStockItems: outOfStockItems,
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Availability Slider
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(32),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onTap:
+                                  () => setState(
+                                    () => _availabilityTabIndex = 0,
+                                  ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      _availabilityTabIndex == 0
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                          : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                                child: Text(
+                                  "AVAILABLE",
+                                  style: TextStyle(
+                                    color:
+                                        _availabilityTabIndex == 0
+                                            ? Theme.of(
+                                                context,
+                                              ).colorScheme.onPrimary
+                                            : Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap:
+                                  () => setState(
+                                    () => _availabilityTabIndex = 1,
+                                  ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      _availabilityTabIndex == 1
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                          : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                                child: Text(
+                                  "UNAVAILABLE",
+                                  style: TextStyle(
+                                    color:
+                                        _availabilityTabIndex == 1
+                                            ? Theme.of(
+                                                context,
+                                              ).colorScheme.onPrimary
+                                            : Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 24),
 

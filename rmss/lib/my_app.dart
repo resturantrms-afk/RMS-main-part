@@ -15,6 +15,9 @@ import 'package:rmss/core/repositories/order_repository.dart';
 import 'package:rmss/core/repositories/payment_repository.dart';
 import 'package:rmss/core/repositories/table_repository.dart';
 import 'package:rmss/core/repositories/user_repository.dart';
+import 'package:rmss/core/repositories/menu_profile_repository.dart';
+import 'package:rmss/core/blocs/menu_profile_bloc/menu_profile_bloc.dart';
+import 'package:rmss/core/blocs/menu_profile_bloc/menu_profile_event.dart';
 import 'package:rmss/core/theme/colors.dart';
 
 import 'package:rmss/core/theme/theme_cubit.dart';
@@ -53,6 +56,7 @@ class MyApp extends StatelessWidget {
         RepositoryProvider(create: (context) => AppNotificationRepository()),
         RepositoryProvider(create: (context) => ReportsRepository()),
         RepositoryProvider(create: (context) => AppBrandingRepository()),
+        RepositoryProvider(create: (context) => MenuProfileRepository()),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -78,6 +82,11 @@ class MyApp extends StatelessWidget {
             create: (context) =>
                 MenuBloc(repository: context.read<MenuRepository>())
                   ..add(LoadMenu()),
+          ),
+          BlocProvider(
+            create: (context) =>
+                MenuProfileBloc(repository: context.read<MenuProfileRepository>())
+                  ..add(LoadMenuProfiles()),
           ),
           BlocProvider(
             create: (context) =>
@@ -113,8 +122,8 @@ class MyApp extends StatelessWidget {
                 return MaterialApp(
                   title: brandingState.appName.isNotEmpty ? brandingState.appName : AppConfig.appName,
                   debugShowCheckedModeBanner: false,
-                  darkTheme: AppTheme.darkTheme,
-                  theme: AppTheme.lightTheme,
+                  darkTheme: AppTheme.getTheme(Brightness.dark, brandingState.brandColorHex),
+                  theme: AppTheme.getTheme(Brightness.light, brandingState.brandColorHex),
                   themeMode: themeState,
                   builder: (context, child) => GestureDetector(
                     onTap: () => FocusManager.instance.primaryFocus?.unfocus(),

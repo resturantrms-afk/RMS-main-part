@@ -24,6 +24,7 @@ class _SettingsState extends State<Settings> {
   final TextEditingController _photoUrlController = TextEditingController();
 
   bool _soundAlerts = true;
+  bool _pushNotifications = true;
   double _alertVolume = 75.0;
 
   bool _isEditingName = false;
@@ -40,6 +41,7 @@ class _SettingsState extends State<Settings> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _soundAlerts = prefs.getBool('cashierSoundAlerts') ?? true;
+      _pushNotifications = prefs.getBool('cashierPushNotifications') ?? true;
       _alertVolume = prefs.getDouble('cashierAlertVolume') ?? 75.0;
     });
   }
@@ -553,6 +555,67 @@ class _SettingsState extends State<Settings> {
                                 Divider(color: colorScheme.surfaceContainer),
                                 const SizedBox(height: 24),
 
+                                // Toggle: Push Notifications
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.surfaceContainer,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.message,
+                                            color: colorScheme.primary,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "Push Notifications",
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                                color: colorScheme.onSurface,
+                                              ),
+                                            ),
+                                            Text(
+                                              "Receive visual push alerts on this device.",
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    Switch(
+                                      value: _pushNotifications,
+                                      onChanged: (val) {
+                                        setState(() {
+                                          _pushNotifications = val;
+                                        });
+                                      },
+                                      activeThumbColor: colorScheme.onPrimary,
+                                      activeTrackColor: colorScheme.primary,
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 24),
+                                Divider(color: colorScheme.surfaceContainer),
+                                const SizedBox(height: 24),
+
                                 // Volume Slider
                                 Row(
                                   mainAxisAlignment:
@@ -673,11 +736,12 @@ class _SettingsState extends State<Settings> {
                                 onPressed: () async {
                                   final prefs = await SharedPreferences.getInstance();
                                   await prefs.setBool('cashierSoundAlerts', _soundAlerts);
+                                  await prefs.setBool('cashierPushNotifications', _pushNotifications);
                                   await prefs.setDouble('cashierAlertVolume', _alertVolume);
                                   
                                   if (context.mounted) {
                                     context.read<AuthBloc>().add(
-                                      UpdateProfileRequested(pushNotificationsEnabled: _soundAlerts),
+                                      UpdateProfileRequested(pushNotificationsEnabled: _pushNotifications),
                                     );
                                   
                                     ScaffoldMessenger.of(context).showSnackBar(

@@ -73,9 +73,9 @@ class _HomeState extends State<Home> {
                                     orderState.items,
                                     selectedDate,
                                   );
-                              int completedOrders = orderRepo
-                                  .getCompletedOrdersForUserAndDate(
-                                    orderState.items,
+                              int completedOrders = paymentRepo
+                                  .getCompletedOrdersProcessedByUserAndDate(
+                                    paymentState.items,
                                     myUserId,
                                     selectedDate,
                                   );
@@ -126,7 +126,7 @@ class _HomeState extends State<Home> {
                                       title: "UNPAID TABS",
                                       value: unPaidTabs.toString(),
                                       subText: "Requires Action",
-                                      subTextColor: Colors.redAccent,
+                                      subTextColor: Theme.of(context).colorScheme.error,
                                     ),
                                   ],
                                 ),

@@ -282,23 +282,19 @@ class OrderDetailsScreen extends StatelessWidget {
 
                     const Spacer(),
 
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primary,
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onPrimary,
-                        ),
-                        onPressed: order.status == OrderStatus.ready
-                            ? null
-                            : () {
+                    if (order.status.index < OrderStatus.ready.index)
+                      Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.primary,
+                                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                              ),
+                              onPressed: () {
                                 OrderStatus newStatus = order.status;
-
                                 switch (order.status) {
                                   case OrderStatus.pending:
                                     newStatus = OrderStatus.preparing;
@@ -306,46 +302,60 @@ class OrderDetailsScreen extends StatelessWidget {
                                   case OrderStatus.preparing:
                                     newStatus = OrderStatus.ready;
                                     break;
-                                  case OrderStatus.ready:
-                                    return;
                                   default:
                                     return;
                                 }
-
-                                final orderState = context
-                                    .read<OrderBloc>()
-                                    .state;
-                                if (orderState is OrderLoaded) {
-                                  final orderIds = order.id.split(',');
-                                  final originalOrders = orderState.items
-                                      .where((o) => orderIds.contains(o.id))
-                                      .toList();
-
-                                  final timestamp = Timestamp.now();
-                                  for (var origOrder in originalOrders) {
-                                    if (origOrder.status == order.status) {
-                                      final updatedOrder = origOrder.copyWith(
-                                        status: newStatus,
-                                        updatedAt: timestamp,
-                                      );
-                                      BlocProvider.of<OrderBloc>(
-                                        context,
-                                      ).add(UpdateOrder(item: updatedOrder));
-                                    }
-                                  }
-                                }
-
-                                Navigator.pop(context);
+                                _updateOrderStatus(context, newStatus);
                               },
-                        child: Text(
-                          _buttonText(order.status),
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            fontWeight: FontWeight.bold,
+                              child: Text(
+                                _buttonText(order.status),
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (order.status == OrderStatus.pending) ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Theme.of(context).colorScheme.primary,
+                                  side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                                ),
+                                onPressed: () {
+                                  _updateOrderStatus(context, OrderStatus.ready);
+                                },
+                                child: const Text(
+                                  "SKIP TO READY",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      )
+                    else
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                          onPressed: null,
+                          child: Text(
+                            _buttonText(order.status),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -407,6 +417,30 @@ class OrderDetailsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _updateOrderStatus(BuildContext context, OrderStatus newStatus) {
+    final orderState = context.read<OrderBloc>().state;
+    if (orderState is OrderLoaded) {
+      final orderIds = order.id.split(',');
+      final originalOrders = orderState.items
+          .where((o) => orderIds.contains(o.id))
+          .toList();
+
+      final timestamp = Timestamp.now();
+      for (var origOrder in originalOrders) {
+        if (origOrder.status == order.status) {
+          final updatedOrder = origOrder.copyWith(
+            status: newStatus,
+            updatedAt: timestamp,
+          );
+          BlocProvider.of<OrderBloc>(
+            context,
+          ).add(UpdateOrder(item: updatedOrder));
+        }
+      }
+    }
+    Navigator.pop(context);
   }
 
   String? _resolveItemImageUrl(
