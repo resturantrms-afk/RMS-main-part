@@ -121,7 +121,7 @@ class _TablesPageState extends State<TablesPage> {
                               color: colorScheme.onSurface,
                               shadows: [
                                 Shadow(
-                                  color: Colors.black.withValues(alpha: 0.4),
+                                  color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.4),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
@@ -386,7 +386,7 @@ class _DownloadAllQrCodesButtonState extends State<_DownloadAllQrCodesButton> {
               borderRadius: BorderRadius.circular(999),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
@@ -535,7 +535,7 @@ class _AddTableDialogState extends State<_AddTableDialog> {
             border: Border.all(color: colorScheme.outlineVariant),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
+                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
                 blurRadius: 40,
                 offset: const Offset(0, 16),
               ),
@@ -885,7 +885,7 @@ class _StatCard extends StatelessWidget {
             : Border(left: BorderSide(color: accentColor, width: 4)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1067,7 +1067,7 @@ class _TableCardState extends State<_TableCard>
             BoxShadow(
               color: _hovered
                   ? colorScheme.primary.withValues(alpha: 0.12)
-                  : Colors.black.withValues(alpha: 0.08),
+                  : Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
               blurRadius: _hovered ? 24 : 10,
               offset: const Offset(0, 6),
             ),
@@ -1280,7 +1280,7 @@ class _ChangeStatusButtonState extends State<_ChangeStatusButton> {
               border: Border.all(color: colorScheme.outlineVariant),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
+                  color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.25),
                   blurRadius: 32,
                   offset: const Offset(0, 12),
                 ),
@@ -1605,7 +1605,7 @@ class _DeleteTableButtonState extends State<_DeleteTableButton> {
                         border: Border.all(color: cs.outlineVariant),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.25),
                             blurRadius: 30,
                             offset: const Offset(0, 12),
                           ),

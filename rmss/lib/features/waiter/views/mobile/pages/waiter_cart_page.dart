@@ -28,7 +28,9 @@ class WaiterCartPage extends StatelessWidget {
       builder: (context, cartState) {
         return BlocBuilder<MenuBloc, MenuState>(
           builder: (context, menuState) {
-            final double totalAmount = cartState.totalPrice;
+            final double subtotal = cartState.totalPrice;
+            final double taxAmount = cartState.totalTax;
+            final double totalAmount = subtotal + taxAmount;
 
             return Scaffold(
               backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
@@ -71,7 +73,15 @@ class WaiterCartPage extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              // Total Amount
+                              Text(
+                                "SUBTOTAL: \$${subtotal.toStringAsFixed(2)}  |  TAX: \$${taxAmount.toStringAsFixed(2)}",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
                               const Text(
                                 "TOTAL AMOUNT",
                                 style: TextStyle(
@@ -230,6 +240,7 @@ class WaiterCartPage extends StatelessWidget {
         createdAt: existingOrder.createdAt,
         updatedAt: Timestamp.now(),
         items: updatedItems,
+        taxPercent: cartState.globalTaxPercent,
       );
 
       context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));
@@ -254,6 +265,7 @@ class WaiterCartPage extends StatelessWidget {
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
         items: cartState.items,
+        taxPercent: cartState.globalTaxPercent,
       );
 
       context.read<OrderBloc>().add(AddOrder(item: order));
@@ -298,7 +310,7 @@ class _WaiterCartItemTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.2),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),

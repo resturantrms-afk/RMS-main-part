@@ -45,3 +45,5 @@ class UpdateCartItemNote extends CartEvent {
   @override
   List<Object?> get props => [menuItemId, newNotes];
 }
+
+class LoadGlobalTax extends CartEvent {}

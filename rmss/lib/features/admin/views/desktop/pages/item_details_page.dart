@@ -163,7 +163,7 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                           if (_isHoveringPhoto || _isUploading)
                             Positioned.fill(
                               child: Container(
-                                color: Colors.black.withValues(alpha: 0.5),
+                                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.5),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [

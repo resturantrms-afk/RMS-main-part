@@ -584,7 +584,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                                     MenuItemStatus.unavailable)
                                                   Positioned.fill(
                                                     child: Container(
-                                                      color: Colors.black
+                                                      color: Theme.of(context).colorScheme.shadow
                                                           .withValues(
                                                             alpha: 0.5,
                                                           ),
@@ -692,7 +692,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
           return Center(
             child: Text(
               state.message,
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           );
         }

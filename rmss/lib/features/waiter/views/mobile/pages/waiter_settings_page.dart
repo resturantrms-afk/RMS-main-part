@@ -191,7 +191,7 @@ class _WaiterSettingsPageState extends State<WaiterSettingsPage> {
                       border: Border.all(color: colorScheme.outlineVariant),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
+                          color: colorScheme.shadow.withValues(alpha: 0.1),
                           blurRadius: 16,
                           offset: const Offset(0, 8),
                         ),
@@ -214,7 +214,7 @@ class _WaiterSettingsPageState extends State<WaiterSettingsPage> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(
+                                      color: colorScheme.shadow.withValues(
                                         alpha: 0.3,
                                       ),
                                       blurRadius: 12,
@@ -237,7 +237,7 @@ class _WaiterSettingsPageState extends State<WaiterSettingsPage> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Colors.black.withValues(
+                                      color: colorScheme.shadow.withValues(
                                         alpha: 0.5,
                                       ),
                                     ),
@@ -420,7 +420,7 @@ class _WaiterSettingsPageState extends State<WaiterSettingsPage> {
                       border: Border.all(color: colorScheme.outlineVariant),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
+                          color: colorScheme.shadow.withValues(alpha: 0.1),
                           blurRadius: 16,
                           offset: const Offset(0, 8),
                         ),

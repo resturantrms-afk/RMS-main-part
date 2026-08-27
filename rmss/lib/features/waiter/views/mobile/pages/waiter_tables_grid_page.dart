@@ -52,6 +52,7 @@ class WaiterTablesGridPage extends StatelessWidget {
                               itemContext,
                               tables[index],
                               orderState,
+                              Theme.of(context).colorScheme,
                             );
                           },
                         );
@@ -73,6 +74,7 @@ class WaiterTablesGridPage extends StatelessWidget {
     BuildContext itemContext,
     TableModel table,
     OrderState orderState,
+    ColorScheme colorScheme,
   ) {
     Color borderColor = Colors.transparent;
     Color bgColor = Colors.transparent;
@@ -80,9 +82,9 @@ class WaiterTablesGridPage extends StatelessWidget {
     String statusText = "";
 
     if (table.needsHelp) {
-      borderColor = Colors.red;
-      bgColor = Colors.red.withValues(alpha: 0.15);
-      statusTextColor = Colors.red;
+      borderColor = colorScheme.error;
+      bgColor = colorScheme.error.withValues(alpha: 0.15);
+      statusTextColor = colorScheme.error;
       statusText = "NEEDS HELP";
     } else if (table.status == TableStatus.occupied) {
       borderColor = Theme.of(itemContext).colorScheme.primary;

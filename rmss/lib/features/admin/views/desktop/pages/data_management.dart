@@ -189,7 +189,7 @@ class _DataManagementPageState extends State<DataManagementPage> {
                     color: colorScheme.onSurface,
                     shadows: [
                       Shadow(
-                        color: Colors.black.withValues(alpha: 0.5),
+                        color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.5),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -216,7 +216,7 @@ class _DataManagementPageState extends State<DataManagementPage> {
                 border: Border.all(color: colorScheme.outlineVariant),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.2),
                     blurRadius: 24,
                     offset: const Offset(0, 12),
                   ),
@@ -340,7 +340,7 @@ class _DataManagementPageState extends State<DataManagementPage> {
                 border: Border.all(color: colorScheme.outlineVariant),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.2),
                     blurRadius: 24,
                     offset: const Offset(0, 12),
                   ),

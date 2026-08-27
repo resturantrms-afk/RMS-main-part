@@ -46,7 +46,7 @@ class _KitchenDashboardState extends State<KitchenDashboard> {
           return Center(
             child: Text(
               state.message,
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           );
         }
@@ -96,9 +96,9 @@ class _KitchenDashboardState extends State<KitchenDashboard> {
                         isLabelVisible: unread > 0,
                         label: Text(
                           '$unread',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onError,
                           ),
                         ),
                         child: IconButton(

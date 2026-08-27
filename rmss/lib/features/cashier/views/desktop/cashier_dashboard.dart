@@ -11,6 +11,7 @@ import 'package:rmss/features/cashier/views/desktop/pages/orders.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/payments.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/settings.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/menu_profiles_page.dart';
+import 'package:rmss/features/cashier/views/desktop/pages/reports.dart';
 import 'package:rmss/core/blocs/notification_bloc/app_notification_bloc.dart';
 import 'package:rmss/core/blocs/notification_bloc/app_notification_state.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -38,6 +39,7 @@ class _CashierDashboardState extends State<CashierDashboard> {
           Orders(),
           const Payments(),
           const MenuProfilesPage(),
+          const CashierReportsPage(),
           const Settings(),
         ];
         return BlocListener<AppNotificationBloc, AppNotificationState>(
@@ -209,6 +211,10 @@ class _CashierDashboardState extends State<CashierDashboard> {
                         _buildDestination(
                           label: "Menu Profiles",
                           icon: Icons.restaurant_menu_outlined,
+                        ),
+                        _buildDestination(
+                          label: "Reports",
+                          icon: Icons.bar_chart,
                         ),
                         _buildDestination(
                           label: "Setting",

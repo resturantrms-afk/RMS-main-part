@@ -1,10 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rmss/core/blocs/menu_bloc/menu_bloc.dart';
 import 'package:rmss/core/blocs/menu_bloc/menu_state.dart';
 import 'package:rmss/core/blocs/order_bloc/order_bloc.dart';
+import 'package:rmss/core/blocs/order_bloc/order_event.dart';
 import 'package:rmss/core/blocs/order_bloc/order_state.dart';
+import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/core/models/table_model.dart';
 import 'package:rmss/core/utils/order_utils.dart';
 import 'package:rmss/features/waiter/views/mobile/pages/waiter_menu_page.dart';
@@ -24,9 +27,14 @@ class WaiterHistoryPage extends StatelessWidget {
       builder: (context, orderState) {
         if (orderState is OrderLoaded) {
           final orderIds = orderId.split(',');
-          final originalOrders = orderState.items.where((o) => orderIds.contains(o.id)).toList();
-          if (originalOrders.isEmpty) return const Center(child: Text("Order not found"));
+          final originalOrders = orderState.items
+              .where((o) => orderIds.contains(o.id))
+              .toList();
+          if (originalOrders.isEmpty)
+            return const Center(child: Text("Order not found"));
           final order = OrderUtils.mergeOrders(originalOrders);
+          double totalTax = order.totalTax;
+          double subtotal = order.totalPrice - totalTax;
           return BlocBuilder<MenuBloc, MenuState>(
             builder: (context, menuState) {
               return Scaffold(
@@ -83,6 +91,17 @@ class WaiterHistoryPage extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
+                                  "SUBTOTAL: \$${subtotal.toStringAsFixed(2)}  |  TAX: \$${totalTax.toStringAsFixed(2)}",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
                                   "\$${order.totalPrice.toStringAsFixed(2)}",
                                   style: TextStyle(
                                     fontSize: 48,
@@ -97,18 +116,23 @@ class WaiterHistoryPage extends StatelessWidget {
                                 // Items List
                                 ...originalOrders.map((origOrder) {
                                   return Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       if (originalOrders.length > 1)
                                         Padding(
-                                          padding: const EdgeInsets.only(bottom: 12),
+                                          padding: const EdgeInsets.only(
+                                            bottom: 12,
+                                          ),
                                           child: Text(
                                             "Part - ${origOrder.status.name.toUpperCase()}",
                                             style: TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.bold,
                                               letterSpacing: 1.5,
-                                              color: Theme.of(context).colorScheme.primary,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
                                             ),
                                           ),
                                         ),
@@ -116,25 +140,31 @@ class WaiterHistoryPage extends StatelessWidget {
                                         String? imageUrl;
                                         if (menuState is MenuLoaded) {
                                           final menuItem = menuState.items
-                                              .where((m) => m.id == item.menuItemId)
+                                              .where(
+                                                (m) => m.id == item.menuItemId,
+                                              )
                                               .firstOrNull;
                                           imageUrl = menuItem?.imageUrl;
                                         }
 
                                         return Padding(
-                                          padding: const EdgeInsets.only(bottom: 16),
+                                          padding: const EdgeInsets.only(
+                                            bottom: 16,
+                                          ),
                                           child: Container(
                                             padding: const EdgeInsets.all(16),
                                             decoration: BoxDecoration(
                                               color: Theme.of(
                                                 context,
                                               ).colorScheme.surfaceContainer,
-                                              borderRadius: BorderRadius.circular(16),
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color: Colors.black.withValues(
-                                                    alpha: 0.2,
-                                                  ),
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .shadow
+                                                      .withValues(alpha: 0.2),
                                                   blurRadius: 16,
                                                   offset: const Offset(0, 8),
                                                 ),
@@ -146,9 +176,8 @@ class WaiterHistoryPage extends StatelessWidget {
                                               children: [
                                                 // Image
                                                 ClipRRect(
-                                                  borderRadius: BorderRadius.circular(
-                                                    12,
-                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
                                                   child: SizedBox(
                                                     width: 80,
                                                     height: 80,
@@ -158,20 +187,24 @@ class WaiterHistoryPage extends StatelessWidget {
                                                         ? CachedNetworkImage(
                                                             imageUrl: imageUrl,
                                                             fit: BoxFit.cover,
-                                                            placeholder: (_, _) => Container(
+                                                            placeholder:
+                                                                (
+                                                                  _,
+                                                                  _,
+                                                                ) => Container(
+                                                                  color: Theme.of(
+                                                                    context,
+                                                                  ).colorScheme.surfaceContainerHighest,
+                                                                ),
+                                                            errorWidget: (_, _, _) => Container(
                                                               color: Theme.of(context)
                                                                   .colorScheme
                                                                   .surfaceContainerHighest,
+                                                              child: const Icon(
+                                                                Icons
+                                                                    .restaurant,
+                                                              ),
                                                             ),
-                                                            errorWidget: (_, _, _) =>
-                                                                Container(
-                                                                  color: Theme.of(context)
-                                                                      .colorScheme
-                                                                      .surfaceContainerHighest,
-                                                                  child: const Icon(
-                                                                    Icons.restaurant,
-                                                                  ),
-                                                                ),
                                                           )
                                                         : Container(
                                                             color: Theme.of(context)
@@ -188,20 +221,26 @@ class WaiterHistoryPage extends StatelessWidget {
                                                 Expanded(
                                                   child: Column(
                                                     crossAxisAlignment:
-                                                        CrossAxisAlignment.start,
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
                                                       Text(
                                                         item.name,
                                                         style: const TextStyle(
                                                           fontSize: 18,
-                                                          fontWeight: FontWeight.bold,
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                         ),
                                                         maxLines: 1,
-                                                        overflow:
-                                                            TextOverflow.ellipsis,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
                                                       ),
-                                                      if (item.notes.isNotEmpty) ...[
-                                                        const SizedBox(height: 4),
+                                                      if (item
+                                                          .notes
+                                                          .isNotEmpty) ...[
+                                                        const SizedBox(
+                                                          height: 4,
+                                                        ),
                                                         Text(
                                                           item.notes,
                                                           style: TextStyle(
@@ -211,8 +250,8 @@ class WaiterHistoryPage extends StatelessWidget {
                                                                 .onSurfaceVariant,
                                                           ),
                                                           maxLines: 1,
-                                                          overflow:
-                                                              TextOverflow.ellipsis,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
                                                         ),
                                                       ],
                                                       const SizedBox(height: 8),
@@ -221,21 +260,118 @@ class WaiterHistoryPage extends StatelessWidget {
                                                             MainAxisAlignment
                                                                 .spaceBetween,
                                                         children: [
-                                                          Text(
-                                                            "\$${(item.price * item.quantity).toStringAsFixed(2)}",
-                                                            style: TextStyle(
-                                                              fontSize: 16,
-                                                              fontWeight:
-                                                                  FontWeight.bold,
-                                                              color: Theme.of(
-                                                                context,
-                                                              ).colorScheme.primary,
-                                                            ),
+                                                          Row(
+                                                            children: [
+                                                              Text(
+                                                                "\$${(item.price * item.quantity).toStringAsFixed(2)}",
+                                                                style: TextStyle(
+                                                                  fontSize: 16,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  color: Theme.of(
+                                                                    context,
+                                                                  ).colorScheme.primary,
+                                                                ),
+                                                              ),
+                                                              if (order.status ==
+                                                                      OrderStatus
+                                                                          .pending ||
+                                                                  order.status ==
+                                                                      OrderStatus
+                                                                          .preparing)
+                                                                IconButton(
+                                                                  icon: Icon(
+                                                                    Icons
+                                                                        .delete_outline,
+                                                                    color: Theme.of(
+                                                                      context,
+                                                                    ).colorScheme.error,
+                                                                    size: 20,
+                                                                  ),
+                                                                  padding:
+                                                                      EdgeInsets
+                                                                          .zero,
+                                                                  constraints:
+                                                                      const BoxConstraints(),
+                                                                  onPressed: () {
+                                                                    final updatedItems =
+                                                                        List<
+                                                                          OrderItemModel
+                                                                        >.from(
+                                                                          order
+                                                                              .items,
+                                                                        );
+                                                                    updatedItems.removeWhere(
+                                                                      (i) =>
+                                                                          i.menuItemId ==
+                                                                              item.menuItemId &&
+                                                                          i.notes ==
+                                                                              item.notes,
+                                                                    );
+
+                                                                    if (updatedItems
+                                                                        .isEmpty) {
+                                                                      final updatedOrder = order.copyWith(
+                                                                        status:
+                                                                            OrderStatus.cancelled,
+                                                                        items:
+                                                                            [],
+                                                                        totalPrice:
+                                                                            0.0,
+                                                                        updatedAt:
+                                                                            Timestamp.now(),
+                                                                      );
+                                                                      context
+                                                                          .read<
+                                                                            OrderBloc
+                                                                          >()
+                                                                          .add(
+                                                                            UpdateOrder(
+                                                                              item: updatedOrder,
+                                                                            ),
+                                                                          );
+                                                                    } else {
+                                                                      double
+                                                                      newSubtotal = updatedItems.fold(
+                                                                        0.0,
+                                                                        (
+                                                                          sum,
+                                                                          i,
+                                                                        ) =>
+                                                                            sum +
+                                                                            (i.price *
+                                                                                i.quantity),
+                                                                      );
+                                                                      double newTax = newSubtotal * (order.taxPercent / 100);
+                                                                      final updatedOrder = order.copyWith(
+                                                                        items:
+                                                                            updatedItems,
+                                                                        totalPrice:
+                                                                            newSubtotal +
+                                                                            newTax,
+                                                                        updatedAt:
+                                                                            Timestamp.now(),
+                                                                      );
+                                                                      context
+                                                                          .read<
+                                                                            OrderBloc
+                                                                          >()
+                                                                          .add(
+                                                                            UpdateOrder(
+                                                                              item: updatedOrder,
+                                                                            ),
+                                                                          );
+                                                                    }
+                                                                  },
+                                                                ),
+                                                            ],
                                                           ),
                                                           Container(
                                                             padding:
                                                                 const EdgeInsets.symmetric(
-                                                                  horizontal: 12,
+                                                                  horizontal:
+                                                                      12,
                                                                   vertical: 4,
                                                                 ),
                                                             decoration: BoxDecoration(
@@ -252,8 +388,10 @@ class WaiterHistoryPage extends StatelessWidget {
                                                               style: const TextStyle(
                                                                 fontSize: 10,
                                                                 fontWeight:
-                                                                    FontWeight.bold,
-                                                                letterSpacing: 1.0,
+                                                                    FontWeight
+                                                                        .bold,
+                                                                letterSpacing:
+                                                                    1.0,
                                                               ),
                                                             ),
                                                           ),

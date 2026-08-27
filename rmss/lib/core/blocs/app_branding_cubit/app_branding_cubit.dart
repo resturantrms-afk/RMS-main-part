@@ -9,7 +9,7 @@ class AppBrandingCubit extends Cubit<AppBrandingModel> {
 
   AppBrandingCubit({required AppBrandingRepository repository}) 
     : _repository = repository, 
-      super(const AppBrandingModel(appName: 'Crown Restaurant', appLogoUrl: '')) {
+      super(const AppBrandingModel(appName: 'Restaurant Management', appLogoUrl: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80')) {
     _subscription = _repository.getBrandingStream().listen((branding) {
       emit(branding);
     });

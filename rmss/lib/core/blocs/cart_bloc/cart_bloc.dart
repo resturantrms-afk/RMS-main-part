@@ -2,13 +2,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rmss/core/blocs/cart_bloc/cart_event.dart';
 import 'package:rmss/core/blocs/cart_bloc/cart_state.dart';
 import 'package:rmss/core/models/order_model.dart';
+import 'package:rmss/core/repositories/tax_history_repository.dart';
 
 class CartBloc extends Bloc<CartEvent, CartState> {
+  final TaxHistoryRepository _taxHistoryRepository = TaxHistoryRepository();
   final List<OrderItemModel> _cartItems = [];
   final String tableId = 'unknown';
   final int tableNumber = 1;
 
   CartBloc() : super(const CartState(items: [])) {
+    on<LoadGlobalTax>((event, emit) async {
+      final tax = await _taxHistoryRepository.getGlobalTax();
+      emit(state.copyWith(globalTaxPercent: tax));
+    });
+
     on<AddToCart>((event, emit) {
       // check if the item is already in the cart
       final existingIndex = _cartItems.indexWhere(
@@ -28,23 +35,30 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         );
       } else {
         // if it is a new item, add it to the list
-        _cartItems.add(event.item);
+        final newItem = OrderItemModel(
+          menuItemId: event.item.menuItemId,
+          name: event.item.name,
+          price: event.item.price,
+          quantity: event.item.quantity,
+          notes: event.item.notes,
+          imageUrl: event.item.imageUrl,
+        );
+        _cartItems.add(newItem);
       }
 
       // emit the updated list
-
-      emit(CartState(items: List.from(_cartItems)));
+      emit(state.copyWith(items: List.from(_cartItems)));
     });
     on<RemoveFromCart>((event, emit) {
       _cartItems.removeWhere(
         (item) => item.menuItemId == event.item.menuItemId,
       );
-      emit(CartState(items: List.from(_cartItems)));
+      emit(state.copyWith(items: List.from(_cartItems)));
     });
 
     on<ClearCart>((event, emit) {
       _cartItems.clear();
-      emit(const CartState(items: []));
+      emit(state.copyWith(items: const []));
     });
 
     on<UpdateCartItemQuantity>((event, emit) {
@@ -66,9 +80,10 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           price: item.price,
           quantity: newQty,
           notes: item.notes,
+          imageUrl: item.imageUrl,
         );
       }
-      emit(CartState(items: List.from(_cartItems)));
+      emit(state.copyWith(items: List.from(_cartItems)));
     });
 
     on<UpdateCartItemNote>((event, emit) {
@@ -88,7 +103,10 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         imageUrl: item.imageUrl,
       );
       
-      emit(CartState(items: List.from(_cartItems)));
+      emit(state.copyWith(items: List.from(_cartItems)));
     });
+
+    // Add initial event after all handlers are registered
+    add(LoadGlobalTax());
   }
 }

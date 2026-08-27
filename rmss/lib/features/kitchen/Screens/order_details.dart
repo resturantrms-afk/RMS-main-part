@@ -16,6 +16,9 @@ class OrderDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    double totalTax = order.totalTax;
+    double subtotal = order.totalPrice - totalTax;
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
 
@@ -79,6 +82,18 @@ class OrderDetailsScreen extends StatelessWidget {
                       context,
                       "Status",
                       order.status.name.toUpperCase(),
+                    ),
+
+                    _infoTile(
+                      context,
+                      "Subtotal",
+                      "\$${subtotal.toStringAsFixed(2)}",
+                    ),
+
+                    _infoTile(
+                      context,
+                      "Tax",
+                      "\$${totalTax.toStringAsFixed(2)}",
                     ),
 
                     _infoTile(
@@ -209,14 +224,51 @@ class OrderDetailsScreen extends StatelessWidget {
                                           ),
                                         ),
 
-                                        trailing: Text(
-                                          "\$${item.price.toStringAsFixed(2)}",
-                                          style: TextStyle(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                        trailing: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              "\$${item.price.toStringAsFixed(2)}",
+                                              style: TextStyle(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            if (origOrder.status == OrderStatus.pending || origOrder.status == OrderStatus.preparing)
+                                              IconButton(
+                                                icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20),
+                                                padding: EdgeInsets.zero,
+                                                constraints: const BoxConstraints(),
+                                                onPressed: () {
+                                                  final updatedItems = List<OrderItemModel>.from(origOrder.items);
+                                                  updatedItems.removeWhere((i) => i.menuItemId == item.menuItemId && i.notes == item.notes);
+                                                  
+                                                  if (updatedItems.isEmpty) {
+                                                    final updatedOrder = origOrder.copyWith(
+                                                      status: OrderStatus.cancelled,
+                                                      items: [],
+                                                      totalPrice: 0.0,
+                                                      updatedAt: Timestamp.now(),
+                                                    );
+                                                    context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));
+                                                  } else {
+                                                    double newSubtotal = updatedItems.fold(0.0, (sum, i) => sum + (i.price * i.quantity));
+                                                    double subtotal = updatedItems.fold(0.0, (sum, i) => sum + (i.price * i.quantity));
+                                                    double newTax = subtotal * (order.taxPercent / 100);
+                                                    final updatedOrder = origOrder.copyWith(
+                                                      items: updatedItems,
+                                                      totalPrice: newSubtotal + newTax,
+                                                      updatedAt: Timestamp.now(),
+                                                    );
+                                                    context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));
+                                                  }
+                                                },
+                                              ),
+                                          ],
                                         ),
                                       ),
                                     );

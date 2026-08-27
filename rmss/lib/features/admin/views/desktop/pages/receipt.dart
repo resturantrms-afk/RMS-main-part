@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:rmss/core/blocs/app_branding_cubit/app_branding_cubit.dart';
 
 import 'package:rmss/core/models/order_model.dart';
@@ -22,30 +23,47 @@ class ReceiptPage extends StatelessWidget {
     final paymentState = context.read<PaymentBloc>().state;
     final usersState = context.read<AdminUsersBloc>().state;
     
-    String adminName = 'Unknown';
-    String? processorId;
-    
-    if (paymentState is PaymentsLoaded) {
+    String operatorName = 'Unknown';
+    String operatorLabel = order.status == OrderStatus.paid ? "Processed By" : "Created By";
+
+    if (order.status == OrderStatus.paid && paymentState is PaymentsLoaded) {
       try {
         final payment = paymentState.items.firstWhere((p) => p.orderId == order.id);
-        processorId = payment.processedBy['user'];
-      } catch (e) {
-        // Payment not found
-      }
-    }
-    
-    processorId ??= order.createdBy['id'] ?? order.createdBy['user'];
-    
-    if (processorId != null && usersState is AdminUsersLoaded) {
-      try {
-        final user = usersState.allUsers.firstWhere((u) => u.id == processorId);
-        adminName = user.name;
-      } catch (e) {
-        adminName = order.createdBy['name'] ?? 'Unknown';
+        String? processorId = payment.processedBy['user'] ?? payment.processedBy['id'];
+        if (processorId != null && usersState is AdminUsersLoaded) {
+          try {
+            final user = usersState.allUsers.firstWhere((u) => u.id == processorId);
+            operatorName = user.name;
+          } catch (_) {
+            operatorName = payment.processedBy['name'] ?? 'Unknown';
+          }
+        } else {
+          operatorName = payment.processedBy['name'] ?? 'Unknown';
+        }
+      } catch (_) {
+        operatorName = 'Unknown';
       }
     } else {
-      adminName = order.createdBy['name'] ?? 'Unknown';
+      if (order.source == OrderSource.web) {
+        operatorName = 'Customer';
+      } else {
+        String? creatorId = order.createdBy['id'] ?? order.createdBy['user'];
+        if (creatorId != null && usersState is AdminUsersLoaded) {
+          try {
+            final user = usersState.allUsers.firstWhere((u) => u.id == creatorId);
+            operatorName = user.name;
+          } catch (_) {
+            operatorName = order.createdBy['name'] ?? 'Unknown';
+          }
+        } else {
+          operatorName = order.createdBy['name'] ?? 'Unknown';
+        }
+      }
     }
+    
+    double totalTax = order.totalTax;
+    double subtotal = order.totalPrice - totalTax;
+
     final pdf = pw.Document();
 
     pdf.addPage(
@@ -69,7 +87,7 @@ class ReceiptPage extends StatelessWidget {
               pw.SizedBox(height: 4),
               pw.Center(
                 child: pw.Text(
-                  'Table ${order.tableNumber} - Receipt',
+                  'Table ${order.tableNumber} - ${order.status == OrderStatus.paid ? "Receipt" : "Invoice"}',
                   style: const pw.TextStyle(fontSize: 10),
                 ),
               ),
@@ -96,7 +114,7 @@ class ReceiptPage extends StatelessWidget {
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text(
-                    'Admin: $adminName',
+                    '$operatorLabel: $operatorName',
                     style: const pw.TextStyle(fontSize: 8),
                   ),
                   pw.Text(
@@ -205,7 +223,18 @@ class ReceiptPage extends StatelessWidget {
                 children: [
                   pw.Text('Subtotal:', style: const pw.TextStyle(fontSize: 9)),
                   pw.Text(
-                    '\$${order.totalPrice.toStringAsFixed(2)}',
+                    '\$${subtotal.toStringAsFixed(2)}',
+                    style: const pw.TextStyle(fontSize: 9),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 2),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Tax:', style: const pw.TextStyle(fontSize: 9)),
+                  pw.Text(
+                    '\$${totalTax.toStringAsFixed(2)}',
                     style: const pw.TextStyle(fontSize: 9),
                   ),
                 ],
@@ -245,24 +274,34 @@ class ReceiptPage extends StatelessWidget {
     );
 
     try {
-      final bytes = await pdf.save();
-      final dir = Directory.systemTemp;
-      final file = File('${dir.path}/receipt_${order.id}.pdf');
-      await file.writeAsBytes(bytes);
+      final printers = await Printing.listPrinters();
+      
+      if (printers.isNotEmpty) {
+        await Printing.layoutPdf(
+          onLayout: (PdfPageFormat format) async => pdf.save(),
+          name: 'Receipt_${order.id}',
+        );
+      } else {
+        final bytes = await pdf.save();
+        final dir = Directory.systemTemp;
+        final docType = order.status == OrderStatus.paid ? "receipt" : "invoice";
+        final file = File('${dir.path}/${docType}_${order.id}.pdf');
+        await file.writeAsBytes(bytes);
 
-      if (Platform.isWindows) {
-        await Process.run('cmd', ['/c', 'start', '', file.path]);
-      } else if (Platform.isMacOS) {
-        await Process.run('open', [file.path]);
-      } else if (Platform.isLinux) {
-        await Process.run('xdg-open', [file.path]);
+        if (Platform.isWindows) {
+          await Process.run('cmd', ['/c', 'start', '', file.path]);
+        } else if (Platform.isMacOS) {
+          await Process.run('open', [file.path]);
+        } else if (Platform.isLinux) {
+          await Process.run('xdg-open', [file.path]);
+        }
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to open receipt: $e'),
-            backgroundColor: Colors.red,
+            content: Text('Failed to open document: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -276,30 +315,46 @@ class ReceiptPage extends StatelessWidget {
     final paymentState = context.watch<PaymentBloc>().state;
     final usersState = context.watch<AdminUsersBloc>().state;
     
-    String adminName = 'Unknown';
-    String? processorId;
-    
-    if (paymentState is PaymentsLoaded) {
+    String operatorName = 'Unknown';
+    String operatorLabel = order.status == OrderStatus.paid ? "Processed By" : "Created By";
+
+    if (order.status == OrderStatus.paid && paymentState is PaymentsLoaded) {
       try {
         final payment = paymentState.items.firstWhere((p) => p.orderId == order.id);
-        processorId = payment.processedBy['user'];
-      } catch (e) {
-        // Payment not found
-      }
-    }
-    
-    processorId ??= order.createdBy['id'] ?? order.createdBy['user'];
-    
-    if (processorId != null && usersState is AdminUsersLoaded) {
-      try {
-        final user = usersState.allUsers.firstWhere((u) => u.id == processorId);
-        adminName = user.name;
-      } catch (e) {
-        adminName = order.createdBy['name'] ?? 'Unknown';
+        String? processorId = payment.processedBy['user'] ?? payment.processedBy['id'];
+        if (processorId != null && usersState is AdminUsersLoaded) {
+          try {
+            final user = usersState.allUsers.firstWhere((u) => u.id == processorId);
+            operatorName = user.name;
+          } catch (_) {
+            operatorName = payment.processedBy['name'] ?? 'Unknown';
+          }
+        } else {
+          operatorName = payment.processedBy['name'] ?? 'Unknown';
+        }
+      } catch (_) {
+        operatorName = 'Unknown';
       }
     } else {
-      adminName = order.createdBy['name'] ?? 'Unknown';
+      if (order.source == OrderSource.web) {
+        operatorName = 'Customer';
+      } else {
+        String? creatorId = order.createdBy['id'] ?? order.createdBy['user'];
+        if (creatorId != null && usersState is AdminUsersLoaded) {
+          try {
+            final user = usersState.allUsers.firstWhere((u) => u.id == creatorId);
+            operatorName = user.name;
+          } catch (_) {
+            operatorName = order.createdBy['name'] ?? 'Unknown';
+          }
+        } else {
+          operatorName = order.createdBy['name'] ?? 'Unknown';
+        }
+      }
     }
+
+    double totalTax = order.totalTax;
+    double subtotal = order.totalPrice - totalTax;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -332,7 +387,7 @@ class ReceiptPage extends StatelessWidget {
                   border: Border.all(color: colorScheme.outlineVariant),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
+                      color: colorScheme.shadow.withValues(alpha: 0.3),
                       blurRadius: 30,
                       offset: const Offset(0, 15),
                     ),
@@ -357,7 +412,7 @@ class ReceiptPage extends StatelessWidget {
                                 color: colorScheme.primary,
                                 shadows: [
                                   Shadow(
-                                    color: Colors.black.withValues(alpha: 0.5),
+                                    color: colorScheme.shadow.withValues(alpha: 0.5),
                                     blurRadius: 10,
                                     offset: const Offset(0, 4),
                                   ),
@@ -377,7 +432,7 @@ class ReceiptPage extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  "Table ${order.tableNumber} • Receipt"
+                                  "Table ${order.tableNumber} • ${order.status == OrderStatus.paid ? "Receipt" : "Invoice"}"
                                       .toUpperCase(),
                                   style: GoogleFonts.beVietnamPro(
                                     fontSize: 12,
@@ -439,8 +494,8 @@ class ReceiptPage extends StatelessWidget {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.end,
                                       children: [
-                                        _buildMetaLabel("Admin", colorScheme),
-                                        _buildMetaValue(adminName),
+                                        _buildMetaLabel(operatorLabel, colorScheme),
+                                        _buildMetaValue(operatorName),
                                         const SizedBox(height: 24),
                                         _buildMetaLabel("Order #", colorScheme),
                                         Text(
@@ -492,7 +547,28 @@ class ReceiptPage extends StatelessWidget {
                                         ),
                                       ),
                                       Text(
-                                        "\$${order.totalPrice.toStringAsFixed(2)}",
+                                        "\$${subtotal.toStringAsFixed(2)}",
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        "Tax",
+                                        style: TextStyle(
+                                          color: colorScheme.onSurfaceVariant,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      Text(
+                                        "\$${totalTax.toStringAsFixed(2)}",
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w500,
                                           fontSize: 14,
@@ -572,9 +648,9 @@ class ReceiptPage extends StatelessWidget {
                             const SizedBox(height: 32),
 
                             // Footer
-                            const Icon(
+                            Icon(
                               Icons.restaurant,
-                              color: Colors.grey,
+                              color: colorScheme.onSurfaceVariant,
                               size: 24,
                             ),
                             const SizedBox(height: 16),
@@ -595,7 +671,7 @@ class ReceiptPage extends StatelessWidget {
                               onPressed: () => _generatePdf(context),
                               icon: const Icon(Icons.print, size: 16),
                               label: Text(
-                                "PRINT RECEIPT",
+                                order.status == OrderStatus.paid ? "PRINT RECEIPT" : "PRINT INVOICE",
                                 style: GoogleFonts.beVietnamPro(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,

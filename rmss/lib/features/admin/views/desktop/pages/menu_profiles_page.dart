@@ -84,7 +84,7 @@ class _MenuProfilesPageState extends State<MenuProfilesPage> {
                           color: colorScheme.onSurface,
                           shadows: [
                             Shadow(
-                              color: Colors.black.withValues(alpha: 0.4),
+                              color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.4),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -263,7 +263,7 @@ class _MenuProfileCard extends StatelessWidget {
         border: Border.all(color: colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -289,7 +289,7 @@ class _MenuProfileCard extends StatelessWidget {
             children: [
               // 1. Collage section
               Expanded(
-                flex: 5,
+                flex: 4,
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(24),
@@ -309,7 +309,7 @@ class _MenuProfileCard extends StatelessWidget {
 
               // 2. Details and Controls
               Expanded(
-                flex: 5,
+                flex: 6,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -350,66 +350,70 @@ class _MenuProfileCard extends StatelessWidget {
                           alpha: 0.5,
                         ),
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Switch(
-                                value: profile.isActive,
-                                activeColor: colorScheme.primary,
-                                onChanged: (val) {
-                                  context.read<MenuProfileBloc>().add(
-                                    ToggleMenuProfileActiveStatus(
-                                      profile: profile,
-                                      isActive: val,
-                                      allCurrentMenuItems: allItems,
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                profile.isActive ? 'ACTIVE' : 'INACTIVE',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: profile.isActive
-                                      ? colorScheme.primary
-                                      : colorScheme.onSurfaceVariant,
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Switch(
+                                  value: profile.isActive,
+                                  activeColor: colorScheme.primary,
+                                  onChanged: (val) {
+                                    context.read<MenuProfileBloc>().add(
+                                      ToggleMenuProfileActiveStatus(
+                                        profile: profile,
+                                        isActive: val,
+                                        allCurrentMenuItems: allItems,
+                                      ),
+                                    );
+                                  },
                                 ),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: Icon(
-                                  Icons.edit,
-                                  size: 20,
-                                  color: colorScheme.onSurfaceVariant,
+                                const SizedBox(width: 8),
+                                Text(
+                                  profile.isActive ? 'ACTIVE' : 'INACTIVE',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: profile.isActive
+                                        ? colorScheme.primary
+                                        : colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) =>
-                                        MenuProfileDialog(profile: profile),
-                                  );
-                                },
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  Icons.delete_outline,
-                                  size: 20,
-                                  color: colorScheme.error,
+                              ],
+                            ),
+                            const SizedBox(width: 16),
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.edit,
+                                    size: 20,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) =>
+                                          MenuProfileDialog(profile: profile),
+                                    );
+                                  },
                                 ),
-                                onPressed: () {
-                                  _confirmDelete(context, profile);
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.delete_outline,
+                                    size: 20,
+                                    color: colorScheme.error,
+                                  ),
+                                  onPressed: () {
+                                    _confirmDelete(context, profile);
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),

@@ -17,12 +17,15 @@ class AppTheme {
 
     // Optional: We can still enforce our deep hearth for dark mode backgrounds if we want,
     // or let Material 3 decide. Let's let Material 3 calculate it perfectly.
-    
+
     return ThemeData(
       brightness: brightness,
-      fontFamily: font,
+      textTheme: GoogleFonts.plusJakartaSansTextTheme(
+        ThemeData(brightness: brightness).textTheme,
+      ),
       colorScheme: ColorScheme.fromSeed(
         seedColor: seedColor,
+        primary: seedColor,
         brightness: brightness,
       ),
       useMaterial3: true,

@@ -286,7 +286,7 @@ class _AiAssociationInsightCard extends StatelessWidget {
         border: Border.all(color: cs.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.15),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -319,7 +319,7 @@ class _AiAssociationInsightCard extends StatelessWidget {
                       color: cs.outlineVariant.withValues(alpha: 0.5)),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
+                        color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.15),
                         blurRadius: 10,
                         offset: const Offset(0, 4)),
                   ],
@@ -424,7 +424,7 @@ class _TopPairingsCard extends StatelessWidget {
         border: Border.all(color: cs.outlineVariant),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
+              color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.15),
               blurRadius: 20,
               offset: const Offset(0, 8)),
         ],
@@ -583,7 +583,7 @@ class _AssociationTable extends StatelessWidget {
         border: Border.all(color: cs.outlineVariant),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
+              color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.15),
               blurRadius: 20,
               offset: const Offset(0, 8)),
         ],

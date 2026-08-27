@@ -13,6 +13,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rmss/features/admin/views/desktop/pages/data_management.dart';
 import 'package:rmss/features/admin/views/desktop/pages/app_branding_page.dart';
+import 'package:rmss/core/repositories/tax_history_repository.dart';
 
 class Settings extends StatefulWidget {
   const Settings({super.key});
@@ -24,6 +25,7 @@ class Settings extends StatefulWidget {
 class _SettingsState extends State<Settings> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _photoUrlController = TextEditingController();
+  final TextEditingController _taxController = TextEditingController();
 
   bool _soundAlerts = true;
   double _alertVolume = 75.0;
@@ -40,16 +42,21 @@ class _SettingsState extends State<Settings> {
 
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _soundAlerts = prefs.getBool('adminSoundAlerts') ?? true;
-      _alertVolume = prefs.getDouble('adminAlertVolume') ?? 75.0;
-    });
+    final globalTax = await TaxHistoryRepository().getGlobalTax();
+    if (mounted) {
+      setState(() {
+        _soundAlerts = prefs.getBool('adminSoundAlerts') ?? true;
+        _alertVolume = prefs.getDouble('adminAlertVolume') ?? 75.0;
+        _taxController.text = globalTax.toString();
+      });
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _photoUrlController.dispose();
+    _taxController.dispose();
     super.dispose();
   }
 
@@ -108,7 +115,7 @@ class _SettingsState extends State<Settings> {
                 color: colorScheme.onSurface,
                 shadows: [
                   Shadow(
-                    color: Colors.black.withValues(alpha: 0.5),
+                    color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.5),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -155,7 +162,7 @@ class _SettingsState extends State<Settings> {
                         border: Border.all(color: colorScheme.outlineVariant),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.2),
                             blurRadius: 24,
                             offset: const Offset(0, 12),
                           ),
@@ -183,7 +190,7 @@ class _SettingsState extends State<Settings> {
                                       shape: BoxShape.circle,
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withValues(
+                                          color: Theme.of(context).colorScheme.shadow.withValues(
                                             alpha: 0.5,
                                           ),
                                           blurRadius: 16,
@@ -208,7 +215,7 @@ class _SettingsState extends State<Settings> {
                                       child: Container(
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: Colors.black.withValues(
+                                          color: Theme.of(context).colorScheme.shadow.withValues(
                                             alpha: 0.5,
                                           ),
                                         ),
@@ -395,7 +402,7 @@ class _SettingsState extends State<Settings> {
                         border: Border.all(color: colorScheme.outlineVariant),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.2),
                             blurRadius: 24,
                             offset: const Offset(0, 12),
                           ),
@@ -420,27 +427,30 @@ class _SettingsState extends State<Settings> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Appearance",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: colorScheme.onSurface,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Appearance",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurface,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "Switch between light and dark modes.",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: colorScheme.onSurfaceVariant,
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "Switch between light and dark modes.",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
+                              const SizedBox(width: 16),
                               BlocBuilder<ThemeCubit, ThemeMode>(
                                 builder: (context, themeState) {
                                   return Switch(
@@ -473,7 +483,7 @@ class _SettingsState extends State<Settings> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
+                                  color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                                   blurRadius: 10,
                                   offset: const Offset(0, 2),
                                   spreadRadius: -2,
@@ -622,7 +632,7 @@ class _SettingsState extends State<Settings> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
+                                  color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                                   blurRadius: 10,
                                   offset: const Offset(0, 2),
                                   spreadRadius: -2,
@@ -632,27 +642,30 @@ class _SettingsState extends State<Settings> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "Payment Security PIN",
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        color: colorScheme.onSurface,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Payment Security PIN",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.onSurface,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "Require a 4-digit PIN to complete orders.",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: colorScheme.onSurfaceVariant,
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "Require a 4-digit PIN to complete orders.",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
+                                const SizedBox(width: 16),
                                 ElevatedButton(
                                   onPressed: () {
                                     _showSetPinDialog(context);
@@ -680,7 +693,7 @@ class _SettingsState extends State<Settings> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
+                                  color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                                   blurRadius: 10,
                                   offset: const Offset(0, 2),
                                   spreadRadius: -2,
@@ -690,27 +703,30 @@ class _SettingsState extends State<Settings> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "Data Management",
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        color: colorScheme.onSurface,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Data Management",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.onSurface,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "Manage collections and clear database.",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: colorScheme.onSurfaceVariant,
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "Manage collections and clear database.",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
+                                const SizedBox(width: 16),
                                 ElevatedButton(
                                   onPressed: () {
                                     Navigator.push(
@@ -744,7 +760,7 @@ class _SettingsState extends State<Settings> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
+                                  color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                                   blurRadius: 10,
                                   offset: const Offset(0, 2),
                                   spreadRadius: -2,
@@ -754,27 +770,30 @@ class _SettingsState extends State<Settings> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "App Branding",
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        color: colorScheme.onSurface,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "App Branding",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.onSurface,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "Change global application name and logo.",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: colorScheme.onSurfaceVariant,
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "Change global application name and logo.",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
+                                const SizedBox(width: 16),
                                 ElevatedButton(
                                   onPressed: () {
                                     Navigator.push(
@@ -790,6 +809,99 @@ class _SettingsState extends State<Settings> {
                                     foregroundColor: colorScheme.onPrimary,
                                   ),
                                   child: const Text("CUSTOMIZE"),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 32),
+
+                          // Global Tax Management
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerLowest,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: colorScheme.outlineVariant,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 2),
+                                  spreadRadius: -2,
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Global Order Tax",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.onSurface,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "Set the global tax percentage applied to all orders.",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                      width: 120,
+                                      child: TextField(
+                                        controller: _taxController,
+                                        keyboardType: TextInputType.number,
+                                        decoration: const InputDecoration(
+                                          suffixText: '%',
+                                          border: OutlineInputBorder(),
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    ElevatedButton(
+                                      onPressed: () async {
+                                        final newTax = double.tryParse(_taxController.text) ?? -1.0;
+                                        if (newTax >= 0 && newTax <= 100) {
+                                          await TaxHistoryRepository().updateGlobalTax(newTax);
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text("Global Tax Updated")),
+                                            );
+                                          }
+                                        } else {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text("Please enter a valid tax between 0 and 100")),
+                                            );
+                                          }
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: colorScheme.primary,
+                                        foregroundColor: colorScheme.onPrimary,
+                                      ),
+                                      child: const Text("CHANGE TAX"),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

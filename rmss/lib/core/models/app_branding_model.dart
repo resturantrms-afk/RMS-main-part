@@ -11,8 +11,8 @@ class AppBrandingModel {
 
   factory AppBrandingModel.fromJson(Map<String, dynamic> json) {
     return AppBrandingModel(
-      appName: json['appName'] ?? 'Crown Restaurant',
-      appLogoUrl: json['appLogoUrl'] ?? '',
+      appName: json['appName'] ?? 'Restaurant Management',
+      appLogoUrl: json['appLogoUrl'] ?? 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
       brandColorHex: json['brandColorHex'] ?? '#E88328',
     );
   }

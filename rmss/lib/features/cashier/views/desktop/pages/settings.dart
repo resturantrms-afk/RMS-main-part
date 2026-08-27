@@ -108,7 +108,7 @@ class _SettingsState extends State<Settings> {
                 color: colorScheme.onSurface,
                 shadows: [
                   Shadow(
-                    color: Colors.black.withValues(alpha: 0.5),
+                    color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.5),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -155,7 +155,7 @@ class _SettingsState extends State<Settings> {
                         border: Border.all(color: colorScheme.outlineVariant),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.2),
                             blurRadius: 24,
                             offset: const Offset(0, 12),
                           ),
@@ -183,7 +183,7 @@ class _SettingsState extends State<Settings> {
                                       shape: BoxShape.circle,
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withValues(
+                                          color: Theme.of(context).colorScheme.shadow.withValues(
                                             alpha: 0.5,
                                           ),
                                           blurRadius: 16,
@@ -208,7 +208,7 @@ class _SettingsState extends State<Settings> {
                                       child: Container(
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: Colors.black.withValues(
+                                          color: Theme.of(context).colorScheme.shadow.withValues(
                                             alpha: 0.5,
                                           ),
                                         ),
@@ -395,7 +395,7 @@ class _SettingsState extends State<Settings> {
                         border: Border.all(color: colorScheme.outlineVariant),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.2),
                             blurRadius: 24,
                             offset: const Offset(0, 12),
                           ),
@@ -473,7 +473,7 @@ class _SettingsState extends State<Settings> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
+                                  color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                                   blurRadius: 10,
                                   offset: const Offset(0, 2),
                                   spreadRadius: -2,
@@ -683,7 +683,7 @@ class _SettingsState extends State<Settings> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
+                                  color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                                   blurRadius: 10,
                                   offset: const Offset(0, 2),
                                   spreadRadius: -2,

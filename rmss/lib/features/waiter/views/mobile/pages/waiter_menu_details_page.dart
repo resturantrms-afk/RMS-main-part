@@ -46,8 +46,11 @@ class _WaiterMenuDetailsPageState extends State<WaiterMenuDetailsPage> {
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
-                        placeholder: (context, url) =>
-                            Container(color: Colors.grey[800]),
+                        placeholder: (context, url) => Container(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                        ),
                         errorWidget: (context, url, error) =>
                             const Icon(Icons.error),
                       ),
@@ -81,15 +84,17 @@ class _WaiterMenuDetailsPageState extends State<WaiterMenuDetailsPage> {
                                 children: [
                                   Text(
                                     widget.item.name,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 36,
                                       fontWeight: FontWeight.w900,
 
                                       shadows: [
                                         Shadow(
-                                          offset: Offset(0, 4),
+                                          offset: const Offset(0, 4),
                                           blurRadius: 12,
-                                          color: Colors.black54,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.shadow,
                                         ),
                                       ],
                                     ),
@@ -135,7 +140,9 @@ class _WaiterMenuDetailsPageState extends State<WaiterMenuDetailsPage> {
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.shadow.withValues(alpha: 0.2),
                           blurRadius: 24,
                           offset: const Offset(0, 10),
                         ),

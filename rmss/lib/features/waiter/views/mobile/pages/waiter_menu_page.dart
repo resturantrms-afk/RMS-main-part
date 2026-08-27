@@ -318,7 +318,7 @@ class _WaiterMenuPageState extends State<WaiterMenuPage> {
                   fit: BoxFit.cover,
                   width: double.infinity,
                   placeholder: (context, url) =>
-                      Container(color: Colors.grey[800]),
+                      Container(color: Theme.of(context).colorScheme.surfaceContainerHighest),
                   errorWidget: (context, url, error) => const Icon(Icons.error),
                 ),
               ),

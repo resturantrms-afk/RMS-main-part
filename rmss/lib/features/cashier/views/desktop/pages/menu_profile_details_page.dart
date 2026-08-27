@@ -47,7 +47,7 @@ class MenuProfileDetailsPage extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: colorScheme.shadow.withValues(alpha: 0.05),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -190,7 +190,7 @@ class MenuProfileDetailsPage extends StatelessWidget {
         border: Border.all(color: colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -212,10 +212,10 @@ class MenuProfileDetailsPage extends StatelessWidget {
                     )
                   : Container(
                       color: colorScheme.surfaceContainerHighest,
-                      child: const Icon(
+                      child: Icon(
                         Icons.fastfood,
                         size: 40,
-                        color: Colors.grey,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
             ),

@@ -33,8 +33,8 @@ class Cart extends StatelessWidget {
             final tableId = table.id;
 
             final double subtotal = cartState.totalPrice;
-            final double total =
-                subtotal; // Total equals subtotal without tax/gratuity
+            final double taxAmount = cartState.totalTax;
+            final double total = subtotal + taxAmount;
 
             return Scaffold(
               backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
@@ -214,6 +214,11 @@ class Cart extends StatelessWidget {
                                         value:
                                             '\$${subtotal.toStringAsFixed(2)}',
                                       ),
+                                      const SizedBox(height: 8),
+                                      _SummaryRow(
+                                        label: 'Tax',
+                                        value: '\$${taxAmount.toStringAsFixed(2)}',
+                                      ),
                                       Divider(
                                         height: 32,
                                         color: Theme.of(
@@ -356,6 +361,7 @@ class Cart extends StatelessWidget {
         createdAt: existingOrder.createdAt, // Keep original time
         updatedAt: Timestamp.now(),
         items: updatedItems,
+        taxPercent: cartState.globalTaxPercent,
       );
 
       context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));
@@ -380,6 +386,7 @@ class Cart extends StatelessWidget {
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
         items: cartState.items,
+        taxPercent: cartState.globalTaxPercent,
       );
 
       context.read<OrderBloc>().add(AddOrder(item: order));

@@ -83,7 +83,9 @@ class _MenuProfilesPageState extends State<MenuProfilesPage> {
                           color: colorScheme.onSurface,
                           shadows: [
                             Shadow(
-                              color: Colors.black.withValues(alpha: 0.4),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.shadow.withValues(alpha: 0.4),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -198,7 +200,7 @@ class _MenuProfileCard extends StatelessWidget {
         border: Border.all(color: colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -331,13 +333,13 @@ class _MenuProfileCard extends StatelessWidget {
 
   Widget _buildCollage(List<MenuItemModel> items, ColorScheme colorScheme) {
     if (items.length == 1) {
-      return _buildImage(items[0].imageUrl);
+      return _buildImage(items[0].imageUrl, colorScheme);
     } else if (items.length == 2) {
       return Row(
         children: [
-          Expanded(child: _buildImage(items[0].imageUrl)),
+          Expanded(child: _buildImage(items[0].imageUrl, colorScheme)),
           const SizedBox(width: 2),
-          Expanded(child: _buildImage(items[1].imageUrl)),
+          Expanded(child: _buildImage(items[1].imageUrl, colorScheme)),
         ],
       );
     } else {
@@ -346,9 +348,9 @@ class _MenuProfileCard extends StatelessWidget {
           Expanded(
             child: Row(
               children: [
-                Expanded(child: _buildImage(items[0].imageUrl)),
+                Expanded(child: _buildImage(items[0].imageUrl, colorScheme)),
                 const SizedBox(width: 2),
-                Expanded(child: _buildImage(items[1].imageUrl)),
+                Expanded(child: _buildImage(items[1].imageUrl, colorScheme)),
               ],
             ),
           ),
@@ -357,11 +359,17 @@ class _MenuProfileCard extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: _buildImage(items.length > 2 ? items[2].imageUrl : ''),
+                  child: _buildImage(
+                    items.length > 2 ? items[2].imageUrl : '',
+                    colorScheme,
+                  ),
                 ),
                 const SizedBox(width: 2),
                 Expanded(
-                  child: _buildImage(items.length > 3 ? items[3].imageUrl : ''),
+                  child: _buildImage(
+                    items.length > 3 ? items[3].imageUrl : '',
+                    colorScheme,
+                  ),
                 ),
               ],
             ),
@@ -371,11 +379,13 @@ class _MenuProfileCard extends StatelessWidget {
     }
   }
 
-  Widget _buildImage(String url) {
+  Widget _buildImage(String url, ColorScheme colorScheme) {
     if (url.isEmpty) {
       return Container(
-        color: Colors.grey.withValues(alpha: 0.1),
-        child: const Center(child: Icon(Icons.restaurant, color: Colors.grey)),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+        child: Center(
+          child: Icon(Icons.restaurant, color: colorScheme.onSurfaceVariant),
+        ),
       );
     }
     return CachedNetworkImage(
@@ -383,12 +393,20 @@ class _MenuProfileCard extends StatelessWidget {
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
-      placeholder: (context, url) =>
-          Container(color: Colors.grey.withValues(alpha: 0.2)),
+      placeholder: (context, url) => Container(
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+      ),
       errorWidget: (context, url, error) => Container(
-        color: Colors.grey.withValues(alpha: 0.1),
-        child: const Center(
-          child: Icon(Icons.error_outline, color: Colors.grey),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+        child: Center(
+          child: Icon(
+            Icons.error_outline,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
     );

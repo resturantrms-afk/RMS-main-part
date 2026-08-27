@@ -7,6 +7,7 @@ import 'package:rmss/core/blocs/order_bloc/order_state.dart';
 import 'package:rmss/core/models/order_model.dart';
 import 'package:rmss/features/cashier/views/desktop/home%20widgets/cashier_top_bar.dart';
 import 'package:rmss/features/cashier/views/desktop/pages/order_details.dart';
+import 'package:rmss/features/cashier/views/desktop/pages/receipt.dart';
 import 'package:rmss/core/utils/order_utils.dart';
 
 class Orders extends StatefulWidget {
@@ -344,6 +345,34 @@ class _OrdersState extends State<Orders> {
                                             ],
                                           ),
                                           const SizedBox(width: 32),
+                                          if (order.status != OrderStatus.cancelled) ...[
+                                            Container(
+                                              width: 48,
+                                              height: 48,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .surfaceContainerHigh,
+                                              ),
+                                              child: IconButton(
+                                                tooltip: order.status == OrderStatus.paid ? "Print Receipt" : "Print Invoice",
+                                                onPressed: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) => ReceiptPage(order: order),
+                                                    ),
+                                                  );
+                                                },
+                                                icon: Icon(
+                                                  order.status == OrderStatus.paid ? Icons.receipt_long : Icons.request_quote,
+                                                  color: Theme.of(context).colorScheme.primary,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                          ],
                                           Container(
                                             width: 48,
                                             height: 48,

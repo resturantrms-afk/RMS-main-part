@@ -9,7 +9,7 @@ class AppBrandingRepository {
       if (snapshot.exists && snapshot.data() != null) {
         return AppBrandingModel.fromJson(snapshot.data()!);
       }
-      return const AppBrandingModel(appName: 'Crown Restaurant', appLogoUrl: '');
+      return const AppBrandingModel(appName: 'Restaurant Management', appLogoUrl: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80');
     });
   }
 

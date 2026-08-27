@@ -91,8 +91,11 @@ class _UsersPageState extends State<UsersPage> {
             const SizedBox(height: 24),
 
             // ── Header row ────────────────────────────────────
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.end,
+              alignment: WrapAlignment.spaceBetween,
+              spacing: 16,
+              runSpacing: 16,
               children: [
                 // Breadcrumb + title
                 Column(
@@ -141,7 +144,7 @@ class _UsersPageState extends State<UsersPage> {
                           color: colorScheme.onSurface,
                           shadows: [
                             Shadow(
-                              color: Colors.black.withValues(alpha: 0.4),
+                              color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.4),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -159,14 +162,17 @@ class _UsersPageState extends State<UsersPage> {
                   ],
                 ),
 
-                const Spacer(),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Search
+                    _SearchBar(searchController: _searchCtrl),
+                    const SizedBox(width: 16),
 
-                // Search
-                _SearchBar(searchController: _searchCtrl),
-                const SizedBox(width: 16),
-
-                // Add user button
-                _AddUserButton(),
+                    // Add user button
+                    _AddUserButton(),
+                  ],
+                ),
               ],
             ),
 
@@ -622,7 +628,7 @@ class _UserRowState extends State<_UserRow> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: _hovered ? 0.12 : 0.06),
+              color: Theme.of(context).colorScheme.shadow.withValues(alpha: _hovered ? 0.12 : 0.06),
               blurRadius: _hovered ? 16 : 8,
               offset: const Offset(0, 4),
             ),
@@ -747,22 +753,25 @@ class _UserRowState extends State<_UserRow> {
               // ── Actions ──────────────────────────────────
               Expanded(
                 flex: 10,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      color: colorScheme.primary,
-                      tooltip: 'Edit User',
-                      onPressed: widget.onEdit,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 18),
-                      color: colorScheme.error,
-                      tooltip: 'Delete User',
-                      onPressed: widget.onDelete,
-                    ),
-                  ],
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        color: colorScheme.primary,
+                        tooltip: 'Edit User',
+                        onPressed: widget.onEdit,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 18),
+                        color: colorScheme.error,
+                        tooltip: 'Delete User',
+                        onPressed: widget.onDelete,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -946,7 +955,7 @@ class _EditPanelState extends State<_EditPanel> {
         border: Border.all(color: colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.15),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -1450,7 +1459,7 @@ class _AddUserDialogState extends State<_AddUserDialog> {
             border: Border.all(color: colorScheme.outlineVariant),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
+                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
                 blurRadius: 40,
                 offset: const Offset(0, 16),
               ),
@@ -1993,7 +2002,7 @@ class _ConfirmDialog extends StatelessWidget {
             border: Border.all(color: colorScheme.outlineVariant),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
+                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.25),
                 blurRadius: 30,
                 offset: const Offset(0, 12),
               ),

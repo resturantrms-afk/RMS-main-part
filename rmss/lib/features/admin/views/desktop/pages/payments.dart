@@ -51,7 +51,7 @@ class _PaymentsState extends State<Payments> {
                 color: colorScheme.onSurface,
                 shadows: [
                   Shadow(
-                    color: Colors.black.withValues(alpha: 0.5),
+                    color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.5),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -489,7 +489,7 @@ class _PaymentsState extends State<Payments> {
         border: Border.all(color: colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -608,36 +608,39 @@ class _PaymentsState extends State<Payments> {
                     color: colorScheme.outline.withValues(alpha: 0.05),
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      payment.paymentMethod == PaymentMethod.zaad
-                          ? Icons.phone_iphone
-                          : payment.paymentMethod == PaymentMethod.edahab
-                          ? Icons.account_balance_wallet
-                          : Icons.payments,
-                      size: 16,
-                      color: payment.paymentMethod == PaymentMethod.zaad
-                          ? Theme.of(context).colorScheme.primary
-                          : payment.paymentMethod == PaymentMethod.edahab
-                          ? Theme.of(context).colorScheme.secondary
-                          : Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      payment.paymentMethod == PaymentMethod.zaad
-                          ? "Zaad"
-                          : payment.paymentMethod == PaymentMethod.edahab
-                          ? "eDahab"
-                          : "Cash",
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        payment.paymentMethod == PaymentMethod.zaad
+                            ? Icons.phone_iphone
+                            : payment.paymentMethod == PaymentMethod.edahab
+                            ? Icons.account_balance_wallet
+                            : Icons.payments,
+                        size: 16,
+                        color: payment.paymentMethod == PaymentMethod.zaad
+                            ? Theme.of(context).colorScheme.primary
+                            : payment.paymentMethod == PaymentMethod.edahab
+                            ? Theme.of(context).colorScheme.secondary
+                            : Theme.of(context).colorScheme.primary,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Text(
+                        payment.paymentMethod == PaymentMethod.zaad
+                            ? "Zaad"
+                            : payment.paymentMethod == PaymentMethod.edahab
+                            ? "eDahab"
+                            : "Cash",
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -685,193 +688,205 @@ class _PaymentsState extends State<Payments> {
           // Time Passed (Created At)
           Expanded(
             flex: 10,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (createdDuration.inMinutes < 60) ...[
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: colorScheme.secondary.withValues(alpha: 0.8),
-                      shape: BoxShape.circle,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              reverse: true,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (createdDuration.inMinutes < 60) ...[
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondary.withValues(alpha: 0.8),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(
+                    createdPassed,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(width: 6),
                 ],
-                Text(
-                  createdPassed,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
 
           // Time Passed (Last Edited)
           Expanded(
             flex: 10,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (duration.inMinutes < 60) ...[
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.8),
-                      shape: BoxShape.circle,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              reverse: true,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (duration.inMinutes < 60) ...[
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: 0.8),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(
+                    timePassed,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(width: 6),
                 ],
-                Text(
-                  timePassed,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
 
           // Actions
           Expanded(
             flex: 10,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  color: colorScheme.error,
-                  tooltip: 'Delete Payment',
-                  onPressed: () async {
-                    if (payment.status == PaymentStatus.voided) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Cannot void an already voided payment',
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              reverse: true,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    color: colorScheme.error,
+                    tooltip: 'Delete Payment',
+                    onPressed: () async {
+                      if (payment.status == PaymentStatus.voided) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Cannot void an already voided payment',
+                            ),
                           ),
+                        );
+                        return;
+                      }
+                      final bool? confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Void Payment?'),
+                          content: const Text(
+                            'Are you sure you want to void this payment record? The order will be reverted to waiting for payment.',
+                          ),
+                          actions: [
+                            TextButton(
+                              style: ButtonStyle(
+                                mouseCursor: WidgetStateProperty.all(
+                                  SystemMouseCursors.click,
+                                ),
+                              ),
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              style: ButtonStyle(
+                                mouseCursor: WidgetStateProperty.all(
+                                  SystemMouseCursors.click,
+                                ),
+                              ),
+                              onPressed: () => Navigator.pop(context, true),
+                              child: Text(
+                                'Void',
+                                style: TextStyle(color: colorScheme.error),
+                              ),
+                            ),
+                          ],
                         ),
                       );
-                      return;
-                    }
-                    final bool? confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Void Payment?'),
-                        content: const Text(
-                          'Are you sure you want to void this payment record? The order will be reverted to waiting for payment.',
-                        ),
-                        actions: [
-                          TextButton(
-                            style: ButtonStyle(
-                              mouseCursor: WidgetStateProperty.all(
-                                SystemMouseCursors.click,
-                              ),
-                            ),
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            style: ButtonStyle(
-                              mouseCursor: WidgetStateProperty.all(
-                                SystemMouseCursors.click,
-                              ),
-                            ),
-                            onPressed: () => Navigator.pop(context, true),
-                            child: Text(
-                              'Void',
-                              style: TextStyle(color: colorScheme.error),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (confirm == true && context.mounted) {
-                      final paymentState = context.read<PaymentBloc>().state;
-                      final orderState = context.read<OrderBloc>().state;
-
-                      if (paymentState is PaymentsLoaded &&
-                          orderState is OrderLoaded) {
-                        final paymentIds = payment.id.split(',');
-                        final originalPayments = paymentState.items
-                            .where((p) => paymentIds.contains(p.id))
-                            .toList();
-
-                        final orderIds = payment.orderId.split(',');
-                        final originalOrders = orderState.items
-                            .where((o) => orderIds.contains(o.id))
-                            .toList();
-
-                        final timestamp = Timestamp.now();
-
-                        // 1. Void all original payments
-                        for (var origPayment in originalPayments) {
-                          final voidedPayment = origPayment.copyWith(
-                            status: PaymentStatus.voided,
-                            updatedAt: timestamp,
-                          );
-                          context.read<PaymentBloc>().add(
-                            UpdatePayment(item: voidedPayment),
-                          );
-                        }
-
-                        // 2. Revert all original orders to served
-                        for (var origOrder in originalOrders) {
-                          final revertedOrder = origOrder.copyWith(
-                            status: OrderStatus.served,
-                            updatedAt: timestamp,
-                          );
-                          context.read<OrderBloc>().add(
-                            UpdateOrder(item: revertedOrder),
-                          );
+                      if (confirm == true && context.mounted) {
+                        final paymentState = context.read<PaymentBloc>().state;
+                        final orderState = context.read<OrderBloc>().state;
+  
+                        if (paymentState is PaymentsLoaded &&
+                            orderState is OrderLoaded) {
+                          final paymentIds = payment.id.split(',');
+                          final originalPayments = paymentState.items
+                              .where((p) => paymentIds.contains(p.id))
+                              .toList();
+  
+                          final orderIds = payment.orderId.split(',');
+                          final originalOrders = orderState.items
+                              .where((o) => orderIds.contains(o.id))
+                              .toList();
+  
+                          final timestamp = Timestamp.now();
+  
+                          // 1. Void all original payments
+                          for (var origPayment in originalPayments) {
+                            final voidedPayment = origPayment.copyWith(
+                              status: PaymentStatus.voided,
+                              updatedAt: timestamp,
+                            );
+                            context.read<PaymentBloc>().add(
+                              UpdatePayment(item: voidedPayment),
+                            );
+                          }
+  
+                          // 2. Revert all original orders to served
+                          for (var origOrder in originalOrders) {
+                            final revertedOrder = origOrder.copyWith(
+                              status: OrderStatus.served,
+                              updatedAt: timestamp,
+                            );
+                            context.read<OrderBloc>().add(
+                              UpdateOrder(item: revertedOrder),
+                            );
+                          }
                         }
                       }
-                    }
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.receipt_long),
-                  color: colorScheme.primary,
-                  tooltip: 'View Receipt',
-                  onPressed: () {
-                    if (order != null) {
-                      final orderState = context.read<OrderBloc>().state;
-                      if (orderState is OrderLoaded) {
-                        final orderIds = payment.orderId.split(',');
-                        final originalOrders = orderState.items
-                            .where((o) => orderIds.contains(o.id))
-                            .toList();
-                        if (originalOrders.isNotEmpty) {
-                          final mergedOrderForReceipt = OrderUtils.mergeOrders(
-                            originalOrders,
-                          );
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ReceiptPage(order: mergedOrderForReceipt),
-                            ),
-                          );
-                          return;
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.receipt_long),
+                    color: colorScheme.primary,
+                    tooltip: 'View Receipt',
+                    onPressed: () {
+                      if (order != null) {
+                        final orderState = context.read<OrderBloc>().state;
+                        if (orderState is OrderLoaded) {
+                          final orderIds = payment.orderId.split(',');
+                          final originalOrders = orderState.items
+                              .where((o) => orderIds.contains(o.id))
+                              .toList();
+                          if (originalOrders.isNotEmpty) {
+                            final mergedOrderForReceipt = OrderUtils.mergeOrders(
+                              originalOrders,
+                            );
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ReceiptPage(order: mergedOrderForReceipt),
+                              ),
+                            );
+                            return;
+                          }
                         }
                       }
-                    }
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Order details not found')),
-                    );
-                  },
-                ),
-              ],
+  
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Order details not found')),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ],

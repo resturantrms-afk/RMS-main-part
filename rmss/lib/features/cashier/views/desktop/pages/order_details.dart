@@ -127,6 +127,10 @@ class OrderDetails extends StatelessWidget {
                     statusColor = colorScheme.outline;
                   }
 
+                  // Calculate tax based on global order taxPercent
+                  double totalTax = order.totalTax;
+                  double subtotal = order.totalPrice - totalTax;
+
                   return Stack(
                     children: [
                       SingleChildScrollView(
@@ -203,7 +207,7 @@ class OrderDetails extends StatelessWidget {
 
                                         shadows: [
                                           Shadow(
-                                            color: Colors.black.withValues(
+                                            color: Theme.of(context).colorScheme.shadow.withValues(
                                               alpha: 0.2,
                                             ),
                                             blurRadius: 12,
@@ -342,6 +346,15 @@ class OrderDetails extends StatelessWidget {
                                               offset: const Offset(0, 8),
                                             ),
                                           ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        "SUBTOTAL: \$${subtotal.toStringAsFixed(2)}  |  TAX: \$${totalTax.toStringAsFixed(2)}",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: colorScheme.onSurfaceVariant,
                                         ),
                                       ),
                                     ],
@@ -834,7 +847,7 @@ class OrderDetails extends StatelessWidget {
         border: Border.all(color: colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -907,13 +920,48 @@ class OrderDetails extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Text(
-                      "\$${item.price.toStringAsFixed(2)}",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.primary,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          "\$${item.price.toStringAsFixed(2)}",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        if (origOrder.status == OrderStatus.pending || origOrder.status == OrderStatus.preparing)
+                          IconButton(
+                            icon: Icon(Icons.delete_outline, color: colorScheme.error, size: 20),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () {
+                              final updatedItems = List<OrderItemModel>.from(origOrder.items);
+                              updatedItems.removeWhere((i) => i.menuItemId == item.menuItemId && i.notes == item.notes);
+                              
+                              if (updatedItems.isEmpty) {
+                                final updatedOrder = origOrder.copyWith(
+                                  status: OrderStatus.cancelled,
+                                  items: [],
+                                  totalPrice: 0.0,
+                                  updatedAt: Timestamp.now(),
+                                );
+                                context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));
+                              } else {
+                                double newSubtotal = updatedItems.fold(0.0, (sum, i) => sum + (i.price * i.quantity));
+                                double subtotal = updatedItems.fold(0.0, (sum, i) => sum + (i.price * i.quantity));
+                                double newTax = subtotal * (origOrder.taxPercent / 100);
+                                final updatedOrder = origOrder.copyWith(
+                                  items: updatedItems,
+                                  totalPrice: newSubtotal + newTax,
+                                  updatedAt: Timestamp.now(),
+                                );
+                                context.read<OrderBloc>().add(UpdateOrder(item: updatedOrder));
+                              }
+                            },
+                          ),
+                      ],
                     ),
                   ],
                 ),

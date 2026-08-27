@@ -123,7 +123,9 @@ class _AppBrandingPageState extends State<AppBrandingPage> {
                     color: colorScheme.onSurface,
                     shadows: [
                       Shadow(
-                        color: Colors.black.withValues(alpha: 0.5),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.shadow.withValues(alpha: 0.5),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -143,190 +145,202 @@ class _AppBrandingPageState extends State<AppBrandingPage> {
             const SizedBox(height: 48),
 
             Container(
-              padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: colorScheme.outlineVariant),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.shadow.withValues(alpha: 0.2),
                     blurRadius: 24,
                     offset: const Offset(0, 12),
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Application Logo",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
+              child: Material(
+                color: colorScheme.surfaceContainerLowest,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  side: BorderSide(color: colorScheme.outlineVariant),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text(
+                        "Application Logo",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerHighest,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: colorScheme.outlineVariant,
+                                width: 2,
+                              ),
+                              image:
+                                  _pendingLogoUrl != null &&
+                                      _pendingLogoUrl!.isNotEmpty
+                                  ? DecorationImage(
+                                      image: CachedNetworkImageProvider(
+                                        _pendingLogoUrl!,
+                                      ),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                            ),
+                            child:
+                                _pendingLogoUrl == null ||
+                                    _pendingLogoUrl!.isEmpty
+                                ? Icon(
+                                    Icons.storefront,
+                                    size: 48,
+                                    color: colorScheme.onSurfaceVariant,
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 24),
+                          ElevatedButton.icon(
+                            onPressed: _isUploadingImage
+                                ? null
+                                : _pickAndUploadImage,
+                            icon: _isUploadingImage
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.upload),
+                            label: Text(
+                              _isUploadingImage
+                                  ? "UPLOADING..."
+                                  : "UPLOAD NEW LOGO",
+                            ),
+                          ),
+                          if (_pendingLogoUrl != null &&
+                              _pendingLogoUrl!.isNotEmpty) ...[
+                            const SizedBox(width: 16),
+                            TextButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _pendingLogoUrl = '';
+                                });
+                              },
+                              icon: const Icon(Icons.delete),
+                              label: const Text("REMOVE"),
+                              style: TextButton.styleFrom(
+                                foregroundColor: colorScheme.error,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+
+                      const SizedBox(height: 48),
+
+                      Text(
+                        "Application Name",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: "App Name",
+                          hintText: "Enter the new name for your application",
+                        ),
+                      ),
+
+                      const SizedBox(height: 48),
+
+                      Text(
+                        "Brand Color",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       Container(
-                        width: 120,
-                        height: 120,
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHighest,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: colorScheme.outlineVariant,
-                            width: 2,
-                          ),
-                          image:
-                              _pendingLogoUrl != null &&
-                                  _pendingLogoUrl!.isNotEmpty
-                              ? DecorationImage(
-                                  image: CachedNetworkImageProvider(
-                                    _pendingLogoUrl!,
-                                  ),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
+                          border: Border.all(color: colorScheme.outlineVariant),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child:
-                            _pendingLogoUrl == null || _pendingLogoUrl!.isEmpty
-                            ? Icon(
-                                Icons.storefront,
-                                size: 48,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Pick a primary brand color to be applied globally across the POS system.",
+                              style: TextStyle(
                                 color: colorScheme.onSurfaceVariant,
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 24),
-                      ElevatedButton.icon(
-                        onPressed: _isUploadingImage
-                            ? null
-                            : _pickAndUploadImage,
-                        icon: _isUploadingImage
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.upload),
-                        label: Text(
-                          _isUploadingImage
-                              ? "UPLOADING..."
-                              : "UPLOAD NEW LOGO",
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ColorPicker(
+                              pickerColor: _selectedColor,
+                              onColorChanged: (Color color) {
+                                setState(() => _selectedColor = color);
+                              },
+                              enableAlpha: false,
+                              displayThumbColor: true,
+                              pickerAreaHeightPercent: 0.8,
+                            ),
+                          ],
                         ),
                       ),
-                      if (_pendingLogoUrl != null &&
-                          _pendingLogoUrl!.isNotEmpty) ...[
-                        const SizedBox(width: 16),
-                        TextButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              _pendingLogoUrl = '';
-                            });
-                          },
-                          icon: const Icon(Icons.delete),
-                          label: const Text("REMOVE"),
-                          style: TextButton.styleFrom(
-                            foregroundColor: colorScheme.error,
+
+                      const SizedBox(height: 48),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          ElevatedButton(
+                            onPressed: _saveBranding,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: colorScheme.onPrimary,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 20,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                            ),
+                            child: const Text(
+                              "SAVE CHANGES",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5,
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
-                    ],
-                  ),
-
-                  const SizedBox(height: 48),
-
-                  Text(
-                    "Application Name",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: "App Name",
-                      hintText: "Enter the new name for your application",
-                    ),
-                  ),
-
-                  const SizedBox(height: 48),
-
-                  Text(
-                    "Brand Color",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: colorScheme.outlineVariant),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Pick a primary brand color to be applied globally across the POS system.",
-                          style: TextStyle(color: colorScheme.onSurfaceVariant),
-                        ),
-                        const SizedBox(height: 16),
-                        ColorPicker(
-                          pickerColor: _selectedColor,
-                          onColorChanged: (Color color) {
-                            setState(() => _selectedColor = color);
-                          },
-                          enableAlpha: false,
-                          displayThumbColor: true,
-                          pickerAreaHeightPercent: 0.8,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 48),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      ElevatedButton(
-                        onPressed: _saveBranding,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colorScheme.primary,
-                          foregroundColor: colorScheme.onPrimary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 20,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
-                        child: const Text(
-                          "SAVE CHANGES",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                            fontSize: 14,
-                          ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           ],

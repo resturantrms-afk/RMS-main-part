@@ -168,7 +168,7 @@ class _AddMenuItemPopupState extends State<AddMenuItemPopup> {
                           )
                         : Container(
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.4),
+                              color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.4),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: const Center(

@@ -107,9 +107,9 @@ class _KitchenMainLayoutState extends State<KitchenMainLayout> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.open_in_new,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onPrimary,
                         ),
                         onPressed: () {
                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
